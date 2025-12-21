@@ -368,3 +368,575 @@ func ListMergeRequests(getClient GetClientFn) (tool mcp.Tool, handler server.Too
 			return mcp.NewToolResultText(string(data)), nil
 		}
 }
+
+// CreateMergeRequest defines the MCP tool for creating a new GitLab merge request.
+func CreateMergeRequest(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+			"createMergeRequest",
+			mcp.WithDescription("Creates a new merge request in a GitLab project."),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title: "Create GitLab Merge Request",
+			}),
+			// Required parameters
+			mcp.WithString("projectId",
+				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
+				mcp.Required(),
+			),
+			mcp.WithString("sourceBranch",
+				mcp.Description("The source branch name."),
+				mcp.Required(),
+			),
+			mcp.WithString("targetBranch",
+				mcp.Description("The target branch name."),
+				mcp.Required(),
+			),
+			mcp.WithString("title",
+				mcp.Description("The title of the merge request."),
+				mcp.Required(),
+			),
+			// Optional parameters
+			mcp.WithString("description",
+				mcp.Description("The description of the merge request."),
+			),
+			mcp.WithString("labels",
+				mcp.Description("Comma-separated list of label names to apply to the merge request."),
+			),
+			mcp.WithString("assigneeIds",
+				mcp.Description("Comma-separated list of user IDs to assign the merge request to."),
+			),
+			mcp.WithNumber("milestoneId",
+				mcp.Description("The ID of the milestone to associate the merge request with."),
+			),
+			mcp.WithBoolean("removeSourceBranch",
+				mcp.Description("Flag indicating if the source branch should be removed after merge."),
+			),
+			mcp.WithBoolean("squash",
+				mcp.Description("Flag indicating if commits should be squashed into a single commit on merge."),
+			),
+		),
+		// Handler function implementation
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			// --- Parse required parameters
+			projectID, err := requiredParam[string](&request, "projectId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			sourceBranch, err := requiredParam[string](&request, "sourceBranch")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			targetBranch, err := requiredParam[string](&request, "targetBranch")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			title, err := requiredParam[string](&request, "title")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			// --- Parse optional parameters
+			description, err := OptionalParam[string](&request, "description")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			labels, err := OptionalParam[string](&request, "labels")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			assigneeIdsStr, err := OptionalParam[string](&request, "assigneeIds")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			milestoneIDFloat, err := OptionalParam[float64](&request, "milestoneId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			removeSourceBranch, err := OptionalBoolParam(&request, "removeSourceBranch")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			squash, err := OptionalBoolParam(&request, "squash")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			// --- Obtain GitLab client
+			glClient, err := getClient(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+			}
+
+			// --- Construct GitLab API options
+			opts := &gl.CreateMergeRequestOptions{
+				SourceBranch: &sourceBranch,
+				TargetBranch: &targetBranch,
+				Title:        &title,
+			}
+
+			if description != "" {
+				opts.Description = &description
+			}
+
+			if labels != "" {
+				labelSlice := strings.Split(labels, ",")
+				// Trim whitespace from each label
+				for i, label := range labelSlice {
+					labelSlice[i] = strings.TrimSpace(label)
+				}
+				labelOpts := gl.LabelOptions(labelSlice)
+				opts.Labels = &labelOpts
+			}
+
+			if assigneeIdsStr != "" {
+				assigneeIdsList := strings.Split(assigneeIdsStr, ",")
+				assigneeIds := make([]int, 0, len(assigneeIdsList))
+				for _, idStr := range assigneeIdsList {
+					idStr = strings.TrimSpace(idStr)
+					if idStr == "" {
+						continue
+					}
+					id, err := strconv.Atoi(idStr)
+					if err != nil {
+						return mcp.NewToolResultError(fmt.Sprintf("Validation Error: invalid assignee ID %q: %v", idStr, err)), nil
+					}
+					assigneeIds = append(assigneeIds, id)
+				}
+				if len(assigneeIds) > 0 {
+					opts.AssigneeIDs = &assigneeIds
+				}
+			}
+
+			if milestoneIDFloat != 0 {
+				milestoneID := int(milestoneIDFloat)
+				if float64(milestoneID) != milestoneIDFloat {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
+				}
+				opts.MilestoneID = &milestoneID
+			}
+
+			if removeSourceBranch != nil {
+				opts.RemoveSourceBranch = removeSourceBranch
+			}
+
+			if squash != nil {
+				opts.Squash = squash
+			}
+
+			// --- Call GitLab API
+			mr, resp, err := glClient.MergeRequests.CreateMergeRequest(projectID, opts, gl.WithContext(ctx))
+
+			// --- Handle API errors
+			if err != nil {
+				code := http.StatusInternalServerError
+				if resp != nil {
+					code = resp.StatusCode
+				}
+				if code == http.StatusNotFound {
+					return mcp.NewToolResultError(fmt.Sprintf("project %q not found or access denied (%d)", projectID, code)), nil
+				}
+				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
+					return mcp.NewToolResultError(fmt.Sprintf("failed to create merge request: %v (status: %d)", err, code)), nil
+				}
+				return nil, fmt.Errorf("failed to create merge request in project %q: %w (status: %d)", projectID, err, code)
+			}
+
+			// --- Marshal and return success
+			data, err := json.Marshal(mr)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal merge request data: %w", err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
+		}
+}
+
+// UpdateMergeRequest defines the MCP tool for updating an existing GitLab merge request.
+func UpdateMergeRequest(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+			"updateMergeRequest",
+			mcp.WithDescription("Updates an existing merge request in a GitLab project."),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title: "Update GitLab Merge Request",
+			}),
+			// Required parameters
+			mcp.WithString("projectId",
+				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
+				mcp.Required(),
+			),
+			mcp.WithNumber("mergeRequestIid",
+				mcp.Description("The IID (internal ID, integer) of the merge request within the project."),
+				mcp.Required(),
+			),
+			// Optional parameters
+			mcp.WithString("title",
+				mcp.Description("The title of the merge request."),
+			),
+			mcp.WithString("description",
+				mcp.Description("The description of the merge request."),
+			),
+			mcp.WithString("targetBranch",
+				mcp.Description("The target branch name."),
+			),
+			mcp.WithString("labels",
+				mcp.Description("Comma-separated list of label names to apply to the merge request."),
+			),
+			mcp.WithString("assigneeIds",
+				mcp.Description("Comma-separated list of user IDs to assign the merge request to."),
+			),
+			mcp.WithNumber("milestoneId",
+				mcp.Description("The ID of the milestone to associate the merge request with."),
+			),
+			mcp.WithString("stateEvent",
+				mcp.Description("The state event to perform on the merge request (close, reopen, merge)."),
+				mcp.Enum("close", "reopen", "merge"),
+			),
+			mcp.WithBoolean("removeSourceBranch",
+				mcp.Description("Flag indicating if the source branch should be removed after merge."),
+			),
+			mcp.WithBoolean("squash",
+				mcp.Description("Flag indicating if commits should be squashed into a single commit on merge."),
+			),
+		),
+		// Handler function implementation
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			// --- Parse required parameters
+			projectID, err := requiredParam[string](&request, "projectId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			mrIidFloat, err := requiredParam[float64](&request, "mergeRequestIid")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+			mrIid := int(mrIidFloat)
+			if float64(mrIid) != mrIidFloat {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: mergeRequestIid %v is not a valid integer", mrIidFloat)), nil
+			}
+
+			// --- Parse optional parameters
+			title, err := OptionalParam[string](&request, "title")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			description, err := OptionalParam[string](&request, "description")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			targetBranch, err := OptionalParam[string](&request, "targetBranch")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			labels, err := OptionalParam[string](&request, "labels")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			assigneeIdsStr, err := OptionalParam[string](&request, "assigneeIds")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			milestoneIDFloat, err := OptionalParam[float64](&request, "milestoneId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			stateEvent, err := OptionalParam[string](&request, "stateEvent")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			removeSourceBranch, err := OptionalBoolParam(&request, "removeSourceBranch")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			squash, err := OptionalBoolParam(&request, "squash")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			// --- Obtain GitLab client
+			glClient, err := getClient(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+			}
+
+			// --- Construct GitLab API options
+			opts := &gl.UpdateMergeRequestOptions{}
+
+			if title != "" {
+				opts.Title = &title
+			}
+
+			if description != "" {
+				opts.Description = &description
+			}
+
+			if targetBranch != "" {
+				opts.TargetBranch = &targetBranch
+			}
+
+			if labels != "" {
+				labelSlice := strings.Split(labels, ",")
+				// Trim whitespace from each label
+				for i, label := range labelSlice {
+					labelSlice[i] = strings.TrimSpace(label)
+				}
+				labelOpts := gl.LabelOptions(labelSlice)
+				opts.Labels = &labelOpts
+			}
+
+			if assigneeIdsStr != "" {
+				assigneeIdsList := strings.Split(assigneeIdsStr, ",")
+				assigneeIds := make([]int, 0, len(assigneeIdsList))
+				for _, idStr := range assigneeIdsList {
+					idStr = strings.TrimSpace(idStr)
+					if idStr == "" {
+						continue
+					}
+					id, err := strconv.Atoi(idStr)
+					if err != nil {
+						return mcp.NewToolResultError(fmt.Sprintf("Validation Error: invalid assignee ID %q: %v", idStr, err)), nil
+					}
+					assigneeIds = append(assigneeIds, id)
+				}
+				if len(assigneeIds) > 0 {
+					opts.AssigneeIDs = &assigneeIds
+				}
+			}
+
+			if milestoneIDFloat != 0 {
+				milestoneID := int(milestoneIDFloat)
+				if float64(milestoneID) != milestoneIDFloat {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
+				}
+				opts.MilestoneID = &milestoneID
+			}
+
+			if stateEvent != "" {
+				opts.StateEvent = &stateEvent
+			}
+
+			if removeSourceBranch != nil {
+				opts.RemoveSourceBranch = removeSourceBranch
+			}
+
+			if squash != nil {
+				opts.Squash = squash
+			}
+
+			// --- Call GitLab API
+			mr, resp, err := glClient.MergeRequests.UpdateMergeRequest(projectID, mrIid, opts, gl.WithContext(ctx))
+
+			// --- Handle API errors
+			if err != nil {
+				code := http.StatusInternalServerError
+				if resp != nil {
+					code = resp.StatusCode
+				}
+				if code == http.StatusNotFound {
+					return mcp.NewToolResultError(fmt.Sprintf("merge request %d not found in project %q or access denied (%d)", mrIid, projectID, code)), nil
+				}
+				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
+					return mcp.NewToolResultError(fmt.Sprintf("failed to update merge request: %v (status: %d)", err, code)), nil
+				}
+				return nil, fmt.Errorf("failed to update merge request %d in project %q: %w (status: %d)", mrIid, projectID, err, code)
+			}
+
+			// --- Marshal and return success
+			data, err := json.Marshal(mr)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal merge request data: %w", err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
+		}
+}
+
+// CreateMergeRequestComment defines the MCP tool for creating a comment on a GitLab merge request.
+func CreateMergeRequestComment(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+			"createMergeRequestComment",
+			mcp.WithDescription("Creates a comment (note) on a specific GitLab merge request."),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title: "Create Merge Request Comment",
+			}),
+			// Required parameters
+			mcp.WithString("projectId",
+				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
+				mcp.Required(),
+			),
+			mcp.WithNumber("mergeRequestIid",
+				mcp.Description("The IID (internal ID, integer) of the merge request within the project."),
+				mcp.Required(),
+			),
+			mcp.WithString("body",
+				mcp.Description("The content of the comment."),
+				mcp.Required(),
+			),
+		),
+		// Handler function implementation
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			// --- Parse required parameters
+			projectID, err := requiredParam[string](&request, "projectId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			mrIidFloat, err := requiredParam[float64](&request, "mergeRequestIid")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+			mrIid := int(mrIidFloat)
+			if float64(mrIid) != mrIidFloat {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: mergeRequestIid %v is not a valid integer", mrIidFloat)), nil
+			}
+
+			body, err := requiredParam[string](&request, "body")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			// --- Obtain GitLab client
+			glClient, err := getClient(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+			}
+
+			// --- Construct GitLab API options
+			opts := &gl.CreateMergeRequestNoteOptions{
+				Body: &body,
+			}
+
+			// --- Call GitLab API
+			note, resp, err := glClient.Notes.CreateMergeRequestNote(projectID, mrIid, opts, gl.WithContext(ctx))
+
+			// --- Handle API errors
+			if err != nil {
+				code := http.StatusInternalServerError
+				if resp != nil {
+					code = resp.StatusCode
+				}
+				if code == http.StatusNotFound {
+					return mcp.NewToolResultError(fmt.Sprintf("merge request %d not found in project %q or access denied (%d)", mrIid, projectID, code)), nil
+				}
+				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
+					return mcp.NewToolResultError(fmt.Sprintf("failed to create comment: %v (status: %d)", err, code)), nil
+				}
+				return nil, fmt.Errorf("failed to create comment on merge request %d in project %q: %w (status: %d)", mrIid, projectID, err, code)
+			}
+
+			// --- Marshal and return success
+			data, err := json.Marshal(note)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal comment data: %w", err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
+		}
+}
+
+// UpdateMergeRequestComment defines the MCP tool for updating a comment on a GitLab merge request.
+func UpdateMergeRequestComment(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+			"updateMergeRequestComment",
+			mcp.WithDescription("Updates an existing comment (note) on a specific GitLab merge request."),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title: "Update Merge Request Comment",
+			}),
+			// Required parameters
+			mcp.WithString("projectId",
+				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
+				mcp.Required(),
+			),
+			mcp.WithNumber("mergeRequestIid",
+				mcp.Description("The IID (internal ID, integer) of the merge request within the project."),
+				mcp.Required(),
+			),
+			mcp.WithNumber("noteId",
+				mcp.Description("The ID of the note (comment) to update."),
+				mcp.Required(),
+			),
+			mcp.WithString("body",
+				mcp.Description("The updated content of the comment."),
+				mcp.Required(),
+			),
+		),
+		// Handler function implementation
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			// --- Parse required parameters
+			projectID, err := requiredParam[string](&request, "projectId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			mrIidFloat, err := requiredParam[float64](&request, "mergeRequestIid")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+			mrIid := int(mrIidFloat)
+			if float64(mrIid) != mrIidFloat {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: mergeRequestIid %v is not a valid integer", mrIidFloat)), nil
+			}
+
+			noteIDFloat, err := requiredParam[float64](&request, "noteId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+			noteID := int(noteIDFloat)
+			if float64(noteID) != noteIDFloat {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: noteId %v is not a valid integer", noteIDFloat)), nil
+			}
+
+			body, err := requiredParam[string](&request, "body")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			// --- Obtain GitLab client
+			glClient, err := getClient(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+			}
+
+			// --- Construct GitLab API options
+			opts := &gl.UpdateMergeRequestNoteOptions{
+				Body: &body,
+			}
+
+			// --- Call GitLab API
+			note, resp, err := glClient.Notes.UpdateMergeRequestNote(projectID, mrIid, noteID, opts, gl.WithContext(ctx))
+
+			// --- Handle API errors
+			if err != nil {
+				code := http.StatusInternalServerError
+				if resp != nil {
+					code = resp.StatusCode
+				}
+				if code == http.StatusNotFound {
+					return mcp.NewToolResultError(fmt.Sprintf("merge request %d or note %d not found in project %q or access denied (%d)", mrIid, noteID, projectID, code)), nil
+				}
+				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
+					return mcp.NewToolResultError(fmt.Sprintf("failed to update comment: %v (status: %d)", err, code)), nil
+				}
+				return nil, fmt.Errorf("failed to update comment %d on merge request %d in project %q: %w (status: %d)", noteID, mrIid, projectID, err, code)
+			}
+
+			// --- Marshal and return success
+			data, err := json.Marshal(note)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal comment data: %w", err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
+		}
+}

@@ -794,3 +794,736 @@ func convertToBasicMRs(mrs []*gl.MergeRequest) []*gl.BasicMergeRequest {
 	}
 	return basicMRs
 }
+
+// TestCreateMergeRequestHandler tests the CreateMergeRequest tool handler
+func TestCreateMergeRequestHandler(t *testing.T) {
+	ctx := context.Background()
+	mockClient, mockMRs, ctrl := setupMockClientForMergeRequests(t)
+	defer ctrl.Finish()
+
+	mockGetClient := func(_ context.Context) (*gl.Client, error) {
+		return mockClient, nil
+	}
+
+	createMRTool, handler := CreateMergeRequest(mockGetClient)
+
+	projectID := "group/project"
+	timeNow := time.Now()
+
+	tests := []struct {
+		name                string
+		args                map[string]any
+		mockSetup           func()
+		expectedResult      interface{}
+		expectResultError   bool
+		expectInternalError bool
+		errorContains       string
+	}{
+		{
+			name: "Success - Create Merge Request with minimal fields",
+			args: map[string]any{
+				"projectId":    projectID,
+				"sourceBranch": "feature-branch",
+				"targetBranch": "main",
+				"title":        "New MR",
+			},
+			mockSetup: func() {
+				expectedMR := &gl.MergeRequest{
+					BasicMergeRequest: gl.BasicMergeRequest{
+						ID:           123,
+						IID:          1,
+						ProjectID:    456,
+						Title:        "New MR",
+						SourceBranch: "feature-branch",
+						TargetBranch: "main",
+						State:        "opened",
+						CreatedAt:    &timeNow,
+					},
+				}
+				mockMRs.EXPECT().
+					CreateMergeRequest(projectID, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, opts *gl.CreateMergeRequestOptions, _ ...gl.RequestOptionFunc) (*gl.MergeRequest, *gl.Response, error) {
+						assert.Equal(t, "New MR", *opts.Title)
+						assert.Equal(t, "feature-branch", *opts.SourceBranch)
+						assert.Equal(t, "main", *opts.TargetBranch)
+						return expectedMR, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil
+					})
+			},
+			expectedResult: &gl.MergeRequest{
+				BasicMergeRequest: gl.BasicMergeRequest{
+					ID:           123,
+					IID:          1,
+					ProjectID:    456,
+					Title:        "New MR",
+					SourceBranch: "feature-branch",
+					TargetBranch: "main",
+					State:        "opened",
+					CreatedAt:    &timeNow,
+				},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Create Merge Request with all fields",
+			args: map[string]any{
+				"projectId":          projectID,
+				"sourceBranch":       "feature-branch",
+				"targetBranch":       "main",
+				"title":              "Complete MR",
+				"description":        "This is a complete MR",
+				"labels":             "bug,critical",
+				"assigneeIds":        "1,2",
+				"milestoneId":        5.0,
+				"removeSourceBranch": true,
+				"squash":             true,
+			},
+			mockSetup: func() {
+				expectedMR := &gl.MergeRequest{
+					BasicMergeRequest: gl.BasicMergeRequest{
+						ID:           124,
+						IID:          2,
+						ProjectID:    456,
+						Title:        "Complete MR",
+						Description:  "This is a complete MR",
+						SourceBranch: "feature-branch",
+						TargetBranch: "main",
+						State:        "opened",
+						CreatedAt:    &timeNow,
+					},
+				}
+				mockMRs.EXPECT().
+					CreateMergeRequest(projectID, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, opts *gl.CreateMergeRequestOptions, _ ...gl.RequestOptionFunc) (*gl.MergeRequest, *gl.Response, error) {
+						assert.Equal(t, "Complete MR", *opts.Title)
+						assert.Equal(t, "This is a complete MR", *opts.Description)
+						assert.NotNil(t, opts.Labels)
+						assert.NotNil(t, opts.AssigneeIDs)
+						assert.Equal(t, 2, len(*opts.AssigneeIDs))
+						assert.Equal(t, 5, *opts.MilestoneID)
+						assert.NotNil(t, opts.RemoveSourceBranch)
+						assert.True(t, *opts.RemoveSourceBranch)
+						assert.NotNil(t, opts.Squash)
+						assert.True(t, *opts.Squash)
+						return expectedMR, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil
+					})
+			},
+			expectedResult: &gl.MergeRequest{
+				BasicMergeRequest: gl.BasicMergeRequest{
+					ID:           124,
+					IID:          2,
+					ProjectID:    456,
+					Title:        "Complete MR",
+					Description:  "This is a complete MR",
+					SourceBranch: "feature-branch",
+					TargetBranch: "main",
+					State:        "opened",
+					CreatedAt:    &timeNow,
+				},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Missing projectId",
+			args: map[string]any{
+				"sourceBranch": "feature-branch",
+				"targetBranch": "main",
+				"title":        "New MR",
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: missing required parameter: projectId",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Missing sourceBranch",
+			args: map[string]any{
+				"projectId":    projectID,
+				"targetBranch": "main",
+				"title":        "New MR",
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: missing required parameter: sourceBranch",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Project Not Found (404)",
+			args: map[string]any{
+				"projectId":    "nonexistent",
+				"sourceBranch": "feature-branch",
+				"targetBranch": "main",
+				"title":        "New MR",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					CreateMergeRequest("nonexistent", gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Project Not Found"))
+			},
+			expectedResult:      "project \"nonexistent\" not found or access denied (404)",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - GitLab API Error (500)",
+			args: map[string]any{
+				"projectId":    projectID,
+				"sourceBranch": "feature-branch",
+				"targetBranch": "main",
+				"title":        "New MR",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					CreateMergeRequest(projectID, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
+			},
+			expectedResult:      nil,
+			expectResultError:   false,
+			expectInternalError: true,
+			errorContains:       "failed to create merge request in project",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mockSetup()
+
+			request := mcp.CallToolRequest{
+				Params: struct {
+					Name      string                 `json:"name"`
+					Arguments map[string]interface{} `json:"arguments,omitempty"`
+					Meta      *struct {
+						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+					} `json:"_meta,omitempty"`
+				}{
+					Name:      createMRTool.Name,
+					Arguments: tc.args,
+				},
+			}
+
+			result, err := handler(ctx, request)
+
+			if tc.expectInternalError {
+				require.Error(t, err)
+				if tc.errorContains != "" {
+					assert.ErrorContains(t, err, tc.errorContains)
+				}
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				textContent := getTextResult(t, result)
+
+				if tc.expectResultError {
+					expectedErrString, ok := tc.expectedResult.(string)
+					require.True(t, ok)
+					assert.Contains(t, textContent.Text, expectedErrString)
+				} else {
+					expectedMR, ok := tc.expectedResult.(*gl.MergeRequest)
+					require.True(t, ok)
+					expectedJSON, err := json.Marshal(expectedMR)
+					require.NoError(t, err)
+					assert.JSONEq(t, string(expectedJSON), textContent.Text)
+				}
+			}
+		})
+	}
+}
+
+// TestUpdateMergeRequestHandler tests the UpdateMergeRequest tool handler
+func TestUpdateMergeRequestHandler(t *testing.T) {
+	ctx := context.Background()
+	mockClient, mockMRs, ctrl := setupMockClientForMergeRequests(t)
+	defer ctrl.Finish()
+
+	mockGetClient := func(_ context.Context) (*gl.Client, error) {
+		return mockClient, nil
+	}
+
+	updateMRTool, handler := UpdateMergeRequest(mockGetClient)
+
+	projectID := "group/project"
+	mrIid := 1.0
+	timeNow := time.Now()
+
+	tests := []struct {
+		name                string
+		args                map[string]any
+		mockSetup           func()
+		expectedResult      interface{}
+		expectResultError   bool
+		expectInternalError bool
+		errorContains       string
+	}{
+		{
+			name: "Success - Update Merge Request title",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"title":           "Updated MR Title",
+			},
+			mockSetup: func() {
+				expectedMR := &gl.MergeRequest{
+					BasicMergeRequest: gl.BasicMergeRequest{
+						ID:        123,
+						IID:       1,
+						ProjectID: 456,
+						Title:     "Updated MR Title",
+						State:     "opened",
+						UpdatedAt: &timeNow,
+					},
+				}
+				mockMRs.EXPECT().
+					UpdateMergeRequest(projectID, 1, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int, opts *gl.UpdateMergeRequestOptions, _ ...gl.RequestOptionFunc) (*gl.MergeRequest, *gl.Response, error) {
+						assert.Equal(t, "Updated MR Title", *opts.Title)
+						return expectedMR, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: &gl.MergeRequest{
+				BasicMergeRequest: gl.BasicMergeRequest{
+					ID:        123,
+					IID:       1,
+					ProjectID: 456,
+					Title:     "Updated MR Title",
+					State:     "opened",
+					UpdatedAt: &timeNow,
+				},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Update Merge Request with stateEvent",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"stateEvent":      "close",
+			},
+			mockSetup: func() {
+				expectedMR := &gl.MergeRequest{
+					BasicMergeRequest: gl.BasicMergeRequest{
+						ID:        123,
+						IID:       1,
+						ProjectID: 456,
+						Title:     "Test MR",
+						State:     "closed",
+						UpdatedAt: &timeNow,
+					},
+				}
+				mockMRs.EXPECT().
+					UpdateMergeRequest(projectID, 1, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int, opts *gl.UpdateMergeRequestOptions, _ ...gl.RequestOptionFunc) (*gl.MergeRequest, *gl.Response, error) {
+						assert.Equal(t, "close", *opts.StateEvent)
+						return expectedMR, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: &gl.MergeRequest{
+				BasicMergeRequest: gl.BasicMergeRequest{
+					ID:        123,
+					IID:       1,
+					ProjectID: 456,
+					Title:     "Test MR",
+					State:     "closed",
+					UpdatedAt: &timeNow,
+				},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Missing projectId",
+			args: map[string]any{
+				"mergeRequestIid": mrIid,
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: missing required parameter: projectId",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - MR Not Found (404)",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": 999.0,
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					UpdateMergeRequest(projectID, 999, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 MR Not Found"))
+			},
+			expectedResult:      "merge request 999 not found in project \"group/project\" or access denied (404)",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - GitLab API Error (500)",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					UpdateMergeRequest(projectID, 1, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
+			},
+			expectedResult:      nil,
+			expectResultError:   false,
+			expectInternalError: true,
+			errorContains:       "failed to update merge request",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mockSetup()
+
+			request := mcp.CallToolRequest{
+				Params: struct {
+					Name      string                 `json:"name"`
+					Arguments map[string]interface{} `json:"arguments,omitempty"`
+					Meta      *struct {
+						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+					} `json:"_meta,omitempty"`
+				}{
+					Name:      updateMRTool.Name,
+					Arguments: tc.args,
+				},
+			}
+
+			result, err := handler(ctx, request)
+
+			if tc.expectInternalError {
+				require.Error(t, err)
+				if tc.errorContains != "" {
+					assert.ErrorContains(t, err, tc.errorContains)
+				}
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				textContent := getTextResult(t, result)
+
+				if tc.expectResultError {
+					expectedErrString, ok := tc.expectedResult.(string)
+					require.True(t, ok)
+					assert.Contains(t, textContent.Text, expectedErrString)
+				} else {
+					expectedMR, ok := tc.expectedResult.(*gl.MergeRequest)
+					require.True(t, ok)
+					expectedJSON, err := json.Marshal(expectedMR)
+					require.NoError(t, err)
+					assert.JSONEq(t, string(expectedJSON), textContent.Text)
+				}
+			}
+		})
+	}
+}
+
+// TestCreateMergeRequestCommentHandler tests the CreateMergeRequestComment tool handler
+func TestCreateMergeRequestCommentHandler(t *testing.T) {
+	ctx := context.Background()
+	mockClient, mockNotes, ctrl := setupMockClientForNotes(t)
+	defer ctrl.Finish()
+
+	mockGetClient := func(_ context.Context) (*gl.Client, error) {
+		return mockClient, nil
+	}
+
+	createCommentTool, handler := CreateMergeRequestComment(mockGetClient)
+
+	projectID := "group/project"
+	mrIid := 1.0
+	timeNow := time.Now()
+
+	tests := []struct {
+		name                string
+		args                map[string]any
+		mockSetup           func()
+		expectedResult      interface{}
+		expectResultError   bool
+		expectInternalError bool
+		errorContains       string
+	}{
+		{
+			name: "Success - Create Merge Request Comment",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"body":            "This is a comment on MR",
+			},
+			mockSetup: func() {
+				expectedNote := &gl.Note{
+					ID:   123,
+					Body: "This is a comment on MR",
+					Author: gl.NoteAuthor{
+						Name: "Test User",
+					},
+					CreatedAt: &timeNow,
+				}
+				mockNotes.EXPECT().
+					CreateMergeRequestNote(projectID, 1, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int, opts *gl.CreateMergeRequestNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
+						assert.Equal(t, "This is a comment on MR", *opts.Body)
+						return expectedNote, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil
+					})
+			},
+			expectedResult: &gl.Note{
+				ID:   123,
+				Body: "This is a comment on MR",
+				Author: gl.NoteAuthor{
+					Name: "Test User",
+				},
+				CreatedAt: &timeNow,
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Missing projectId",
+			args: map[string]any{
+				"mergeRequestIid": mrIid,
+				"body":            "Comment",
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: missing required parameter: projectId",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - MR Not Found (404)",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": 999.0,
+				"body":            "Comment",
+			},
+			mockSetup: func() {
+				mockNotes.EXPECT().
+					CreateMergeRequestNote(projectID, 999, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 MR Not Found"))
+			},
+			expectedResult:      "merge request 999 not found in project \"group/project\" or access denied (404)",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - GitLab API Error (500)",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"body":            "Comment",
+			},
+			mockSetup: func() {
+				mockNotes.EXPECT().
+					CreateMergeRequestNote(projectID, 1, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
+			},
+			expectedResult:      nil,
+			expectResultError:   false,
+			expectInternalError: true,
+			errorContains:       "failed to create comment on merge request",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mockSetup()
+
+			request := mcp.CallToolRequest{
+				Params: struct {
+					Name      string                 `json:"name"`
+					Arguments map[string]interface{} `json:"arguments,omitempty"`
+					Meta      *struct {
+						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+					} `json:"_meta,omitempty"`
+				}{
+					Name:      createCommentTool.Name,
+					Arguments: tc.args,
+				},
+			}
+
+			result, err := handler(ctx, request)
+
+			if tc.expectInternalError {
+				require.Error(t, err)
+				if tc.errorContains != "" {
+					assert.ErrorContains(t, err, tc.errorContains)
+				}
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				textContent := getTextResult(t, result)
+
+				if tc.expectResultError {
+					expectedErrString, ok := tc.expectedResult.(string)
+					require.True(t, ok)
+					assert.Contains(t, textContent.Text, expectedErrString)
+				} else {
+					expectedNote, ok := tc.expectedResult.(*gl.Note)
+					require.True(t, ok)
+					expectedJSON, err := json.Marshal(expectedNote)
+					require.NoError(t, err)
+					assert.JSONEq(t, string(expectedJSON), textContent.Text)
+				}
+			}
+		})
+	}
+}
+
+// TestUpdateMergeRequestCommentHandler tests the UpdateMergeRequestComment tool handler
+func TestUpdateMergeRequestCommentHandler(t *testing.T) {
+	ctx := context.Background()
+	mockClient, mockNotes, ctrl := setupMockClientForNotes(t)
+	defer ctrl.Finish()
+
+	mockGetClient := func(_ context.Context) (*gl.Client, error) {
+		return mockClient, nil
+	}
+
+	updateCommentTool, handler := UpdateMergeRequestComment(mockGetClient)
+
+	projectID := "group/project"
+	mrIid := 1.0
+	noteID := 123.0
+	timeNow := time.Now()
+
+	tests := []struct {
+		name                string
+		args                map[string]any
+		mockSetup           func()
+		expectedResult      interface{}
+		expectResultError   bool
+		expectInternalError bool
+		errorContains       string
+	}{
+		{
+			name: "Success - Update Merge Request Comment",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"noteId":          noteID,
+				"body":            "Updated comment on MR",
+			},
+			mockSetup: func() {
+				expectedNote := &gl.Note{
+					ID:   123,
+					Body: "Updated comment on MR",
+					Author: gl.NoteAuthor{
+						Name: "Test User",
+					},
+					UpdatedAt: &timeNow,
+				}
+				mockNotes.EXPECT().
+					UpdateMergeRequestNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int, _ int, opts *gl.UpdateMergeRequestNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
+						assert.Equal(t, "Updated comment on MR", *opts.Body)
+						return expectedNote, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: &gl.Note{
+				ID:   123,
+				Body: "Updated comment on MR",
+				Author: gl.NoteAuthor{
+					Name: "Test User",
+				},
+				UpdatedAt: &timeNow,
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Missing noteId",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"body":            "Comment",
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: missing required parameter: noteId",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - MR or Note Not Found (404)",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": 999.0,
+				"noteId":          999.0,
+				"body":            "Comment",
+			},
+			mockSetup: func() {
+				mockNotes.EXPECT().
+					UpdateMergeRequestNote(projectID, 999, 999, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Not Found"))
+			},
+			expectedResult:      "merge request 999 or note 999 not found in project \"group/project\" or access denied (404)",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - GitLab API Error (500)",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"noteId":          noteID,
+				"body":            "Comment",
+			},
+			mockSetup: func() {
+				mockNotes.EXPECT().
+					UpdateMergeRequestNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
+			},
+			expectedResult:      nil,
+			expectResultError:   false,
+			expectInternalError: true,
+			errorContains:       "failed to update comment",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mockSetup()
+
+			request := mcp.CallToolRequest{
+				Params: struct {
+					Name      string                 `json:"name"`
+					Arguments map[string]interface{} `json:"arguments,omitempty"`
+					Meta      *struct {
+						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+					} `json:"_meta,omitempty"`
+				}{
+					Name:      updateCommentTool.Name,
+					Arguments: tc.args,
+				},
+			}
+
+			result, err := handler(ctx, request)
+
+			if tc.expectInternalError {
+				require.Error(t, err)
+				if tc.errorContains != "" {
+					assert.ErrorContains(t, err, tc.errorContains)
+				}
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				textContent := getTextResult(t, result)
+
+				if tc.expectResultError {
+					expectedErrString, ok := tc.expectedResult.(string)
+					require.True(t, ok)
+					assert.Contains(t, textContent.Text, expectedErrString)
+				} else {
+					expectedNote, ok := tc.expectedResult.(*gl.Note)
+					require.True(t, ok)
+					expectedJSON, err := json.Marshal(expectedNote)
+					require.NoError(t, err)
+					assert.JSONEq(t, string(expectedJSON), textContent.Text)
+				}
+			}
+		})
+	}
+}
