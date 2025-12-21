@@ -131,3 +131,16 @@ func setupMockClientForNotes(t *testing.T) (*gl.Client, *mock_gitlab.MockNotesSe
 
 	return client, mockNotes, ctrl
 }
+
+// Helper to create a mock GetClientFn for testing handlers for the Milestones service
+func setupMockClientForMilestones(t *testing.T) (*gl.Client, *mock_gitlab.MockMilestonesServiceInterface, *gomock.Controller) {
+	ctrl := gomock.NewController(t)
+	mockMilestones := mock_gitlab.NewMockMilestonesServiceInterface(ctrl) // Mock for Milestones
+
+	// Create a minimal client and attach the mock service
+	client := &gl.Client{
+		Milestones: mockMilestones, // Attach the Milestones service mock
+	}
+
+	return client, mockMilestones, ctrl
+}

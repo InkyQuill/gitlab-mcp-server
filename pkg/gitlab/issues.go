@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -489,6 +491,536 @@ func GetIssueLabels(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHa
 			data, err := json.Marshal(issue.Labels)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal issue labels data: %w", err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
+		}
+}
+
+// CreateIssue defines the MCP tool for creating a new GitLab issue.
+func CreateIssue(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+			"createIssue",
+			mcp.WithDescription("Creates a new issue in a GitLab project."),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title: "Create GitLab Issue",
+			}),
+			// Required parameters
+			mcp.WithString("projectId",
+				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
+				mcp.Required(),
+			),
+			mcp.WithString("title",
+				mcp.Description("The title of the issue."),
+				mcp.Required(),
+			),
+			// Optional parameters
+			mcp.WithString("description",
+				mcp.Description("The description of the issue."),
+			),
+			mcp.WithString("labels",
+				mcp.Description("Comma-separated list of label names to apply to the issue."),
+			),
+			mcp.WithString("assigneeIds",
+				mcp.Description("Comma-separated list of user IDs to assign the issue to."),
+			),
+			mcp.WithNumber("milestoneId",
+				mcp.Description("The ID of the milestone to associate the issue with."),
+			),
+			mcp.WithString("dueDate",
+				mcp.Description("The due date of the issue (ISO 8601 format: YYYY-MM-DD)."),
+			),
+			mcp.WithString("stateEvent",
+				mcp.Description("The state event to perform on the issue (close, reopen)."),
+				mcp.Enum("close", "reopen"),
+			),
+		),
+		// Handler function implementation
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			// --- Parse required parameters
+			projectID, err := requiredParam[string](&request, "projectId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			title, err := requiredParam[string](&request, "title")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			// --- Parse optional parameters
+			description, err := OptionalParam[string](&request, "description")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			labels, err := OptionalParam[string](&request, "labels")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			assigneeIdsStr, err := OptionalParam[string](&request, "assigneeIds")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			milestoneIDFloat, err := OptionalParam[float64](&request, "milestoneId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			dueDateStr, err := OptionalParam[string](&request, "dueDate")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			// --- Obtain GitLab client
+			glClient, err := getClient(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+			}
+
+			// --- Construct GitLab API options
+			opts := &gl.CreateIssueOptions{
+				Title: &title,
+			}
+
+			if description != "" {
+				opts.Description = &description
+			}
+
+			if labels != "" {
+				labelSlice := strings.Split(labels, ",")
+				// Trim whitespace from each label
+				for i, label := range labelSlice {
+					labelSlice[i] = strings.TrimSpace(label)
+				}
+				labelOpts := gl.LabelOptions(labelSlice)
+				opts.Labels = &labelOpts
+			}
+
+			if assigneeIdsStr != "" {
+				assigneeIdsList := strings.Split(assigneeIdsStr, ",")
+				assigneeIds := make([]int, 0, len(assigneeIdsList))
+				for _, idStr := range assigneeIdsList {
+					idStr = strings.TrimSpace(idStr)
+					if idStr == "" {
+						continue
+					}
+					id, err := strconv.Atoi(idStr)
+					if err != nil {
+						return mcp.NewToolResultError(fmt.Sprintf("Validation Error: invalid assignee ID %q: %v", idStr, err)), nil
+					}
+					assigneeIds = append(assigneeIds, id)
+				}
+				if len(assigneeIds) > 0 {
+					opts.AssigneeIDs = &assigneeIds
+				}
+			}
+
+			if milestoneIDFloat != 0 {
+				milestoneID := int(milestoneIDFloat)
+				if float64(milestoneID) != milestoneIDFloat {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
+				}
+				opts.MilestoneID = &milestoneID
+			}
+
+			if dueDateStr != "" {
+				dueDate, err := time.Parse("2006-01-02", dueDateStr)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: dueDate must be in YYYY-MM-DD format, got %q: %v", dueDateStr, err)), nil
+				}
+				isoTime := gl.ISOTime(dueDate)
+				opts.DueDate = &isoTime
+			}
+
+			// --- Call GitLab API
+			issue, resp, err := glClient.Issues.CreateIssue(projectID, opts, gl.WithContext(ctx))
+
+			// --- Handle API errors
+			if err != nil {
+				code := http.StatusInternalServerError
+				if resp != nil {
+					code = resp.StatusCode
+				}
+				if code == http.StatusNotFound {
+					return mcp.NewToolResultError(fmt.Sprintf("project %q not found or access denied (%d)", projectID, code)), nil
+				}
+				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
+					return mcp.NewToolResultError(fmt.Sprintf("failed to create issue: %v (status: %d)", err, code)), nil
+				}
+				return nil, fmt.Errorf("failed to create issue in project %q: %w (status: %d)", projectID, err, code)
+			}
+
+			// --- Marshal and return success
+			data, err := json.Marshal(issue)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal issue data: %w", err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
+		}
+}
+
+// UpdateIssue defines the MCP tool for updating an existing GitLab issue.
+func UpdateIssue(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+			"updateIssue",
+			mcp.WithDescription("Updates an existing issue in a GitLab project."),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title: "Update GitLab Issue",
+			}),
+			// Required parameters
+			mcp.WithString("projectId",
+				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
+				mcp.Required(),
+			),
+			mcp.WithNumber("issueIid",
+				mcp.Description("The IID (internal ID, integer) of the issue within the project."),
+				mcp.Required(),
+			),
+			// Optional parameters
+			mcp.WithString("title",
+				mcp.Description("The title of the issue."),
+			),
+			mcp.WithString("description",
+				mcp.Description("The description of the issue."),
+			),
+			mcp.WithString("labels",
+				mcp.Description("Comma-separated list of label names to apply to the issue."),
+			),
+			mcp.WithString("assigneeIds",
+				mcp.Description("Comma-separated list of user IDs to assign the issue to."),
+			),
+			mcp.WithNumber("milestoneId",
+				mcp.Description("The ID of the milestone to associate the issue with."),
+			),
+			mcp.WithString("dueDate",
+				mcp.Description("The due date of the issue (ISO 8601 format: YYYY-MM-DD)."),
+			),
+			mcp.WithString("stateEvent",
+				mcp.Description("The state event to perform on the issue (close, reopen)."),
+				mcp.Enum("close", "reopen"),
+			),
+		),
+		// Handler function implementation
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			// --- Parse required parameters
+			projectID, err := requiredParam[string](&request, "projectId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			issueIidFloat, err := requiredParam[float64](&request, "issueIid")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+			issueIid := int(issueIidFloat)
+			if float64(issueIid) != issueIidFloat {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: issueIid %v is not a valid integer", issueIidFloat)), nil
+			}
+
+			// --- Parse optional parameters
+			title, err := OptionalParam[string](&request, "title")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			description, err := OptionalParam[string](&request, "description")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			labels, err := OptionalParam[string](&request, "labels")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			assigneeIdsStr, err := OptionalParam[string](&request, "assigneeIds")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			milestoneIDFloat, err := OptionalParam[float64](&request, "milestoneId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			dueDateStr, err := OptionalParam[string](&request, "dueDate")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			stateEvent, err := OptionalParam[string](&request, "stateEvent")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			// --- Obtain GitLab client
+			glClient, err := getClient(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+			}
+
+			// --- Construct GitLab API options
+			opts := &gl.UpdateIssueOptions{}
+
+			if title != "" {
+				opts.Title = &title
+			}
+
+			if description != "" {
+				opts.Description = &description
+			}
+
+			if labels != "" {
+				labelSlice := strings.Split(labels, ",")
+				// Trim whitespace from each label
+				for i, label := range labelSlice {
+					labelSlice[i] = strings.TrimSpace(label)
+				}
+				labelOpts := gl.LabelOptions(labelSlice)
+				opts.Labels = &labelOpts
+			}
+
+			if assigneeIdsStr != "" {
+				assigneeIdsList := strings.Split(assigneeIdsStr, ",")
+				assigneeIds := make([]int, 0, len(assigneeIdsList))
+				for _, idStr := range assigneeIdsList {
+					idStr = strings.TrimSpace(idStr)
+					if idStr == "" {
+						continue
+					}
+					id, err := strconv.Atoi(idStr)
+					if err != nil {
+						return mcp.NewToolResultError(fmt.Sprintf("Validation Error: invalid assignee ID %q: %v", idStr, err)), nil
+					}
+					assigneeIds = append(assigneeIds, id)
+				}
+				if len(assigneeIds) > 0 {
+					opts.AssigneeIDs = &assigneeIds
+				}
+			}
+
+			if milestoneIDFloat != 0 {
+				milestoneID := int(milestoneIDFloat)
+				if float64(milestoneID) != milestoneIDFloat {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
+				}
+				opts.MilestoneID = &milestoneID
+			}
+
+			if dueDateStr != "" {
+				dueDate, err := time.Parse("2006-01-02", dueDateStr)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: dueDate must be in YYYY-MM-DD format, got %q: %v", dueDateStr, err)), nil
+				}
+				isoTime := gl.ISOTime(dueDate)
+				opts.DueDate = &isoTime
+			}
+
+			if stateEvent != "" {
+				opts.StateEvent = &stateEvent
+			}
+
+			// --- Call GitLab API
+			issue, resp, err := glClient.Issues.UpdateIssue(projectID, issueIid, opts, gl.WithContext(ctx))
+
+			// --- Handle API errors
+			if err != nil {
+				code := http.StatusInternalServerError
+				if resp != nil {
+					code = resp.StatusCode
+				}
+				if code == http.StatusNotFound {
+					return mcp.NewToolResultError(fmt.Sprintf("issue %d not found in project %q or access denied (%d)", issueIid, projectID, code)), nil
+				}
+				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
+					return mcp.NewToolResultError(fmt.Sprintf("failed to update issue: %v (status: %d)", err, code)), nil
+				}
+				return nil, fmt.Errorf("failed to update issue %d in project %q: %w (status: %d)", issueIid, projectID, err, code)
+			}
+
+			// --- Marshal and return success
+			data, err := json.Marshal(issue)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal issue data: %w", err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
+		}
+}
+
+// CreateIssueComment defines the MCP tool for creating a comment (note) on a GitLab issue.
+func CreateIssueComment(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+			"createIssueComment",
+			mcp.WithDescription("Creates a comment (note) on a specific GitLab issue."),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title: "Create Issue Comment",
+			}),
+			// Required parameters
+			mcp.WithString("projectId",
+				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
+				mcp.Required(),
+			),
+			mcp.WithNumber("issueIid",
+				mcp.Description("The IID (internal ID, integer) of the issue within the project."),
+				mcp.Required(),
+			),
+			mcp.WithString("body",
+				mcp.Description("The content of the comment."),
+				mcp.Required(),
+			),
+		),
+		// Handler function implementation
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			// --- Parse required parameters
+			projectID, err := requiredParam[string](&request, "projectId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			issueIidFloat, err := requiredParam[float64](&request, "issueIid")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+			issueIid := int(issueIidFloat)
+			if float64(issueIid) != issueIidFloat {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: issueIid %v is not a valid integer", issueIidFloat)), nil
+			}
+
+			body, err := requiredParam[string](&request, "body")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			// --- Obtain GitLab client
+			glClient, err := getClient(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+			}
+
+			// --- Construct GitLab API options
+			opts := &gl.CreateIssueNoteOptions{
+				Body: &body,
+			}
+
+			// --- Call GitLab API
+			note, resp, err := glClient.Notes.CreateIssueNote(projectID, issueIid, opts, gl.WithContext(ctx))
+
+			// --- Handle API errors
+			if err != nil {
+				code := http.StatusInternalServerError
+				if resp != nil {
+					code = resp.StatusCode
+				}
+				if code == http.StatusNotFound {
+					return mcp.NewToolResultError(fmt.Sprintf("issue %d not found in project %q or access denied (%d)", issueIid, projectID, code)), nil
+				}
+				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
+					return mcp.NewToolResultError(fmt.Sprintf("failed to create comment: %v (status: %d)", err, code)), nil
+				}
+				return nil, fmt.Errorf("failed to create comment on issue %d in project %q: %w (status: %d)", issueIid, projectID, err, code)
+			}
+
+			// --- Marshal and return success
+			data, err := json.Marshal(note)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal comment data: %w", err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
+		}
+}
+
+// UpdateIssueComment defines the MCP tool for updating a comment on a GitLab issue.
+func UpdateIssueComment(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+			"updateIssueComment",
+			mcp.WithDescription("Updates an existing comment (note) on a specific GitLab issue."),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title: "Update Issue Comment",
+			}),
+			// Required parameters
+			mcp.WithString("projectId",
+				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
+				mcp.Required(),
+			),
+			mcp.WithNumber("issueIid",
+				mcp.Description("The IID (internal ID, integer) of the issue within the project."),
+				mcp.Required(),
+			),
+			mcp.WithNumber("noteId",
+				mcp.Description("The ID of the note (comment) to update."),
+				mcp.Required(),
+			),
+			mcp.WithString("body",
+				mcp.Description("The updated content of the comment."),
+				mcp.Required(),
+			),
+		),
+		// Handler function implementation
+		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			// --- Parse required parameters
+			projectID, err := requiredParam[string](&request, "projectId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			issueIidFloat, err := requiredParam[float64](&request, "issueIid")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+			issueIid := int(issueIidFloat)
+			if float64(issueIid) != issueIidFloat {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: issueIid %v is not a valid integer", issueIidFloat)), nil
+			}
+
+			noteIDFloat, err := requiredParam[float64](&request, "noteId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+			noteID := int(noteIDFloat)
+			if float64(noteID) != noteIDFloat {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: noteId %v is not a valid integer", noteIDFloat)), nil
+			}
+
+			body, err := requiredParam[string](&request, "body")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			// --- Obtain GitLab client
+			glClient, err := getClient(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+			}
+
+			// --- Construct GitLab API options
+			opts := &gl.UpdateIssueNoteOptions{
+				Body: &body,
+			}
+
+			// --- Call GitLab API
+			note, resp, err := glClient.Notes.UpdateIssueNote(projectID, issueIid, noteID, opts, gl.WithContext(ctx))
+
+			// --- Handle API errors
+			if err != nil {
+				code := http.StatusInternalServerError
+				if resp != nil {
+					code = resp.StatusCode
+				}
+				if code == http.StatusNotFound {
+					return mcp.NewToolResultError(fmt.Sprintf("issue %d or note %d not found in project %q or access denied (%d)", issueIid, noteID, projectID, code)), nil
+				}
+				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
+					return mcp.NewToolResultError(fmt.Sprintf("failed to update comment: %v (status: %d)", err, code)), nil
+				}
+				return nil, fmt.Errorf("failed to update comment %d on issue %d in project %q: %w (status: %d)", noteID, issueIid, projectID, err, code)
+			}
+
+			// --- Marshal and return success
+			data, err := json.Marshal(note)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal comment data: %w", err)
 			}
 			return mcp.NewToolResultText(string(data)), nil
 		}

@@ -57,8 +57,19 @@ func InitToolsets(
 		toolsets.NewServerTool(ListIssues(getClient)),
 		toolsets.NewServerTool(GetIssueComments(getClient)),
 		toolsets.NewServerTool(GetIssueLabels(getClient)),
+		// Milestones read tools (milestones are related to issues)
+		toolsets.NewServerTool(GetMilestone(getClient)),
+		toolsets.NewServerTool(ListMilestones(getClient)),
 	)
-	// issuesTS.AddWriteTools(...)
+	issuesTS.AddWriteTools(
+		toolsets.NewServerTool(CreateIssue(getClient)),
+		toolsets.NewServerTool(UpdateIssue(getClient)),
+		toolsets.NewServerTool(CreateIssueComment(getClient)),
+		toolsets.NewServerTool(UpdateIssueComment(getClient)),
+		// Milestones write tools
+		toolsets.NewServerTool(CreateMilestone(getClient)),
+		toolsets.NewServerTool(UpdateMilestone(getClient)),
+	)
 
 	// --- Add tools to mergeRequestsTS (Task 9 & 14) ---
 	mergeRequestsTS.AddReadTools(
@@ -66,7 +77,12 @@ func InitToolsets(
 		toolsets.NewServerTool(ListMergeRequests(getClient)),
 		toolsets.NewServerTool(GetMergeRequestComments(getClient)),
 	)
-	// mergeRequestsTS.AddWriteTools(...)
+	mergeRequestsTS.AddWriteTools(
+		toolsets.NewServerTool(CreateMergeRequest(getClient)),
+		toolsets.NewServerTool(UpdateMergeRequest(getClient)),
+		toolsets.NewServerTool(CreateMergeRequestComment(getClient)),
+		toolsets.NewServerTool(UpdateMergeRequestComment(getClient)),
+	)
 
 	// --- Add tools to securityTS (Part of future tasks?) ---
 	// securityTS.AddReadTools(...) // Likely read-only
