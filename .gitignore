@@ -11,6 +11,7 @@ __debug_bin*
 # Go
 vendor
 gitlab-mcp-server
+bin/
 
 PDR.md
 gitlab_openapi_v2.yaml

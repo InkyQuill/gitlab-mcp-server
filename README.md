@@ -25,7 +25,68 @@ automation and interaction capabilities for developers and AI tools within the G
 
 ## Installation 🚀
 
+### Quick Setup (Recommended)
+
+The easiest way to set up the GitLab MCP Server is using the automated installer:
+
+**Linux:**
+```bash
+git clone <repository-url>
+cd gitlab-mcp-server
+make setup
+make install-mcp
+```
+
+**macOS/Linux (using setup script):**
+```bash
+git clone <repository-url>
+cd gitlab-mcp-server
+./setup.sh
+```
+
+**Windows:**
+```cmd
+git clone <repository-url>
+cd gitlab-mcp-server
+setup.bat
+```
+
+The installer will:
+- Check prerequisites (Go version, dependencies)
+- Build the server binary
+- Prompt you for:
+  - Deployment mode: local binary (default) or Docker
+  - GitLab host URL (defaults to `https://gitlab.com`)
+  - GitLab access token (entered securely, not displayed)
+  - Read-only mode preference
+  - Development environments to configure (VS Code, Claude Desktop, Claude Code, Cursor)
+- Automatically configure your selected development environments
+- Create backup copies (`.bak` files) of existing configuration files before modifying them
+
+The server will be registered as `gitlab-go-mcp` in your MCP configurations.
+
+**Note:** The installer intelligently merges with existing configurations, preserving your other MCP server settings.
+
 ### Building the Server
+
+#### Using Makefile (Linux)
+
+The project includes a Makefile with the following targets:
+
+- `make setup` - Install prerequisites and dependencies
+- `make build` - Build the binary to `bin/gitlab-mcp-server`
+- `make clean` - Clean build artifacts
+- `make test` - Run tests
+- `make docker-build` - Build Docker image
+- `make install-mcp` - Build installer and run MCP configuration
+- `make help` - Show all available targets
+
+**Example:**
+```bash
+make setup    # Install prerequisites
+make build     # Build the server
+make install-mcp  # Configure MCP servers
+```
 
 #### Docker Build
 
@@ -35,6 +96,11 @@ To build the Docker image:
 docker build -t gitlab-mcp-server:latest .
 ```
 
+Or using Makefile:
+```bash
+make docker-build
+```
+
 #### Standalone Build
 
 To build the binary from source:
@@ -42,10 +108,15 @@ To build the binary from source:
 ```bash
 git clone <repository-url>
 cd gitlab-mcp-server
-go build -o gitlab-mcp-server ./cmd/gitlab-mcp-server
+go build -o bin/gitlab-mcp-server ./cmd/gitlab-mcp-server
 ```
 
-The binary will be created as `gitlab-mcp-server` in the current directory.
+Or using Makefile:
+```bash
+make build
+```
+
+The binary will be created as `bin/gitlab-mcp-server`.
 
 ### Editor Setup
 
@@ -74,7 +145,7 @@ Add the following JSON block to your User Settings (JSON) file (`Preferences: Op
       }
     ],
     "servers": {
-      "gitlab": {
+      "gitlab-go-mcp": {
         "command": "docker",
         "args": [
           "run",
@@ -104,7 +175,7 @@ For the standalone binary, update your VS Code User Settings (JSON):
 {
   "mcp": {
     "servers": {
-      "gitlab": {
+      "gitlab-go-mcp": {
         "command": "/path/to/gitlab-mcp-server",
         "args": ["stdio"],
         "env": {
@@ -122,7 +193,7 @@ Or use `.vscode/mcp.json` in your workspace:
 ```json
 {
   "servers": {
-    "gitlab": {
+    "gitlab-go-mcp": {
       "command": "/path/to/gitlab-mcp-server",
       "args": ["stdio"],
       "env": {
@@ -154,7 +225,7 @@ If the file doesn't exist, create it with the following structure.
 ```json
 {
   "mcpServers": {
-    "Gitlab Local": {
+    "gitlab-go-mcp": {
       "command": "docker",
       "args": [
         "run",
@@ -178,7 +249,7 @@ If the file doesn't exist, create it with the following structure.
 ```json
 {
   "mcpServers": {
-    "Gitlab Local": {
+    "gitlab-go-mcp": {
       "command": "/path/to/gitlab-mcp-server",
       "args": ["stdio"],
       "env": {
@@ -207,13 +278,13 @@ Claude Code uses a command-line interface to manage MCP servers. The configurati
 **Using Docker:**
 
 ```bash
-claude mcp add gitlab -s user -e GITLAB_TOKEN=<YOUR_TOKEN> -e GITLAB_HOST=<YOUR_GITLAB_URL_OR_EMPTY> -- docker run -i --rm -e GITLAB_TOKEN -e GITLAB_HOST gitlab-mcp-server:latest
+claude mcp add gitlab-go-mcp -s user -e GITLAB_TOKEN=<YOUR_TOKEN> -e GITLAB_HOST=<YOUR_GITLAB_URL_OR_EMPTY> -- docker run -i --rm -e GITLAB_TOKEN -e GITLAB_HOST gitlab-mcp-server:latest
 ```
 
 **Using Standalone Binary:**
 
 ```bash
-claude mcp add gitlab -s user -e GITLAB_TOKEN=<YOUR_TOKEN> -e GITLAB_HOST=<YOUR_GITLAB_URL_OR_EMPTY> -- /path/to/gitlab-mcp-server stdio
+claude mcp add gitlab-go-mcp -s user -e GITLAB_TOKEN=<YOUR_TOKEN> -e GITLAB_HOST=<YOUR_GITLAB_URL_OR_EMPTY> -- /path/to/gitlab-mcp-server stdio
 ```
 
 **Verify the installation:**
@@ -256,7 +327,7 @@ Alternatively, you can directly edit the configuration file:
 ```json
 {
   "mcpServers": {
-    "gitlab": {
+    "gitlab-go-mcp": {
       "type": "stdio",
       "command": "/path/to/gitlab-mcp-server",
       "args": ["stdio"],
@@ -289,7 +360,7 @@ Create or edit the file `~/.cursor/mcp.json` with the following configuration.
 ```json
 {
   "mcpServers": {
-    "Gitlab Local": {
+    "gitlab-go-mcp": {
       "command": "docker",
       "args": [
         "run",
@@ -313,7 +384,7 @@ Create or edit the file `~/.cursor/mcp.json` with the following configuration.
 ```json
 {
   "mcpServers": {
-    "Gitlab Local": {
+    "gitlab-go-mcp": {
       "command": "/home/inky/Development/gitlab-mcp-server/gitlab-mcp-server",
       "args": ["stdio"],
       "env": {
@@ -325,7 +396,9 @@ Create or edit the file `~/.cursor/mcp.json` with the following configuration.
 }
 ```
 
-Replace `/home/inky/Development/gitlab-mcp-server/gitlab-mcp-server` with the actual path to your binary.
+Replace `/path/to/gitlab-mcp-server` with the actual path to your binary (typically `bin/gitlab-mcp-server` relative to the project root).
+
+**Note:** The automated installer (`make install-mcp` or `./setup.sh`) will automatically configure all supported environments with the correct paths and settings.
 
 </details>
 
