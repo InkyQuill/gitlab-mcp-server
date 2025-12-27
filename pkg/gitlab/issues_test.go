@@ -87,7 +87,7 @@ func TestGetIssueHandler(t *testing.T) {
 					GetIssue("group/project", 999, gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Issue Not Found"))
 			},
-			expectedResult:      "issue 999 not found in project \"group/project\" or access denied (404)", // Expect error message string
+			expectedResult:      "issue 999 in project \"group/project\" not found or access denied (404)", // Expect error message string
 			expectResultError:   true,
 			expectInternalError: false,
 		},
@@ -122,7 +122,7 @@ func TestGetIssueHandler(t *testing.T) {
 			expectedResult:      nil,                                                                                       // No result content expected when handler errors
 			expectResultError:   true,                                                                                      // Result is nil due to handler error
 			expectInternalError: true,                                                                                      // Handler returns an actual error
-			errorContains:       "failed to get issue 2 from project \"group/project\": gitlab: 500 Internal Server Error", // Check internal error here
+			errorContains:       "failed to process issue 2 in project \"group/project\": gitlab: 500 Internal Server Error", // Check internal error here
 		},
 	}
 
@@ -397,9 +397,10 @@ func TestListIssuesHandler(t *testing.T) {
 					ListProjectIssues("nonexistent", gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Project Not Found"))
 			},
-			expectedResult:      "project \"nonexistent\" not found or access denied (404)",
-			expectResultError:   true,
-			expectInternalError: false,
+			expectedResult:      nil,
+			expectResultError:   false,
+			expectInternalError: true,
+			errorContains:       "failed to list issues from project \"nonexistent\"",
 		},
 		{
 			name: "Error - GitLab API Error (500)",
@@ -688,7 +689,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 					ListIssueNotes(projectID, 999, gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Issue Not Found"))
 			},
-			expectedResult:      "issue 999 not found in project \"group/project\" or access denied (404)",
+			expectedResult:      "comments for issue 999 in project \"group/project\" not found or access denied (404)",
 			expectResultError:   true,
 			expectInternalError: false,
 		},
@@ -706,7 +707,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 			expectedResult:      nil,
 			expectResultError:   false,
 			expectInternalError: true,
-			errorContains:       "failed to get comments for issue 1 from project \"group/project\"",
+			errorContains:       "failed to process comments for issue 1 in project \"group/project\"",
 		},
 		{
 			name:                "Error - Missing projectId parameter",
@@ -955,7 +956,7 @@ func TestGetIssueLabelsHandler(t *testing.T) {
 					GetIssue(projectID, 999, gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Issue Not Found"))
 			},
-			expectedResult:      "issue 999 not found in project \"group/project\" or access denied (404)",
+			expectedResult:      "labels for issue 999 in project \"group/project\" not found or access denied (404)",
 			expectResultError:   true,
 			expectInternalError: false,
 		},
@@ -973,7 +974,7 @@ func TestGetIssueLabelsHandler(t *testing.T) {
 			expectedResult:      nil,
 			expectResultError:   false,
 			expectInternalError: true,
-			errorContains:       "failed to get labels for issue 1 from project \"group/project\"",
+			errorContains:       "failed to process labels for issue 1 in project \"group/project\"",
 		},
 		{
 			name:                "Error - Missing projectId parameter",
@@ -1270,7 +1271,7 @@ func TestCreateIssueHandler(t *testing.T) {
 			expectedResult:      nil,
 			expectResultError:   false,
 			expectInternalError: true,
-			errorContains:       "failed to create issue in project",
+			errorContains:       "failed to create issue project",
 		},
 	}
 
@@ -1471,7 +1472,7 @@ func TestUpdateIssueHandler(t *testing.T) {
 					UpdateIssue(projectID, 999, gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Issue Not Found"))
 			},
-			expectedResult:      "issue 999 not found in project \"group/project\" or access denied (404)",
+			expectedResult:      "issue 999 in project \"group/project\" not found or access denied (404)",
 			expectResultError:   true,
 			expectInternalError: false,
 		},
@@ -1632,7 +1633,7 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 					CreateIssueNote(projectID, 999, gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Issue Not Found"))
 			},
-			expectedResult:      "issue 999 not found in project \"group/project\" or access denied (404)",
+			expectedResult:      "issue 999 in project \"group/project\" not found or access denied (404)",
 			expectResultError:   true,
 			expectInternalError: false,
 		},
@@ -1651,7 +1652,7 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 			expectedResult:      nil,
 			expectResultError:   false,
 			expectInternalError: true,
-			errorContains:       "failed to create comment on issue",
+			errorContains:       "failed to create comment issue",
 		},
 	}
 
@@ -1787,7 +1788,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 					UpdateIssueNote(projectID, 999, 999, gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Not Found"))
 			},
-			expectedResult:      "issue 999 or note 999 not found in project \"group/project\" or access denied (404)",
+			expectedResult:      "issue 999 or note 999 in project \"group/project\" not found or access denied (404)",
 			expectResultError:   true,
 			expectInternalError: false,
 		},

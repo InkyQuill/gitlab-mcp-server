@@ -359,6 +359,81 @@ func TestListProjectsHandler(t *testing.T) {
 			expectHandlerError: false,
 			errorContains:      "Validation Error: invalid 'page' parameter: parameter 'page' must be a valid integer string", // Updated expected error to be more precise
 		},
+		{
+			name:      "Success - List Projects - With Membership Filter",
+			inputArgs: map[string]any{"membership": true},
+			mockSetup: func() {
+				mockProjects.EXPECT().
+					ListProjects(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(opts *gl.ListProjectsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Project, *gl.Response, error) {
+						require.NotNil(t, opts.Membership)
+						assert.True(t, *opts.Membership)
+						return []*gl.Project{createMockProject(3, "member-proj")}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.Project{createMockProject(3, "member-proj")},
+		},
+		{
+			name:      "Success - List Projects - With Starred Filter",
+			inputArgs: map[string]any{"starred": true},
+			mockSetup: func() {
+				mockProjects.EXPECT().
+					ListProjects(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(opts *gl.ListProjectsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Project, *gl.Response, error) {
+						require.NotNil(t, opts.Starred)
+						assert.True(t, *opts.Starred)
+						return []*gl.Project{createMockProject(7, "starred-proj")}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.Project{createMockProject(7, "starred-proj")},
+		},
+		{
+			name:      "Success - List Projects - Combined Filters",
+			inputArgs: map[string]any{"membership": true, "starred": true, "search": "test"},
+			mockSetup: func() {
+				mockProjects.EXPECT().
+					ListProjects(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(opts *gl.ListProjectsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Project, *gl.Response, error) {
+						require.NotNil(t, opts.Membership)
+						assert.True(t, *opts.Membership)
+						require.NotNil(t, opts.Starred)
+						assert.True(t, *opts.Starred)
+						require.NotNil(t, opts.Search)
+						assert.Equal(t, "test", *opts.Search)
+						return []*gl.Project{createMockProject(4, "test-proj")}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.Project{createMockProject(4, "test-proj")},
+		},
+		{
+			name:      "Success - List Projects - Order By Created At",
+			inputArgs: map[string]any{"orderBy": "created_at", "sort": "asc"},
+			mockSetup: func() {
+				mockProjects.EXPECT().
+					ListProjects(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(opts *gl.ListProjectsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Project, *gl.Response, error) {
+						require.NotNil(t, opts.OrderBy)
+						assert.Equal(t, "created_at", *opts.OrderBy)
+						require.NotNil(t, opts.Sort)
+						assert.Equal(t, "asc", *opts.Sort)
+						return []*gl.Project{createMockProject(1, "old"), createMockProject(2, "new")}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.Project{createMockProject(1, "old"), createMockProject(2, "new")},
+		},
+		{
+			name:      "Error - Unauthorized (401)",
+			inputArgs: map[string]any{},
+			mockSetup: func() {
+				mockProjects.EXPECT().
+					ListProjects(gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("gitlab: 401 Unauthorized"))
+			},
+			expectedResult:     nil,
+			expectResultError:  true,
+			expectHandlerError: false,
+			errorContains:      "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.",
+		},
 	}
 
 	// --- Run Tests ---

@@ -1590,6 +1590,142 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 			expectInternalError: true,
 			errorContains:       "failed to update comment",
 		},
+		{
+			name: "Error - Missing body",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"noteId":          noteID,
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: missing required parameter: body",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Invalid mergeRequestIid (not integer)",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": 1.5,
+				"noteId":          noteID,
+				"body":            "Comment",
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: mergeRequestIid 1.5 is not a valid integer",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Invalid noteId (not integer)",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"noteId":          123.5,
+				"body":            "Comment",
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: noteId 123.5 is not a valid integer",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Update with special characters",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"noteId":          noteID,
+				"body":            "Comment with <html> & \"quotes\" and 'apostrophes'",
+			},
+			mockSetup: func() {
+				expectedNote := &gl.Note{
+					ID:   123,
+					Body: "Comment with <html> & \"quotes\" and 'apostrophes'",
+					Author: gl.NoteAuthor{
+						Name: "Test User",
+					},
+					UpdatedAt: &timeNow,
+				}
+				mockNotes.EXPECT().
+					UpdateMergeRequestNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int, _ int, opts *gl.UpdateMergeRequestNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
+						assert.Equal(t, "Comment with <html> & \"quotes\" and 'apostrophes'", *opts.Body)
+						return expectedNote, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: &gl.Note{
+				ID:   123,
+				Body: "Comment with <html> & \"quotes\" and 'apostrophes'",
+				Author: gl.NoteAuthor{
+					Name: "Test User",
+				},
+				UpdatedAt: &timeNow,
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Update with markdown",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"noteId":          noteID,
+				"body":            "## Markdown\n\n- Item 1\n- Item 2\n\n[Link](https://example.com)",
+			},
+			mockSetup: func() {
+				expectedNote := &gl.Note{
+					ID:   123,
+					Body: "## Markdown\n\n- Item 1\n- Item 2\n\n[Link](https://example.com)",
+					Author: gl.NoteAuthor{
+						Name: "Test User",
+					},
+					UpdatedAt: &timeNow,
+				}
+				mockNotes.EXPECT().
+					UpdateMergeRequestNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					Return(expectedNote, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+			expectedResult: &gl.Note{
+				ID:   123,
+				Body: "## Markdown\n\n- Item 1\n- Item 2\n\n[Link](https://example.com)",
+				Author: gl.NoteAuthor{
+					Name: "Test User",
+				},
+				UpdatedAt: &timeNow,
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Permission Denied (403)",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"noteId":          noteID,
+				"body":            "Comment",
+			},
+			mockSetup: func() {
+				mockNotes.EXPECT().
+					UpdateMergeRequestNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 403}}, errors.New("gitlab: 403 Forbidden"))
+			},
+			expectedResult:      nil,
+			expectResultError:   false,
+			expectInternalError: true,
+			errorContains:       "failed to update comment merge request 1 or note 123 in project \"group/project\"",
+		},
+		{
+			name:               "Error - Empty Body",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"noteId":          noteID,
+				"body":            "",
+			},
+			mockSetup:           func() {}, // No API call expected - validation fails first
+			expectedResult:      "Validation Error: required parameter 'body' cannot be empty or zero value",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
 	}
 
 	for _, tc := range tests {
