@@ -16,7 +16,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	gl "gitlab.com/gitlab-org/api/client-go"
 
-	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
+	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
 )
 
 // Add tests for GetProjectCommits here
@@ -210,6 +210,21 @@ func TestGetProjectCommitsHandler(t *testing.T) {
 			expectResultError:  true,
 			expectHandlerError: false,
 			errorContains:      "Validation Error: parameter 'withStats' must be a boolean (or boolean-like string), got type string",
+		},
+		{
+			name: "Error - Unauthorized (401)",
+			inputArgs: map[string]any{
+				"projectId": projectID,
+			},
+			mockSetup: func() {
+				mockCommits.EXPECT().
+					ListCommits(projectID, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("gitlab: 401 Unauthorized"))
+			},
+			expectedResult:     nil,
+			expectResultError:  true,
+			expectHandlerError: false,
+			errorContains:      "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.",
 		},
 	}
 

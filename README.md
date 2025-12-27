@@ -1,8 +1,15 @@
 # GitLab MCP Server 🦊
 
+[![Tests](https://github.com/InkyQuill/gitlab-mcp-server/actions/workflows/test.yml/badge.svg)](https://github.com/InkyQuill/gitlab-mcp-server/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/InkyQuill/gitlab-mcp-server/branch/main/graph/badge.svg)](https://codecov.io/gh/InkyQuill/gitlab-mcp-server)
+[![Go Report Card](https://goreportcard.com/badge/github.com/InkyQuill/gitlab-mcp-server)](https://goreportcard.com/report/github.com/InkyQuill/gitlab-mcp-server)
+[![Coverage](https://img.shields.io/badge/coverage-88.9%25-brightgreen)](https://github.com/InkyQuill/gitlab-mcp-server)
+
 The GitLab MCP Server is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction)
 server that provides seamless integration with GitLab APIs, enabling advanced
 automation and interaction capabilities for developers and AI tools within the GitLab ecosystem.
+
+> **Note:** This is a fork of the original [gitlab-mcp-server](https://github.com/LuisCusihuaman/gitlab-mcp-server) project, substantially rewritten with improved testing (88.9% coverage), better error handling, and additional features.
 
 ## Use Cases ✨
 
@@ -660,3 +667,35 @@ For detailed information on specific features, see:
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 This project is released under the [MIT License](LICENSE).
+
+### Testing 🧪
+
+This project maintains a comprehensive test suite with **88.9% code coverage**:
+
+```bash
+# Run all tests
+make test
+
+# Run tests with coverage
+go test -coverprofile=coverage.out ./pkg/...
+go tool cover -html=coverage.out -o coverage.html
+
+# Run tests with race detection
+go test -race ./pkg/... ./internal/...
+```
+
+#### Test Coverage Highlights
+
+- **pkg/gitlab**: 88.7% coverage
+- **pkg/toolsets**: 98.6% coverage
+- **pkg/log**: 100.0% coverage
+
+All tool handlers are tested with unit tests using GitLab's official mock framework. See [TESTING.md](TESTING.md) for testing practices and guidelines.
+
+#### CI/CD
+
+GitHub Actions automatically runs tests on all pull requests and pushes to main/develop branches. The CI pipeline:
+- Runs the full test suite with race detection
+- Enforces a minimum coverage threshold of 85%
+- Uploads coverage reports to Codecov
+- Fails if coverage drops below the threshold

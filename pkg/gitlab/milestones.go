@@ -1,7 +1,7 @@
 package gitlab
 
 import (
-	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations"
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/translations"
 	"context"
 	"encoding/json"
 	"fmt"

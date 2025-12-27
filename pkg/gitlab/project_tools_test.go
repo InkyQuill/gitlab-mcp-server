@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
+	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
 )
 
 func TestSetCurrentProjectHandler(t *testing.T) {

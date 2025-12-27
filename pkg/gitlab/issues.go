@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations"
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/translations"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	gl "gitlab.com/gitlab-org/api/client-go"

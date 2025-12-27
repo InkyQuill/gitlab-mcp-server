@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
+	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
 )
 
 // TestAddTokenHandler tests the AddToken tool

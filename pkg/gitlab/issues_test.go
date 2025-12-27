@@ -436,6 +436,200 @@ func TestListIssuesHandler(t *testing.T) {
 			expectResultError:   true,
 			expectInternalError: false,
 		},
+		// --- Additional Filter Tests ---
+		{
+			name: "Success - Filter by milestone",
+			args: map[string]any{
+				"projectId": "group/project",
+				"milestone": "v1.0",
+			},
+			mockSetup: func() {
+				expectedIssues := []*gl.Issue{
+					{ID: 123, IID: 1, ProjectID: 456, Title: "Issue in v1.0"},
+				}
+				mockIssues.EXPECT().
+					ListProjectIssues("group/project", gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ interface{}, opts *gl.ListProjectIssuesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Issue, *gl.Response, error) {
+						require.NotNil(t, opts.Milestone)
+						assert.Equal(t, "v1.0", *opts.Milestone)
+						return expectedIssues, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.Issue{
+				{ID: 123, IID: 1, ProjectID: 456, Title: "Issue in v1.0"},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Filter by scope (created_by_me)",
+			args: map[string]any{
+				"projectId": "group/project",
+				"scope":     "created_by_me",
+			},
+			mockSetup: func() {
+				expectedIssues := []*gl.Issue{
+					{ID: 124, IID: 2, ProjectID: 456, Title: "My Issue"},
+				}
+				mockIssues.EXPECT().
+					ListProjectIssues("group/project", gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ interface{}, opts *gl.ListProjectIssuesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Issue, *gl.Response, error) {
+						require.NotNil(t, opts.Scope)
+						assert.Equal(t, "created_by_me", *opts.Scope)
+						return expectedIssues, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.Issue{
+				{ID: 124, IID: 2, ProjectID: 456, Title: "My Issue"},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Filter by authorId",
+			args: map[string]any{
+				"projectId": "group/project",
+				"authorId":  123.0,
+			},
+			mockSetup: func() {
+				expectedIssues := []*gl.Issue{
+					{ID: 125, IID: 3, ProjectID: 456, Title: "Authored Issue"},
+				}
+				mockIssues.EXPECT().
+					ListProjectIssues("group/project", gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ interface{}, opts *gl.ListProjectIssuesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Issue, *gl.Response, error) {
+						require.NotNil(t, opts.AuthorID)
+						assert.Equal(t, 123, *opts.AuthorID)
+						return expectedIssues, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.Issue{
+				{ID: 125, IID: 3, ProjectID: 456, Title: "Authored Issue"},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Filter by assigneeId",
+			args: map[string]any{
+				"projectId":  "group/project",
+				"assigneeId": 456.0,
+			},
+			mockSetup: func() {
+				expectedIssues := []*gl.Issue{
+					{ID: 126, IID: 4, ProjectID: 456, Title: "Assigned Issue"},
+				}
+				mockIssues.EXPECT().
+					ListProjectIssues("group/project", gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ interface{}, opts *gl.ListProjectIssuesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Issue, *gl.Response, error) {
+						require.NotNil(t, opts.AssigneeID)
+						assert.Equal(t, 456, *opts.AssigneeID)
+						return expectedIssues, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.Issue{
+				{ID: 126, IID: 4, ProjectID: 456, Title: "Assigned Issue"},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Filter by search",
+			args: map[string]any{
+				"projectId": "group/project",
+				"search":    "bug",
+			},
+			mockSetup: func() {
+				expectedIssues := []*gl.Issue{
+					{ID: 127, IID: 5, ProjectID: 456, Title: "Bug Issue"},
+				}
+				mockIssues.EXPECT().
+					ListProjectIssues("group/project", gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ interface{}, opts *gl.ListProjectIssuesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Issue, *gl.Response, error) {
+						require.NotNil(t, opts.Search)
+						assert.Equal(t, "bug", *opts.Search)
+						return expectedIssues, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.Issue{
+				{ID: 127, IID: 5, ProjectID: 456, Title: "Bug Issue"},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Filter with orderBy and sort",
+			args: map[string]any{
+				"projectId": "group/project",
+				"orderBy":   "created_at",
+				"sort":      "asc",
+			},
+			mockSetup: func() {
+				expectedIssues := []*gl.Issue{
+					{ID: 123, IID: 1, ProjectID: 456, Title: "Old Issue"},
+					{ID: 124, IID: 2, ProjectID: 456, Title: "New Issue"},
+				}
+				mockIssues.EXPECT().
+					ListProjectIssues("group/project", gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ interface{}, opts *gl.ListProjectIssuesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Issue, *gl.Response, error) {
+						require.NotNil(t, opts.OrderBy)
+						assert.Equal(t, "created_at", *opts.OrderBy)
+						require.NotNil(t, opts.Sort)
+						assert.Equal(t, "asc", *opts.Sort)
+						return expectedIssues, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.Issue{
+				{ID: 123, IID: 1, ProjectID: 456, Title: "Old Issue"},
+				{ID: 124, IID: 2, ProjectID: 456, Title: "New Issue"},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Combined multiple filters",
+			args: map[string]any{
+				"projectId": "group/project",
+				"state":     "opened",
+				"labels":    "bug",
+				"authorId":  123.0,
+				"search":    "critical",
+				"orderBy":   "priority",
+				"sort":      "desc",
+				"milestone": "v1.0",
+			},
+			mockSetup: func() {
+				expectedIssues := []*gl.Issue{
+					{ID: 128, IID: 6, ProjectID: 456, State: "opened", Title: "Critical Bug", Labels: []string{"bug"}},
+				}
+				labelOpts := gl.LabelOptions([]string{"bug"})
+				state := "opened"
+				mockIssues.EXPECT().
+					ListProjectIssues("group/project", gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ interface{}, opts *gl.ListProjectIssuesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Issue, *gl.Response, error) {
+						require.NotNil(t, opts.State)
+						assert.Equal(t, state, *opts.State)
+						require.NotNil(t, opts.Labels)
+						assert.Equal(t, labelOpts, *opts.Labels)
+						require.NotNil(t, opts.AuthorID)
+						assert.Equal(t, 123, *opts.AuthorID)
+						require.NotNil(t, opts.Search)
+						assert.Equal(t, "critical", *opts.Search)
+						require.NotNil(t, opts.OrderBy)
+						assert.Equal(t, "priority", *opts.OrderBy)
+						require.NotNil(t, opts.Sort)
+						assert.Equal(t, "desc", *opts.Sort)
+						require.NotNil(t, opts.Milestone)
+						assert.Equal(t, "v1.0", *opts.Milestone)
+						return expectedIssues, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.Issue{
+				{ID: 128, IID: 6, ProjectID: 456, State: "opened", Title: "Critical Bug", Labels: []string{"bug"}},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
 	}
 
 	// Test case for Client Initialization Error (outside the loop)
@@ -1987,6 +2181,89 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 			expectResultError:   false,
 			expectInternalError: true,
 			errorContains:       "failed to update comment",
+		},
+		{
+			name: "Success - Update with special characters",
+			args: map[string]any{
+				"projectId": projectID,
+				"issueIid":  issueIid,
+				"noteId":    noteID,
+				"body":      "Updated comment with <html> & \"quotes\" and 'apostrophes'",
+			},
+			mockSetup: func() {
+				expectedNote := &gl.Note{
+					ID:   123,
+					Body: "Updated comment with <html> & \"quotes\" and 'apostrophes'",
+					Author: gl.NoteAuthor{
+						Name: "Test User",
+					},
+					UpdatedAt: &timeNow,
+				}
+				mockNotes.EXPECT().
+					UpdateIssueNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int, _ int, opts *gl.UpdateIssueNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
+						assert.Equal(t, "Updated comment with <html> & \"quotes\" and 'apostrophes'", *opts.Body)
+						return expectedNote, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: &gl.Note{
+				ID:   123,
+				Body: "Updated comment with <html> & \"quotes\" and 'apostrophes'",
+				Author: gl.NoteAuthor{
+					Name: "Test User",
+				},
+				UpdatedAt: &timeNow,
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Empty body validation",
+			args: map[string]any{
+				"projectId": projectID,
+				"issueIid":  issueIid,
+				"noteId":    noteID,
+				"body":      "",
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: required parameter 'body' cannot be empty or zero value",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Forbidden (403)",
+			args: map[string]any{
+				"projectId": projectID,
+				"issueIid":  issueIid,
+				"noteId":    noteID,
+				"body":      "Comment",
+			},
+			mockSetup: func() {
+				mockNotes.EXPECT().
+					UpdateIssueNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 403}}, errors.New("gitlab: 403 Forbidden"))
+			},
+			expectedResult:      nil,
+			expectResultError:   false,
+			expectInternalError: true,
+			errorContains:       "failed to update comment",
+		},
+		{
+			name: "Error - Unauthorized (401)",
+			args: map[string]any{
+				"projectId": projectID,
+				"issueIid":  issueIid,
+				"noteId":    noteID,
+				"body":      "Comment",
+			},
+			mockSetup: func() {
+				mockNotes.EXPECT().
+					UpdateIssueNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("gitlab: 401 Unauthorized"))
+			},
+			expectedResult:      "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.",
+			expectResultError:   true,
+			expectInternalError: false,
 		},
 	}
 

@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	gl "gitlab.com/gitlab-org/api/client-go"
 
-	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
+	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
 	"go.uber.org/mock/gomock"
 )
 

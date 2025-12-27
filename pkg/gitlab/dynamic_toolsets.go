@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/toolsets"
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/toolsets"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	log "github.com/sirupsen/logrus"

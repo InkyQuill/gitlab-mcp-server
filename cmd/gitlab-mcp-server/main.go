@@ -11,9 +11,9 @@ import (
 	"syscall"   // Added for signal handling
 	"time"      // Added for token validation
 
-	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/gitlab"       // Reference pkg/gitlab
-	iolog "github.com/LuisCusihuaman/gitlab-mcp-server/pkg/log"     // Command logging I/O wrapper
-	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations" // i18n support
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/gitlab"       // Reference pkg/gitlab
+	iolog "github.com/InkyQuill/gitlab-mcp-server/pkg/log"     // Command logging I/O wrapper
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/translations" // i18n support
 	"github.com/mark3labs/mcp-go/server"                           // MCP server components
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

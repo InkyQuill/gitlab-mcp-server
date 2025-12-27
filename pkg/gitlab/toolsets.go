@@ -3,10 +3,10 @@ package gitlab
 import (
 	"context" // Added for GetClientFn
 	// Import necessary packages, including your toolsets package
-	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/toolsets" // Adjust path if needed
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/toolsets" // Adjust path if needed
 	gl "gitlab.com/gitlab-org/api/client-go"                   // Import the GitLab client library
 	log "github.com/sirupsen/logrus"                           // Import logger
-	// "github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations" // Removed for now
+	// "github.com/InkyQuill/gitlab-mcp-server/pkg/translations" // Removed for now
 )
 
 // GetClientFn defines the function signature for retrieving an initialized GitLab client.

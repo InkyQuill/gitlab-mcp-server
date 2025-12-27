@@ -15,7 +15,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	gl "gitlab.com/gitlab-org/api/client-go" // GitLab client library
 
-	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
+	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
 )
 
 func TestGetProjectHandler(t *testing.T) {

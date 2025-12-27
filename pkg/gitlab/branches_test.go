@@ -15,7 +15,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	gl "gitlab.com/gitlab-org/api/client-go"
 
-	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
+	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
 )
 
 // Add tests for GetProjectBranches here
@@ -174,6 +174,38 @@ func TestGetProjectBranchesHandler(t *testing.T) {
 			expectResultError:  true,
 			expectHandlerError: false,
 			errorContains:      "Validation Error: missing required parameter: projectId",
+		},
+		{
+			name: "Error - Unauthorized (401)",
+			inputArgs: map[string]any{
+				"projectId": projectID,
+			},
+			mockSetup: func() {
+				expectedOptsMatcher := gomock.AssignableToTypeOf(&gl.ListBranchesOptions{})
+				mockBranches.EXPECT().
+					ListBranches(projectID, expectedOptsMatcher, gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("gitlab: 401 Unauthorized"))
+			},
+			expectedResult:     nil,
+			expectResultError:  true,
+			expectHandlerError: false,
+			errorContains:      "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.",
+		},
+		{
+			name: "Error - Forbidden (403)",
+			inputArgs: map[string]any{
+				"projectId": projectID,
+			},
+			mockSetup: func() {
+				expectedOptsMatcher := gomock.AssignableToTypeOf(&gl.ListBranchesOptions{})
+				mockBranches.EXPECT().
+					ListBranches(projectID, expectedOptsMatcher, gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 403}}, errors.New("gitlab: 403 Forbidden"))
+			},
+			expectedResult:     nil,
+			expectResultError:  false,
+			expectHandlerError: true,
+			errorContains:      "failed to list branches for project",
 		},
 	}
 
