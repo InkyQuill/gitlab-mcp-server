@@ -1596,3 +1596,362 @@ func TestSearchCommitsByProjectHandler(t *testing.T) {
 		})
 	}
 }
+
+// Tests for additional search tools (Day 3)
+
+func TestSearchMilestonesHandler(t *testing.T) {
+	ctx := context.Background()
+	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
+	defer ctrl.Finish()
+	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
+	tool, handler := SearchMilestones(mockGetClient, nil)
+
+	tests := []struct {
+		name                string
+		args                map[string]any
+		mockSetup           func()
+		expectResultError   bool
+		expectInternalError bool
+		errorContains       string
+	}{
+		{
+			name: "Success",
+			args: map[string]any{"search": "v1.0"},
+			mockSetup: func() {
+				mockSearch.EXPECT().Milestones("v1.0", gomock.Any(), gomock.Any()).
+					Return([]*gl.Milestone{{ID: 1, Title: "v1.0"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+		},
+		{
+			name:              "Error - Missing search",
+			args:              map[string]any{},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "missing required parameter: search",
+		},
+		{
+			name:              "Error - 401",
+			args:              map[string]any{"search": "v1.0"},
+			mockSetup:         func() { mockSearch.EXPECT().Milestones(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
+			expectResultError: true,
+			errorContains:     "Authentication failed (401)",
+		},
+		{
+			name:                "Error - 500",
+			args:                map[string]any{"search": "v1.0"},
+			mockSetup:           func() { mockSearch.EXPECT().Milestones(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
+			expectInternalError: true,
+			errorContains:       "failed to list milestones",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mockSetup()
+			request := mcp.CallToolRequest{Params: struct {
+				Name      string                 `json:"name"`
+				Arguments map[string]interface{} `json:"arguments,omitempty"`
+				Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			}{Name: tool.Name, Arguments: tc.args}}
+			result, err := handler(ctx, request)
+			if tc.expectInternalError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorContains)
+			} else if tc.expectResultError {
+				require.NoError(t, err)
+				assert.Contains(t, getTextResult(t, result).Text, tc.errorContains)
+			} else {
+				require.NoError(t, err)
+				var ms []*gl.Milestone
+				json.Unmarshal([]byte(getTextResult(t, result).Text), &ms)
+				assert.Len(t, ms, 1)
+			}
+		})
+	}
+}
+
+func TestSearchSnippetTitlesHandler(t *testing.T) {
+	ctx := context.Background()
+	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
+	defer ctrl.Finish()
+	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
+	tool, handler := SearchSnippetTitles(mockGetClient, nil)
+
+	tests := []struct {
+		name                string
+		args                map[string]any
+		mockSetup           func()
+		expectResultError   bool
+		expectInternalError bool
+		errorContains       string
+	}{
+		{
+			name: "Success",
+			args: map[string]any{"search": "example"},
+			mockSetup: func() {
+				mockSearch.EXPECT().SnippetTitles("example", gomock.Any(), gomock.Any()).
+					Return([]*gl.Snippet{{ID: 1, Title: "Example"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+		},
+		{
+			name:              "Error - Missing search",
+			args:              map[string]any{},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "missing required parameter: search",
+		},
+		{
+			name:              "Error - 401",
+			args:              map[string]any{"search": "example"},
+			mockSetup:         func() { mockSearch.EXPECT().SnippetTitles(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
+			expectResultError: true,
+			errorContains:     "Authentication failed (401)",
+		},
+		{
+			name:                "Error - 500",
+			args:                map[string]any{"search": "example"},
+			mockSetup:           func() { mockSearch.EXPECT().SnippetTitles(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
+			expectInternalError: true,
+			errorContains:       "failed to list snippet titles",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mockSetup()
+			request := mcp.CallToolRequest{Params: struct {
+				Name      string                 `json:"name"`
+				Arguments map[string]interface{} `json:"arguments,omitempty"`
+				Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			}{Name: tool.Name, Arguments: tc.args}}
+			result, err := handler(ctx, request)
+			if tc.expectInternalError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorContains)
+			} else if tc.expectResultError {
+				require.NoError(t, err)
+				assert.Contains(t, getTextResult(t, result).Text, tc.errorContains)
+			} else {
+				require.NoError(t, err)
+				var snippets []*gl.Snippet
+				json.Unmarshal([]byte(getTextResult(t, result).Text), &snippets)
+				assert.Len(t, snippets, 1)
+			}
+		})
+	}
+}
+
+func TestSearchSnippetBlobsHandler(t *testing.T) {
+	ctx := context.Background()
+	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
+	defer ctrl.Finish()
+	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
+	tool, handler := SearchSnippetBlobs(mockGetClient, nil)
+
+	tests := []struct {
+		name                string
+		args                map[string]any
+		mockSetup           func()
+		expectResultError   bool
+		expectInternalError bool
+		errorContains       string
+	}{
+		{
+			name: "Success",
+			args: map[string]any{"search": "function"},
+			mockSetup: func() {
+				mockSearch.EXPECT().SnippetBlobs("function", gomock.Any(), gomock.Any()).
+					Return([]*gl.Snippet{{ID: 1, Title: "Code"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+		},
+		{
+			name:              "Error - Missing search",
+			args:              map[string]any{},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "missing required parameter: search",
+		},
+		{
+			name:              "Error - 401",
+			args:              map[string]any{"search": "function"},
+			mockSetup:         func() { mockSearch.EXPECT().SnippetBlobs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
+			expectResultError: true,
+			errorContains:     "Authentication failed (401)",
+		},
+		{
+			name:                "Error - 500",
+			args:                map[string]any{"search": "function"},
+			mockSetup:           func() { mockSearch.EXPECT().SnippetBlobs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
+			expectInternalError: true,
+			errorContains:       "failed to list snippet blobs",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mockSetup()
+			request := mcp.CallToolRequest{Params: struct {
+				Name      string                 `json:"name"`
+				Arguments map[string]interface{} `json:"arguments,omitempty"`
+				Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			}{Name: tool.Name, Arguments: tc.args}}
+			result, err := handler(ctx, request)
+			if tc.expectInternalError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorContains)
+			} else if tc.expectResultError {
+				require.NoError(t, err)
+				assert.Contains(t, getTextResult(t, result).Text, tc.errorContains)
+			} else {
+				require.NoError(t, err)
+				var snippets []*gl.Snippet
+				json.Unmarshal([]byte(getTextResult(t, result).Text), &snippets)
+				assert.Len(t, snippets, 1)
+			}
+		})
+	}
+}
+
+func TestSearchWikiBlobsHandler(t *testing.T) {
+	ctx := context.Background()
+	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
+	defer ctrl.Finish()
+	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
+	tool, handler := SearchWikiBlobs(mockGetClient, nil)
+
+	tests := []struct {
+		name                string
+		args                map[string]any
+		mockSetup           func()
+		expectResultError   bool
+		expectInternalError bool
+		errorContains       string
+	}{
+		{
+			name: "Success",
+			args: map[string]any{"search": "documentation"},
+			mockSetup: func() {
+				mockSearch.EXPECT().WikiBlobs("documentation", gomock.Any(), gomock.Any()).
+					Return([]*gl.Wiki{{Title: "Documentation", Slug: "docs"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+		},
+		{
+			name:              "Error - Missing search",
+			args:              map[string]any{},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "missing required parameter: search",
+		},
+		{
+			name:              "Error - 401",
+			args:              map[string]any{"search": "documentation"},
+			mockSetup:         func() { mockSearch.EXPECT().WikiBlobs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
+			expectResultError: true,
+			errorContains:     "Authentication failed (401)",
+		},
+		{
+			name:                "Error - 500",
+			args:                map[string]any{"search": "documentation"},
+			mockSetup:           func() { mockSearch.EXPECT().WikiBlobs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
+			expectInternalError: true,
+			errorContains:       "failed to list wiki blobs",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mockSetup()
+			request := mcp.CallToolRequest{Params: struct {
+				Name      string                 `json:"name"`
+				Arguments map[string]interface{} `json:"arguments,omitempty"`
+				Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			}{Name: tool.Name, Arguments: tc.args}}
+			result, err := handler(ctx, request)
+			if tc.expectInternalError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorContains)
+			} else if tc.expectResultError {
+				require.NoError(t, err)
+				assert.Contains(t, getTextResult(t, result).Text, tc.errorContains)
+			} else {
+				require.NoError(t, err)
+				var wikis []*gl.Wiki
+				json.Unmarshal([]byte(getTextResult(t, result).Text), &wikis)
+				assert.Len(t, wikis, 1)
+			}
+		})
+	}
+}
+
+func TestSearchNotesByProjectHandler(t *testing.T) {
+	ctx := context.Background()
+	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
+	defer ctrl.Finish()
+	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
+	tool, handler := SearchNotesByProject(mockGetClient, nil)
+
+	tests := []struct {
+		name                string
+		args                map[string]any
+		mockSetup           func()
+		expectResultError   bool
+		expectInternalError bool
+		errorContains       string
+	}{
+		{
+			name: "Success",
+			args: map[string]any{"pid": "myproject", "search": "comment"},
+			mockSetup: func() {
+				mockSearch.EXPECT().NotesByProject("myproject", "comment", gomock.Any(), gomock.Any()).
+					Return([]*gl.Note{{ID: 1, Body: "Great comment"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+		},
+		{
+			name:              "Error - Missing pid",
+			args:              map[string]any{"search": "comment"},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "missing required parameter: pid",
+		},
+		{
+			name:              "Error - Missing search",
+			args:              map[string]any{"pid": "myproject"},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "missing required parameter: search",
+		},
+		{
+			name:              "Error - 401",
+			args:              map[string]any{"pid": "myproject", "search": "comment"},
+			mockSetup:         func() { mockSearch.EXPECT().NotesByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
+			expectResultError: true,
+			errorContains:     "Authentication failed (401)",
+		},
+		{
+			name:                "Error - 500",
+			args:                map[string]any{"pid": "myproject", "search": "comment"},
+			mockSetup:           func() { mockSearch.EXPECT().NotesByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
+			expectInternalError: true,
+			errorContains:       "failed to list notes",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mockSetup()
+			request := mcp.CallToolRequest{Params: struct {
+				Name      string                 `json:"name"`
+				Arguments map[string]interface{} `json:"arguments,omitempty"`
+				Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			}{Name: tool.Name, Arguments: tc.args}}
+			result, err := handler(ctx, request)
+			if tc.expectInternalError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorContains)
+			} else if tc.expectResultError {
+				require.NoError(t, err)
+				assert.Contains(t, getTextResult(t, result).Text, tc.errorContains)
+			} else {
+				require.NoError(t, err)
+				var notes []*gl.Note
+				json.Unmarshal([]byte(getTextResult(t, result).Text), &notes)
+				assert.Len(t, notes, 1)
+			}
+		})
+	}
+}

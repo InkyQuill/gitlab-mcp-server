@@ -331,6 +331,70 @@ func SearchCommits(getClient GetClientFn, t map[string]string) (tool mcp.Tool, h
 	}
 }
 
+// SearchMilestones defines the MCP tool for searching milestones globally.
+func SearchMilestones(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+		"searchMilestones",
+		mcp.WithDescription(translations.Translate(t, translations.TOOL_SEARCH_MILESTONES_DESCRIPTION)),
+		mcp.WithString("search",
+			mcp.Description("The search query string"),
+			mcp.Required(),
+		),
+		mcp.WithNumber("page",
+			mcp.Description("The page number to retrieve (default: 1)"),
+		),
+		mcp.WithNumber("per_page",
+			mcp.Description("The number of results per page (default: 20, max: 100)"),
+		),
+		mcp.WithToolAnnotation(mcp.ToolAnnotation{
+			Title:        "Search GitLab Milestones",
+			ReadOnlyHint: true,
+		}),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		client, err := getClient(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+		}
+
+		searchQuery, err := requiredParam[string](&req, "search")
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		page, perPage, err := OptionalPaginationParams(&req)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		opts := &gl.SearchOptions{
+			ListOptions: gl.ListOptions{
+				Page:    page,
+				PerPage: perPage,
+			},
+		}
+
+		milestones, resp, err := client.Search.Milestones(searchQuery, opts, gl.WithContext(ctx))
+		if err != nil {
+			result, apiErr := HandleListAPIError(err, resp, "milestones")
+			if result != nil {
+				return result, nil
+			}
+			return nil, apiErr
+		}
+
+		if len(milestones) == 0 {
+			return mcp.NewToolResultText("[]"), nil
+		}
+
+		jsonData, err := json.Marshal(milestones)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal milestones data: %w", err)
+		}
+
+		return mcp.NewToolResultText(string(jsonData)), nil
+	}
+}
+
 // SearchProjectsByGroup defines the MCP tool for searching projects within a specific group.
 func SearchProjectsByGroup(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
@@ -1055,6 +1119,271 @@ func SearchCommitsByProject(getClient GetClientFn, t map[string]string) (tool mc
 		jsonData, err := json.Marshal(commits)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal commits data: %w", err)
+		}
+
+		return mcp.NewToolResultText(string(jsonData)), nil
+	}
+}
+
+// SearchSnippetTitles defines the MCP tool for searching snippet titles globally.
+func SearchSnippetTitles(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+		"searchSnippetTitles",
+		mcp.WithDescription(translations.Translate(t, translations.TOOL_SEARCH_SNIPPET_TITLES_DESCRIPTION)),
+		mcp.WithString("search",
+			mcp.Description("The search query string"),
+			mcp.Required(),
+		),
+		mcp.WithNumber("page",
+			mcp.Description("The page number to retrieve (default: 1)"),
+		),
+		mcp.WithNumber("per_page",
+			mcp.Description("The number of results per page (default: 20, max: 100)"),
+		),
+		mcp.WithToolAnnotation(mcp.ToolAnnotation{
+			Title:        "Search GitLab Snippet Titles",
+			ReadOnlyHint: true,
+		}),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		client, err := getClient(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+		}
+
+		searchQuery, err := requiredParam[string](&req, "search")
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		page, perPage, err := OptionalPaginationParams(&req)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		opts := &gl.SearchOptions{
+			ListOptions: gl.ListOptions{
+				Page:    page,
+				PerPage: perPage,
+			},
+		}
+
+		snippets, resp, err := client.Search.SnippetTitles(searchQuery, opts, gl.WithContext(ctx))
+		if err != nil {
+			result, apiErr := HandleListAPIError(err, resp, "snippet titles")
+			if result != nil {
+				return result, nil
+			}
+			return nil, apiErr
+		}
+
+		if len(snippets) == 0 {
+			return mcp.NewToolResultText("[]"), nil
+		}
+
+		jsonData, err := json.Marshal(snippets)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal snippet data: %w", err)
+		}
+
+		return mcp.NewToolResultText(string(jsonData)), nil
+	}
+}
+
+// SearchSnippetBlobs defines the MCP tool for searching snippet content globally.
+func SearchSnippetBlobs(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+		"searchSnippetBlobs",
+		mcp.WithDescription(translations.Translate(t, translations.TOOL_SEARCH_SNIPPET_BLOBS_DESCRIPTION)),
+		mcp.WithString("search",
+			mcp.Description("The search query string"),
+			mcp.Required(),
+		),
+		mcp.WithNumber("page",
+			mcp.Description("The page number to retrieve (default: 1)"),
+		),
+		mcp.WithNumber("per_page",
+			mcp.Description("The number of results per page (default: 20, max: 100)"),
+		),
+		mcp.WithToolAnnotation(mcp.ToolAnnotation{
+			Title:        "Search GitLab Snippet Content",
+			ReadOnlyHint: true,
+		}),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		client, err := getClient(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+		}
+
+		searchQuery, err := requiredParam[string](&req, "search")
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		page, perPage, err := OptionalPaginationParams(&req)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		opts := &gl.SearchOptions{
+			ListOptions: gl.ListOptions{
+				Page:    page,
+				PerPage: perPage,
+			},
+		}
+
+		snippets, resp, err := client.Search.SnippetBlobs(searchQuery, opts, gl.WithContext(ctx))
+		if err != nil {
+			result, apiErr := HandleListAPIError(err, resp, "snippet blobs")
+			if result != nil {
+				return result, nil
+			}
+			return nil, apiErr
+		}
+
+		if len(snippets) == 0 {
+			return mcp.NewToolResultText("[]"), nil
+		}
+
+		jsonData, err := json.Marshal(snippets)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal snippet data: %w", err)
+		}
+
+		return mcp.NewToolResultText(string(jsonData)), nil
+	}
+}
+
+// SearchWikiBlobs defines the MCP tool for searching wiki content globally.
+func SearchWikiBlobs(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+		"searchWikiBlobs",
+		mcp.WithDescription(translations.Translate(t, translations.TOOL_SEARCH_WIKI_BLOBS_DESCRIPTION)),
+		mcp.WithString("search",
+			mcp.Description("The search query string"),
+			mcp.Required(),
+		),
+		mcp.WithNumber("page",
+			mcp.Description("The page number to retrieve (default: 1)"),
+		),
+		mcp.WithNumber("per_page",
+			mcp.Description("The number of results per page (default: 20, max: 100)"),
+		),
+		mcp.WithToolAnnotation(mcp.ToolAnnotation{
+			Title:        "Search GitLab Wiki Content",
+			ReadOnlyHint: true,
+		}),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		client, err := getClient(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+		}
+
+		searchQuery, err := requiredParam[string](&req, "search")
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		page, perPage, err := OptionalPaginationParams(&req)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		opts := &gl.SearchOptions{
+			ListOptions: gl.ListOptions{
+				Page:    page,
+				PerPage: perPage,
+			},
+		}
+
+		wikis, resp, err := client.Search.WikiBlobs(searchQuery, opts, gl.WithContext(ctx))
+		if err != nil {
+			result, apiErr := HandleListAPIError(err, resp, "wiki blobs")
+			if result != nil {
+				return result, nil
+			}
+			return nil, apiErr
+		}
+
+		if len(wikis) == 0 {
+			return mcp.NewToolResultText("[]"), nil
+		}
+
+		jsonData, err := json.Marshal(wikis)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal wiki data: %w", err)
+		}
+
+		return mcp.NewToolResultText(string(jsonData)), nil
+	}
+}
+
+// SearchNotesByProject defines the MCP tool for searching notes/comments within a specific project.
+func SearchNotesByProject(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return mcp.NewTool(
+		"searchNotesByProject",
+		mcp.WithDescription(translations.Translate(t, translations.TOOL_SEARCH_NOTES_BY_PROJECT_DESCRIPTION)),
+		mcp.WithString("pid",
+			mcp.Description("The ID or URL-encoded path of the project"),
+			mcp.Required(),
+		),
+		mcp.WithString("search",
+			mcp.Description("The search query string"),
+			mcp.Required(),
+		),
+		mcp.WithNumber("page",
+			mcp.Description("The page number to retrieve (default: 1)"),
+		),
+		mcp.WithNumber("per_page",
+			mcp.Description("The number of results per page (default: 20, max: 100)"),
+		),
+		mcp.WithToolAnnotation(mcp.ToolAnnotation{
+			Title:        "Search GitLab Notes/Comments in Project",
+			ReadOnlyHint: true,
+		}),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		client, err := getClient(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+		}
+
+		pid, err := requiredParam[string](&req, "pid")
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		searchQuery, err := requiredParam[string](&req, "search")
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		page, perPage, err := OptionalPaginationParams(&req)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		opts := &gl.SearchOptions{
+			ListOptions: gl.ListOptions{
+				Page:    page,
+				PerPage: perPage,
+			},
+		}
+
+		notes, resp, err := client.Search.NotesByProject(pid, searchQuery, opts, gl.WithContext(ctx))
+		if err != nil {
+			result, apiErr := HandleListAPIError(err, resp, "notes in project")
+			if result != nil {
+				return result, nil
+			}
+			return nil, apiErr
+		}
+
+		if len(notes) == 0 {
+			return mcp.NewToolResultText("[]"), nil
+		}
+
+		jsonData, err := json.Marshal(notes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal notes data: %w", err)
 		}
 
 		return mcp.NewToolResultText(string(jsonData)), nil

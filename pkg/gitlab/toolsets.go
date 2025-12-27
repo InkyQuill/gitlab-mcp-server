@@ -131,6 +131,10 @@ func InitToolsets(
 		toolsets.NewServerTool(SearchMergeRequests(getClient, translations)),
 		toolsets.NewServerTool(SearchBlobs(getClient, translations)),
 		toolsets.NewServerTool(SearchCommits(getClient, translations)),
+		toolsets.NewServerTool(SearchMilestones(getClient, translations)),
+		toolsets.NewServerTool(SearchSnippetTitles(getClient, translations)),
+		toolsets.NewServerTool(SearchSnippetBlobs(getClient, translations)),
+		toolsets.NewServerTool(SearchWikiBlobs(getClient, translations)),
 		// Group-scoped searches
 		toolsets.NewServerTool(SearchProjectsByGroup(getClient, translations)),
 		toolsets.NewServerTool(SearchIssuesByGroup(getClient, translations)),
@@ -143,6 +147,7 @@ func InitToolsets(
 		toolsets.NewServerTool(SearchMilestonesByProject(getClient, translations)),
 		toolsets.NewServerTool(SearchBlobsByProject(getClient, translations)),
 		toolsets.NewServerTool(SearchCommitsByProject(getClient, translations)),
+		toolsets.NewServerTool(SearchNotesByProject(getClient, translations)),
 	)
 
 	// 4. Add defined Toolsets to the Group
