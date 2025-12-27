@@ -141,7 +141,10 @@ func TestMalformedSnapshotJSON(t *testing.T) {
 }
 
 func TestMultipleSnapshots(t *testing.T) {
-	withIsolatedWorkingDir(t)
+	// Create snapshots dir for testing
+	snapDir := "__toolsnaps__"
+	require.NoError(t, os.MkdirAll(snapDir, 0700))
+	t.Cleanup(func() { os.RemoveAll(snapDir) })
 
 	// Given multiple tools
 	tools := []struct {
@@ -161,14 +164,18 @@ func TestMultipleSnapshots(t *testing.T) {
 
 	// Then all snapshot files should exist
 	for _, tt := range tools {
-		path := filepath.Join("__toolsnaps__", tt.name+".snap")
+		path := filepath.Join(snapDir, tt.name+".snap")
 		_, statErr := os.Stat(path)
 		assert.NoError(t, statErr, "expected snapshot file for %s", tt.name)
 	}
 }
 
 func TestArrayOrderingInsensitive(t *testing.T) {
-	withIsolatedWorkingDir(t)
+	// Create snapshots dir for testing
+	snapDir := "__toolsnaps__"
+	require.NoError(t, os.MkdirAll(snapDir, 0700))
+	t.Cleanup(func() { os.RemoveAll(snapDir) })
+
 	// Ensure that UPDATE_TOOLSNAPS is not set for this test
 	t.Setenv("UPDATE_TOOLSNAPS", "false")
 
@@ -186,8 +193,7 @@ func TestArrayOrderingInsensitive(t *testing.T) {
 		Values: []int{3, 1, 2},
 	}
 	b, _ := json.MarshalIndent(snapshotTool, "", "  ")
-	require.NoError(t, os.MkdirAll("__toolsnaps__", 0700))
-	require.NoError(t, os.WriteFile(filepath.Join("__toolsnaps__", "array_test.snap"), b, 0600))
+	require.NoError(t, os.WriteFile(filepath.Join(snapDir, "array_test.snap"), b, 0600))
 
 	// Test with same arrays but in different order - should still match
 	testTool := toolWithArrays{

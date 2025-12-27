@@ -46,7 +46,14 @@ func Test(toolName string, tool any) error {
 	if os.IsNotExist(err) {
 		// If we're running in CI, we will error if there is no snapshot because it's important that snapshots
 		// are committed alongside the tests, rather than just being constructed and not committed during a CI run.
-		if os.Getenv("GITHUB_ACTIONS") == "true" {
+		// However, if the __toolsnaps__ directory already exists, this is likely a test environment testing
+		// the snapshot mechanism itself, so we allow creating snapshots in CI.
+		snapDirExists := false
+		if _, statErr := os.Stat("__toolsnaps__"); statErr == nil {
+			snapDirExists = true
+		}
+
+		if os.Getenv("GITHUB_ACTIONS") == "true" && !snapDirExists {
 			return fmt.Errorf("tool snapshot does not exist for %s. Please run the tests with UPDATE_TOOLSNAPS=true to create it", toolName)
 		}
 
