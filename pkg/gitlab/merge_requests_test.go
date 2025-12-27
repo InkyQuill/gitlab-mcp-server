@@ -704,6 +704,194 @@ func TestListMergeRequestsHandler(t *testing.T) {
 			expectResultError: true,
 			errorContains:     "must be a valid ISO 8601 datetime",
 		},
+		{
+			name: "Success - Filter by milestone",
+			inputArgs: map[string]any{
+				"projectId": projectID,
+				"milestone": "v1.0",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
+						require.NotNil(t, opts.Milestone)
+						assert.Equal(t, "v1.0", *opts.Milestone)
+						return convertToBasicMRs([]*gl.MergeRequest{sampleMRs[0]}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.MergeRequest{sampleMRs[0]},
+		},
+		{
+			name: "Success - Filter by scope",
+			inputArgs: map[string]any{
+				"projectId": projectID,
+				"scope":     "created_by_me",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
+						require.NotNil(t, opts.Scope)
+						assert.Equal(t, "created_by_me", *opts.Scope)
+						return convertToBasicMRs([]*gl.MergeRequest{sampleMRs[0]}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.MergeRequest{sampleMRs[0]},
+		},
+		{
+			name: "Success - Filter by author ID",
+			inputArgs: map[string]any{
+				"projectId": projectID,
+				"author_id": "123",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
+						require.NotNil(t, opts.AuthorID)
+						assert.Equal(t, 123, *opts.AuthorID)
+						return convertToBasicMRs([]*gl.MergeRequest{sampleMRs[0]}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.MergeRequest{sampleMRs[0]},
+		},
+		{
+			name: "Success - Filter by assignee ID",
+			inputArgs: map[string]any{
+				"projectId":  projectID,
+				"assignee_id": "456",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
+						require.NotNil(t, opts.AssigneeID)
+						// AssigneeIDValue is a custom type, just verify it's set
+						return convertToBasicMRs([]*gl.MergeRequest{sampleMRs[1]}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.MergeRequest{sampleMRs[1]},
+		},
+		{
+			name: "Success - Filter by search",
+			inputArgs: map[string]any{
+				"projectId": projectID,
+				"search":    "feature",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
+						require.NotNil(t, opts.Search)
+						assert.Equal(t, "feature", *opts.Search)
+						return convertToBasicMRs([]*gl.MergeRequest{sampleMRs[0]}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.MergeRequest{sampleMRs[0]},
+		},
+		{
+			name: "Success - Filter by date range (created_after)",
+			inputArgs: map[string]any{
+				"projectId":     projectID,
+				"created_after": "2024-01-01T00:00:00Z",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
+						require.NotNil(t, opts.CreatedAfter)
+						assert.Equal(t, "2024-01-01T00:00:00Z", opts.CreatedAfter.Format(time.RFC3339))
+						return convertToBasicMRs(sampleMRs), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: sampleMRs,
+		},
+		{
+			name: "Success - Filter by date range (created_before)",
+			inputArgs: map[string]any{
+				"projectId":      projectID,
+				"created_before": "2024-12-31T23:59:59Z",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
+						require.NotNil(t, opts.CreatedBefore)
+						assert.Equal(t, "2024-12-31T23:59:59Z", opts.CreatedBefore.Format(time.RFC3339))
+						return convertToBasicMRs([]*gl.MergeRequest{sampleMRs[0]}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.MergeRequest{sampleMRs[0]},
+		},
+		{
+			name: "Success - Filter by date range (updated_after)",
+			inputArgs: map[string]any{
+				"projectId":     projectID,
+				"updated_after": "2024-01-01T00:00:00Z",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
+						require.NotNil(t, opts.UpdatedAfter)
+						assert.Equal(t, "2024-01-01T00:00:00Z", opts.UpdatedAfter.Format(time.RFC3339))
+						return convertToBasicMRs([]*gl.MergeRequest{sampleMRs[1]}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.MergeRequest{sampleMRs[1]},
+		},
+		{
+			name: "Success - Filter by date range (updated_before)",
+			inputArgs: map[string]any{
+				"projectId":      projectID,
+				"updated_before": "2024-12-31T23:59:59Z",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
+						require.NotNil(t, opts.UpdatedBefore)
+						assert.Equal(t, "2024-12-31T23:59:59Z", opts.UpdatedBefore.Format(time.RFC3339))
+						return convertToBasicMRs([]*gl.MergeRequest{sampleMRs[0]}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.MergeRequest{sampleMRs[0]},
+		},
+		{
+			name: "Success - Combined multiple filters",
+			inputArgs: map[string]any{
+				"projectId":     projectID,
+				"state":         "opened",
+				"labels":        "bug",
+				"milestone":     "v1.0",
+				"search":        "fix",
+				"author_id":     "123",
+				"assignee_id":   "456",
+				"created_after": "2024-01-01T00:00:00Z",
+			},
+			mockSetup: func() {
+				mockMRs.EXPECT().
+					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
+						require.NotNil(t, opts.State)
+						assert.Equal(t, "opened", *opts.State)
+						require.NotNil(t, opts.Labels)
+						assert.ElementsMatch(t, gl.LabelOptions{"bug"}, *opts.Labels)
+						require.NotNil(t, opts.Milestone)
+						assert.Equal(t, "v1.0", *opts.Milestone)
+						require.NotNil(t, opts.Search)
+						assert.Equal(t, "fix", *opts.Search)
+						require.NotNil(t, opts.AuthorID)
+						assert.Equal(t, 123, *opts.AuthorID)
+						require.NotNil(t, opts.AssigneeID)
+						// AssigneeIDValue is a custom type, just verify it's set
+						require.NotNil(t, opts.CreatedAfter)
+						assert.Equal(t, "2024-01-01T00:00:00Z", opts.CreatedAfter.Format(time.RFC3339))
+						return convertToBasicMRs([]*gl.MergeRequest{sampleMRs[1]}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: []*gl.MergeRequest{sampleMRs[1]},
+		},
 	}
 
 	// Run test cases

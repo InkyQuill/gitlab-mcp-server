@@ -1492,6 +1492,184 @@ func TestUpdateIssueHandler(t *testing.T) {
 			expectInternalError: true,
 			errorContains:       "failed to update issue",
 		},
+		{
+			name: "Success - Update multiple fields",
+			args: map[string]any{
+				"projectId":  projectID,
+				"issueIid":   issueIid,
+				"title":       "Updated Title",
+				"description": "Updated description",
+				"labels":      "bug,enhancement",
+			},
+			mockSetup: func() {
+				expectedIssue := &gl.Issue{
+					ID:          123,
+					IID:         1,
+					ProjectID:   456,
+					Title:       "Updated Title",
+					Description: "Updated description",
+					State:       "opened",
+					UpdatedAt:   &timeNow,
+				}
+				mockIssues.EXPECT().
+					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
+						assert.Equal(t, "Updated Title", *opts.Title)
+						assert.Equal(t, "Updated description", *opts.Description)
+						require.NotNil(t, opts.Labels)
+						assert.ElementsMatch(t, gl.LabelOptions{"bug", "enhancement"}, *opts.Labels)
+						return expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: &gl.Issue{
+				ID:          123,
+				IID:         1,
+				ProjectID:   456,
+				Title:       "Updated Title",
+				Description: "Updated description",
+				State:       "opened",
+				UpdatedAt:   &timeNow,
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Update with stateEvent reopen",
+			args: map[string]any{
+				"projectId":  projectID,
+				"issueIid":   issueIid,
+				"stateEvent": "reopen",
+			},
+			mockSetup: func() {
+				expectedIssue := &gl.Issue{
+					ID:        123,
+					IID:       1,
+					ProjectID: 456,
+					Title:     "Test Issue",
+					State:     "opened",
+					UpdatedAt: &timeNow,
+				}
+				mockIssues.EXPECT().
+					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
+						assert.Equal(t, "reopen", *opts.StateEvent)
+						return expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: &gl.Issue{
+				ID:        123,
+				IID:       1,
+				ProjectID: 456,
+				Title:     "Test Issue",
+				State:     "opened",
+				UpdatedAt: &timeNow,
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Update with milestoneId",
+			args: map[string]any{
+				"projectId":   projectID,
+				"issueIid":    issueIid,
+				"milestoneId": 10.0,
+			},
+			mockSetup: func() {
+				expectedIssue := &gl.Issue{
+					ID:        123,
+					IID:       1,
+					ProjectID: 456,
+					Title:     "Test Issue",
+					State:     "opened",
+					UpdatedAt: &timeNow,
+				}
+				mockIssues.EXPECT().
+					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
+						require.NotNil(t, opts.MilestoneID)
+						assert.Equal(t, 10, *opts.MilestoneID)
+						return expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: &gl.Issue{
+				ID:        123,
+				IID:       1,
+				ProjectID: 456,
+				Title:     "Test Issue",
+				State:     "opened",
+				UpdatedAt: &timeNow,
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Update with assigneeIds",
+			args: map[string]any{
+				"projectId":   projectID,
+				"issueIid":    issueIid,
+				"assigneeIds": "123,456",
+			},
+			mockSetup: func() {
+				expectedIssue := &gl.Issue{
+					ID:        123,
+					IID:       1,
+					ProjectID: 456,
+					Title:     "Test Issue",
+					State:     "opened",
+					UpdatedAt: &timeNow,
+				}
+				mockIssues.EXPECT().
+					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
+						require.NotNil(t, opts.AssigneeIDs)
+						assert.Equal(t, []int{123, 456}, *opts.AssigneeIDs)
+						return expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: &gl.Issue{
+				ID:        123,
+				IID:       1,
+				ProjectID: 456,
+				Title:     "Test Issue",
+				State:     "opened",
+				UpdatedAt: &timeNow,
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Forbidden (403)",
+			args: map[string]any{
+				"projectId": projectID,
+				"issueIid":  issueIid,
+				"title":     "Updated Title",
+			},
+			mockSetup: func() {
+				mockIssues.EXPECT().
+					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 403}}, errors.New("gitlab: 403 Forbidden"))
+			},
+			expectedResult:      nil,
+			expectResultError:   false,
+			expectInternalError: true,
+			errorContains:       "failed to update issue",
+		},
+		{
+			name: "Error - Unauthorized (401)",
+			args: map[string]any{
+				"projectId": projectID,
+				"issueIid":  issueIid,
+				"title":     "Updated Title",
+			},
+			mockSetup: func() {
+				mockIssues.EXPECT().
+					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("gitlab: 401 Unauthorized"))
+			},
+			expectedResult:      "Authentication failed (401)",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
 	}
 
 	for _, tc := range tests {
