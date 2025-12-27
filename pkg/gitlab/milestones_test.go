@@ -13,11 +13,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	gl "gitlab.com/gitlab-org/api/client-go"
+
+	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
 	"go.uber.org/mock/gomock"
 )
 
 // TestCreateMilestoneHandler tests the CreateMilestone tool handler
 func TestCreateMilestoneHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := CreateMilestone(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockMilestones, ctrl := setupMockClientForMilestones(t)
 	defer ctrl.Finish()
@@ -26,7 +32,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	createMilestoneTool, handler := CreateMilestone(mockGetClient)
+	createMilestoneTool, handler := CreateMilestone(mockGetClient, nil)
 
 	projectID := "group/project"
 	timeNow := time.Now()
@@ -177,7 +183,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 			expectedResult:      nil,
 			expectResultError:   false,
 			expectInternalError: true,
-			errorContains:       "failed to create milestone in project",
+			errorContains:       "failed to create milestone project",
 		},
 	}
 
@@ -230,7 +236,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := CreateMilestone(errorGetClientFn)
+		_, handler := CreateMilestone(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -254,6 +260,10 @@ func TestCreateMilestoneHandler(t *testing.T) {
 
 // TestUpdateMilestoneHandler tests the UpdateMilestone tool handler
 func TestUpdateMilestoneHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := UpdateMilestone(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockMilestones, ctrl := setupMockClientForMilestones(t)
 	defer ctrl.Finish()
@@ -262,7 +272,7 @@ func TestUpdateMilestoneHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	updateMilestoneTool, handler := UpdateMilestone(mockGetClient)
+	updateMilestoneTool, handler := UpdateMilestone(mockGetClient, nil)
 
 	projectID := "group/project"
 	milestoneID := 1.0
@@ -376,7 +386,7 @@ func TestUpdateMilestoneHandler(t *testing.T) {
 					UpdateMilestone(projectID, 999, gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Milestone Not Found"))
 			},
-			expectedResult:      "milestone 999 not found in project \"group/project\" or access denied (404)",
+			expectedResult:      "milestone 999 in project \"group/project\" not found or access denied (404)",
 			expectResultError:   true,
 			expectInternalError: false,
 		},
@@ -446,6 +456,10 @@ func TestUpdateMilestoneHandler(t *testing.T) {
 
 // TestGetMilestoneHandler tests the GetMilestone tool handler
 func TestGetMilestoneHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := GetMilestone(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockMilestones, ctrl := setupMockClientForMilestones(t)
 	defer ctrl.Finish()
@@ -454,7 +468,7 @@ func TestGetMilestoneHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	getMilestoneTool, handler := GetMilestone(mockGetClient)
+	getMilestoneTool, handler := GetMilestone(mockGetClient, nil)
 
 	projectID := "group/project"
 	milestoneID := 1.0
@@ -522,7 +536,7 @@ func TestGetMilestoneHandler(t *testing.T) {
 					GetMilestone(projectID, 999, nil, gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Milestone Not Found"))
 			},
-			expectedResult:      "milestone 999 not found in project \"group/project\" or access denied (404)",
+			expectedResult:      "milestone 999 in project \"group/project\" not found or access denied (404)",
 			expectResultError:   true,
 			expectInternalError: false,
 		},
@@ -540,7 +554,7 @@ func TestGetMilestoneHandler(t *testing.T) {
 			expectedResult:      nil,
 			expectResultError:   false,
 			expectInternalError: true,
-			errorContains:       "failed to get milestone",
+			errorContains:       "failed to process milestone",
 		},
 	}
 
@@ -592,6 +606,10 @@ func TestGetMilestoneHandler(t *testing.T) {
 
 // TestListMilestonesHandler tests the ListMilestones tool handler
 func TestListMilestonesHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := ListMilestones(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockMilestones, ctrl := setupMockClientForMilestones(t)
 	defer ctrl.Finish()
@@ -600,7 +618,7 @@ func TestListMilestonesHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	listMilestonesTool, handler := ListMilestones(mockGetClient)
+	listMilestonesTool, handler := ListMilestones(mockGetClient, nil)
 
 	projectID := "group/project"
 	timeNow := time.Now()
@@ -743,9 +761,10 @@ func TestListMilestonesHandler(t *testing.T) {
 					ListMilestones("nonexistent", gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Project Not Found"))
 			},
-			expectedResult:      "project \"nonexistent\" not found or access denied (404)",
-			expectResultError:   true,
-			expectInternalError: false,
+			expectedResult:      nil,
+			expectResultError:   false,
+			expectInternalError: true,
+			errorContains:       "failed to list milestones from project \"nonexistent\"",
 		},
 		{
 			name: "Error - GitLab API Error (500)",
@@ -818,7 +837,7 @@ func TestListMilestonesHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := ListMilestones(errorGetClientFn)
+		_, handler := ListMilestones(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {

@@ -1,0 +1,40 @@
+{
+  "annotations": {
+    "title": "List Project Files/Directories",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_LIST_PROJECT_FILES_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "page": {
+        "description": "Page number of the results to retrieve (min 1).",
+        "type": "number"
+      },
+      "path": {
+        "description": "The path inside the repository. Used to list files in a subdirectory. Defaults to the root directory.",
+        "type": "string"
+      },
+      "per_page": {
+        "description": "Number of results to return per page (default: 20, max: 100).",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "recursive": {
+        "description": "Flag indicating whether to list files recursively.",
+        "type": "boolean"
+      },
+      "ref": {
+        "description": "The name of branch, tag, or commit SHA (defaults to the repository's default branch). Should be URL-encoded if it contains slashes.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId"
+    ]
+  },
+  "name": "listProjectFiles"
+}

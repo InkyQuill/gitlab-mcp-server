@@ -1,0 +1,29 @@
+{
+  "annotations": {
+    "title": "Create Merge Request Comment"
+  },
+  "description": "Creates a comment (note) on a specific GitLab merge request.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "body": {
+        "description": "The content of the comment.",
+        "type": "string"
+      },
+      "mergeRequestIid": {
+        "description": "The IID (internal ID, integer) of the merge request within the project.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "mergeRequestIid",
+      "body"
+    ]
+  },
+  "name": "createMergeRequestComment"
+}

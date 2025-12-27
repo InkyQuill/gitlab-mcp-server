@@ -1,0 +1,34 @@
+{
+  "annotations": {
+    "title": "Update Merge Request Comment"
+  },
+  "description": "Updates an existing comment (note) on a specific GitLab merge request.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "body": {
+        "description": "The updated content of the comment.",
+        "type": "string"
+      },
+      "mergeRequestIid": {
+        "description": "The IID (internal ID, integer) of the merge request within the project.",
+        "type": "number"
+      },
+      "noteId": {
+        "description": "The ID of the note (comment) to update.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "mergeRequestIid",
+      "noteId",
+      "body"
+    ]
+  },
+  "name": "updateMergeRequestComment"
+}

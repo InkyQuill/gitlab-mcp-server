@@ -1,0 +1,101 @@
+{
+  "annotations": {
+    "title": "List GitLab Merge Requests",
+    "readOnlyHint": true
+  },
+  "description": "Lists merge requests for a GitLab project with filtering and pagination options.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "assignee_id": {
+        "description": "Return merge requests assigned to the specified user ID.",
+        "type": "string"
+      },
+      "author_id": {
+        "description": "Return merge requests created by the specified user ID.",
+        "type": "string"
+      },
+      "created_after": {
+        "description": "Return merge requests created on or after the given datetime (ISO 8601 format).",
+        "type": "string"
+      },
+      "created_before": {
+        "description": "Return merge requests created on or before the given datetime (ISO 8601 format).",
+        "type": "string"
+      },
+      "labels": {
+        "description": "Return merge requests matching the comma-separated list of labels.",
+        "type": "string"
+      },
+      "milestone": {
+        "description": "Return merge requests for the specified milestone title.",
+        "type": "string"
+      },
+      "order_by": {
+        "description": "Return merge requests ordered by the specified field ('created_at', 'updated_at', or 'title'). Default: 'created_at'.",
+        "enum": [
+          "created_at",
+          "updated_at",
+          "title"
+        ],
+        "type": "string"
+      },
+      "page": {
+        "description": "Page number of the results to retrieve (min 1).",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "Number of results to return per page (default: 20, max: 100).",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "scope": {
+        "description": "Return merge requests for the specified scope ('created_by_me', 'assigned_to_me', or 'all'). Default: 'all'.",
+        "enum": [
+          "created_by_me",
+          "assigned_to_me",
+          "all"
+        ],
+        "type": "string"
+      },
+      "search": {
+        "description": "Return merge requests matching the search query in their title or description.",
+        "type": "string"
+      },
+      "sort": {
+        "description": "Return merge requests sorted in the specified order ('asc' or 'desc'). Default: 'desc'.",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "type": "string"
+      },
+      "state": {
+        "description": "Return merge requests with the specified state ('opened', 'closed', 'locked', 'merged', or 'all'). Default: 'all'.",
+        "enum": [
+          "opened",
+          "closed",
+          "locked",
+          "merged",
+          "all"
+        ],
+        "type": "string"
+      },
+      "updated_after": {
+        "description": "Return merge requests updated on or after the given datetime (ISO 8601 format).",
+        "type": "string"
+      },
+      "updated_before": {
+        "description": "Return merge requests updated on or before the given datetime (ISO 8601 format).",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId"
+    ]
+  },
+  "name": "listMergeRequests"
+}

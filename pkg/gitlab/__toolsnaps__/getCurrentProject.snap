@@ -1,0 +1,11 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": true
+  },
+  "description": "Gets the current GitLab project configuration from the .gmcprc file in the current or parent directory.",
+  "inputSchema": {
+    "type": "object"
+  },
+  "name": "getCurrentProject"
+}

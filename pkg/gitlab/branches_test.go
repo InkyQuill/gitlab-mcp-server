@@ -14,10 +14,16 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	gl "gitlab.com/gitlab-org/api/client-go"
+
+	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
 )
 
 // Add tests for GetProjectBranches here
 func TestGetProjectBranchesHandler(t *testing.T) {
+	// Tool schema snapshot test
+	getProjectBranchesTool, _ := GetProjectBranches(nil, nil)
+	require.NoError(t, toolsnaps.Test(getProjectBranchesTool.Name, getProjectBranchesTool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockBranches, ctrl := setupMockClientForBranches(t)
 	defer ctrl.Finish()
@@ -28,7 +34,7 @@ func TestGetProjectBranchesHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler ---
-	getProjectBranchesTool, getProjectBranchesHandler := GetProjectBranches(mockGetClientBranches)
+	getProjectBranchesTool, getProjectBranchesHandler := GetProjectBranches(mockGetClientBranches, nil)
 
 	projectID := "group/project"
 	searchQuery := "feat"
@@ -142,9 +148,9 @@ func TestGetProjectBranchesHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Not Found"))
 			},
 			expectedResult:     nil,
-			expectResultError:  true,
-			expectHandlerError: false,
-			errorContains:      fmt.Sprintf("project %q not found or access denied", "nonexistent/project"),
+			expectResultError:  false,
+			expectHandlerError: true,
+			errorContains:      fmt.Sprintf("failed to list branches for project %q", "nonexistent/project"),
 		},
 		{
 			name: "Error - GitLab API Error (500)",

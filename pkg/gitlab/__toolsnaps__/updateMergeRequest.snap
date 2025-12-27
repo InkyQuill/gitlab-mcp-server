@@ -1,0 +1,65 @@
+{
+  "annotations": {
+    "title": "Update GitLab Merge Request"
+  },
+  "description": "Updates an existing merge request in a GitLab project.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "assigneeIds": {
+        "description": "Comma-separated list of user IDs to assign the merge request to.",
+        "type": "string"
+      },
+      "description": {
+        "description": "The description of the merge request.",
+        "type": "string"
+      },
+      "labels": {
+        "description": "Comma-separated list of label names to apply to the merge request.",
+        "type": "string"
+      },
+      "mergeRequestIid": {
+        "description": "The IID (internal ID, integer) of the merge request within the project.",
+        "type": "number"
+      },
+      "milestoneId": {
+        "description": "The ID of the milestone to associate the merge request with.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "removeSourceBranch": {
+        "description": "Flag indicating if the source branch should be removed after merge.",
+        "type": "boolean"
+      },
+      "squash": {
+        "description": "Flag indicating if commits should be squashed into a single commit on merge.",
+        "type": "boolean"
+      },
+      "stateEvent": {
+        "description": "The state event to perform on the merge request (close, reopen, merge).",
+        "enum": [
+          "close",
+          "reopen",
+          "merge"
+        ],
+        "type": "string"
+      },
+      "targetBranch": {
+        "description": "The target branch name.",
+        "type": "string"
+      },
+      "title": {
+        "description": "The title of the merge request.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "mergeRequestIid"
+    ]
+  },
+  "name": "updateMergeRequest"
+}

@@ -1,0 +1,41 @@
+{
+  "annotations": {
+    "title": "List GitLab Milestones",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_LIST_MILESTONES_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "page": {
+        "description": "Page number of the results to retrieve (min 1).",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "Number of results to return per page (default: 20, max: 100).",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "search": {
+        "description": "Search milestones against their title and description.",
+        "type": "string"
+      },
+      "state": {
+        "description": "Return milestones with the specified state (active, closed, all).",
+        "enum": [
+          "active",
+          "closed",
+          "all"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId"
+    ]
+  },
+  "name": "listMilestones"
+}

@@ -1,0 +1,66 @@
+{
+  "annotations": {
+    "title": "List Projects",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_LIST_PROJECTS_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "membership": {
+        "description": "Limit by projects that the current user is a member of.",
+        "type": "boolean"
+      },
+      "orderBy": {
+        "description": "Return projects ordered by field.",
+        "enum": [
+          "id",
+          "name",
+          "path",
+          "created_at",
+          "updated_at",
+          "last_activity_at"
+        ],
+        "type": "string"
+      },
+      "owned": {
+        "description": "Limit by projects owned by the current user.",
+        "type": "boolean"
+      },
+      "page": {
+        "description": "Page number of the results to retrieve (min 1).",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "Number of results to return per page (default: 20, max: 100).",
+        "type": "number"
+      },
+      "search": {
+        "description": "Return list of projects matching the search criteria.",
+        "type": "string"
+      },
+      "sort": {
+        "description": "Return projects sorted in asc or desc order.",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "type": "string"
+      },
+      "starred": {
+        "description": "Limit by projects starred by the current user.",
+        "type": "boolean"
+      },
+      "visibility": {
+        "description": "Limit by visibility level.",
+        "enum": [
+          "public",
+          "internal",
+          "private"
+        ],
+        "type": "string"
+      }
+    }
+  },
+  "name": "listProjects"
+}

@@ -15,9 +15,15 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	gl "gitlab.com/gitlab-org/api/client-go"
+
+	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
 )
 
 func TestGetProjectFileHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := GetProjectFile(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockFiles, ctrl := setupMockClientForFiles(t)
 	defer ctrl.Finish()
@@ -28,7 +34,7 @@ func TestGetProjectFileHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler ---
-	getProjectFileTool, getProjectFileHandler := GetProjectFile(mockGetClientFiles)
+	getProjectFileTool, getProjectFileHandler := GetProjectFile(mockGetClientFiles, nil)
 
 	projectID := "group/project"
 	filePath := "src/main.go"
@@ -95,7 +101,7 @@ func TestGetProjectFileHandler(t *testing.T) {
 			expectedResult:     "", // No content expected for error result
 			expectResultError:  true,
 			expectHandlerError: false,
-			errorContains:      fmt.Sprintf("project %q or file %q not found", projectID, "nonexistent.txt"),
+			errorContains:      fmt.Sprintf("file %q in project %q (ref: %q) not found or access denied (404)", "nonexistent.txt", projectID, ref),
 		},
 		{
 			name: "Error - GitLab API Error (500)",
@@ -112,7 +118,7 @@ func TestGetProjectFileHandler(t *testing.T) {
 			},
 			expectedResult:     "",
 			expectHandlerError: true,
-			errorContains:      fmt.Sprintf("failed to get file %q from project %q", filePath, projectID),
+			errorContains:      fmt.Sprintf("failed to process file %q in project %q (ref: %q)", filePath, projectID, ref),
 		},
 		{
 			name:               "Error - Missing projectId",
@@ -178,6 +184,10 @@ func TestGetProjectFileHandler(t *testing.T) {
 
 // Add tests for ListProjectFiles here
 func TestListProjectFilesHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := ListProjectFiles(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockRepos, ctrl := setupMockClientForRepos(t)
 	defer ctrl.Finish()
@@ -188,7 +198,7 @@ func TestListProjectFilesHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler ---
-	listProjectFilesTool, listProjectFilesHandler := ListProjectFiles(mockGetClientRepos)
+	listProjectFilesTool, listProjectFilesHandler := ListProjectFiles(mockGetClientRepos, nil)
 
 	projectID := "group/project"
 	path := "src/app"
@@ -317,9 +327,9 @@ func TestListProjectFilesHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Not Found"))
 			},
 			expectedResult:     nil,
-			expectResultError:  true,
-			expectHandlerError: false,
-			errorContains:      fmt.Sprintf("project %q or path %q not found", projectID, "nonexistent/path"),
+			expectResultError:  false,
+			expectHandlerError: true,
+			errorContains:      fmt.Sprintf("failed to list repository tree for project %q", projectID),
 		},
 		{
 			name: "Error - GitLab API Error (500)",

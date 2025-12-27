@@ -152,13 +152,22 @@ func (ts *TokenStore) ValidateToken(ctx context.Context, name string, glClient *
 }
 
 // CheckAllTokens validates all stored tokens and returns results
+// Note: This function does NOT hold a lock while calling ValidateToken to avoid deadlock.
+// ValidateToken acquires its own lock, so we need to release our lock before calling it.
 func (ts *TokenStore) CheckAllTokens(ctx context.Context, getClientFunc func(name string) (*gl.Client, error)) []TokenValidationResult {
+	// First, collect token names under read lock
 	ts.mu.RLock()
-	defer ts.mu.RUnlock()
-
-	results := make([]TokenValidationResult, 0, len(ts.tokens))
-
+	tokenNames := make([]string, 0, len(ts.tokens))
 	for name := range ts.tokens {
+		tokenNames = append(tokenNames, name)
+	}
+	ts.mu.RUnlock()
+
+	// Then validate each token without holding a lock
+	// ValidateToken will acquire its own lock as needed
+	results := make([]TokenValidationResult, 0, len(tokenNames))
+
+	for _, name := range tokenNames {
 		result := TokenValidationResult{
 			TokenName: name,
 			Success:   false,
@@ -172,7 +181,7 @@ func (ts *TokenStore) CheckAllTokens(ctx context.Context, getClientFunc func(nam
 			continue
 		}
 
-		// Validate token
+		// Validate token (will acquire its own lock)
 		metadata, err := ts.ValidateToken(ctx, name, client)
 		if err != nil {
 			result.Error = err.Error()

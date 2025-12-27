@@ -1,0 +1,11 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": true
+  },
+  "description": "Returns recent notifications about token issues, validation results, and other important messages.",
+  "inputSchema": {
+    "type": "object"
+  },
+  "name": "getNotifications"
+}

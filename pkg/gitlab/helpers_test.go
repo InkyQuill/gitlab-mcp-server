@@ -1,9 +1,12 @@
 package gitlab
 
 import (
+	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	gl "gitlab.com/gitlab-org/api/client-go"
 	mock_gitlab "gitlab.com/gitlab-org/api/client-go/testing"
@@ -143,4 +146,310 @@ func setupMockClientForMilestones(t *testing.T) (*gl.Client, *mock_gitlab.MockMi
 	}
 
 	return client, mockMilestones, ctrl
+}
+
+// Tests for HandleAPIError
+func TestHandleAPIError(t *testing.T) {
+	tests := []struct {
+		name               string
+		err                error
+		resp               *gl.Response
+		resourceDesc       string
+		expectToolResult   bool
+		expectInternalErr  bool
+		errorContains      string
+	}{
+		{
+			name:              "No error - nil error",
+			err:               nil,
+			resp:              nil,
+			resourceDesc:      "test resource",
+			expectToolResult:  false,
+			expectInternalErr: false,
+		},
+		{
+			name:              "401 Unauthorized - returns tool result",
+			err:               fmt.Errorf("unauthorized"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 401}},
+			resourceDesc:      "project",
+			expectToolResult:  true,
+			expectInternalErr: false,
+			errorContains:     "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.",
+		},
+		{
+			name:              "404 Not Found - returns tool result",
+			err:               fmt.Errorf("not found"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 404}},
+			resourceDesc:      "issue",
+			expectToolResult:  true,
+			expectInternalErr: false,
+			errorContains:     "issue not found or access denied (404)",
+		},
+		{
+			name:              "400 Bad Request - returns tool result",
+			err:               fmt.Errorf("bad request"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 400}},
+			resourceDesc:      "merge request",
+			expectToolResult:  true,
+			expectInternalErr: false,
+			errorContains:     "failed to process merge request",
+		},
+		{
+			name:              "422 Unprocessable Entity - returns tool result",
+			err:               fmt.Errorf("validation failed"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 422}},
+			resourceDesc:      "milestone",
+			expectToolResult:  true,
+			expectInternalErr: false,
+			errorContains:     "failed to process milestone",
+		},
+		{
+			name:              "500 Internal Server Error - returns internal error",
+			err:               fmt.Errorf("internal error"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 500}},
+			resourceDesc:      "project",
+			expectToolResult:  false,
+			expectInternalErr: true,
+			errorContains:     "failed to process project",
+		},
+		{
+			name:              "Error with nil response - defaults to 500",
+			err:               fmt.Errorf("some error"),
+			resp:              nil,
+			resourceDesc:      "resource",
+			expectToolResult:  false,
+			expectInternalErr: true,
+			errorContains:     "failed to process resource",
+		},
+		{
+			name:              "403 Forbidden - returns internal error",
+			err:               fmt.Errorf("forbidden"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 403}},
+			resourceDesc:      "resource",
+			expectToolResult:  false,
+			expectInternalErr: true,
+			errorContains:     "failed to process resource",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := HandleAPIError(tc.err, tc.resp, tc.resourceDesc)
+
+			if tc.expectInternalErr {
+				require.Error(t, err)
+				assert.Nil(t, result)
+				assert.Contains(t, err.Error(), tc.errorContains)
+			} else if tc.expectToolResult {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				textContent := getTextResult(t, result)
+				assert.Contains(t, textContent.Text, tc.errorContains)
+			} else {
+				require.NoError(t, err)
+				assert.Nil(t, result)
+			}
+		})
+	}
+}
+
+// Tests for HandleListAPIError
+func TestHandleListAPIError(t *testing.T) {
+	tests := []struct {
+		name               string
+		err                error
+		resp               *gl.Response
+		resourceDesc       string
+		expectToolResult   bool
+		expectInternalErr  bool
+		errorContains      string
+	}{
+		{
+			name:              "No error - nil error",
+			err:               nil,
+			resp:              nil,
+			resourceDesc:      "projects",
+			expectToolResult:  false,
+			expectInternalErr: false,
+		},
+		{
+			name:              "401 Unauthorized - returns tool result",
+			err:               fmt.Errorf("unauthorized"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 401}},
+			resourceDesc:      "issues",
+			expectToolResult:  true,
+			expectInternalErr: false,
+			errorContains:     "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.",
+		},
+		{
+			name:              "404 Not Found - returns internal error for list operations",
+			err:               fmt.Errorf("not found"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 404}},
+			resourceDesc:      "projects",
+			expectToolResult:  false,
+			expectInternalErr: true,
+			errorContains:     "failed to list projects",
+		},
+		{
+			name:              "500 Internal Server Error - returns internal error",
+			err:               fmt.Errorf("internal error"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 500}},
+			resourceDesc:      "merge requests",
+			expectToolResult:  false,
+			expectInternalErr: true,
+			errorContains:     "failed to list merge requests",
+		},
+		{
+			name:              "Error with nil response - defaults to 500",
+			err:               fmt.Errorf("some error"),
+			resp:              nil,
+			resourceDesc:      "milestones",
+			expectToolResult:  false,
+			expectInternalErr: true,
+			errorContains:     "failed to list milestones",
+		},
+		{
+			name:              "403 Forbidden - returns internal error",
+			err:               fmt.Errorf("forbidden"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 403}},
+			resourceDesc:      "branches",
+			expectToolResult:  false,
+			expectInternalErr: true,
+			errorContains:     "failed to list branches",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := HandleListAPIError(tc.err, tc.resp, tc.resourceDesc)
+
+			if tc.expectInternalErr {
+				require.Error(t, err)
+				assert.Nil(t, result)
+				assert.Contains(t, err.Error(), tc.errorContains)
+			} else if tc.expectToolResult {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				textContent := getTextResult(t, result)
+				assert.Contains(t, textContent.Text, tc.errorContains)
+			} else {
+				require.NoError(t, err)
+				assert.Nil(t, result)
+			}
+		})
+	}
+}
+
+// Tests for HandleCreateUpdateAPIError
+func TestHandleCreateUpdateAPIError(t *testing.T) {
+	tests := []struct {
+		name               string
+		err                error
+		resp               *gl.Response
+		resourceDesc       string
+		operation          string
+		expectToolResult   bool
+		expectInternalErr  bool
+		errorContains      string
+	}{
+		{
+			name:              "No error - nil error",
+			err:               nil,
+			resp:              nil,
+			resourceDesc:      "issue",
+			operation:         "create",
+			expectToolResult:  false,
+			expectInternalErr: false,
+		},
+		{
+			name:              "401 Unauthorized - returns tool result",
+			err:               fmt.Errorf("unauthorized"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 401}},
+			resourceDesc:      "merge request",
+			operation:         "create",
+			expectToolResult:  true,
+			expectInternalErr: false,
+			errorContains:     "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.",
+		},
+		{
+			name:              "404 Not Found - returns tool result",
+			err:               fmt.Errorf("not found"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 404}},
+			resourceDesc:      "project",
+			operation:         "update",
+			expectToolResult:  true,
+			expectInternalErr: false,
+			errorContains:     "project not found or access denied (404)",
+		},
+		{
+			name:              "400 Bad Request - returns tool result",
+			err:               fmt.Errorf("validation failed: title is required"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 400}},
+			resourceDesc:      "issue",
+			operation:         "create",
+			expectToolResult:  true,
+			expectInternalErr: false,
+			errorContains:     "failed to create",
+		},
+		{
+			name:              "422 Unprocessable Entity - returns tool result",
+			err:               fmt.Errorf("unprocessable entity"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 422}},
+			resourceDesc:      "milestone",
+			operation:         "update",
+			expectToolResult:  true,
+			expectInternalErr: false,
+			errorContains:     "failed to update",
+		},
+		{
+			name:              "500 Internal Server Error - returns internal error",
+			err:               fmt.Errorf("internal error"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 500}},
+			resourceDesc:      "comment",
+			operation:         "create",
+			expectToolResult:  false,
+			expectInternalErr: true,
+			errorContains:     "failed to create comment",
+		},
+		{
+			name:              "Error with nil response - defaults to 500",
+			err:               fmt.Errorf("some error"),
+			resp:              nil,
+			resourceDesc:      "issue",
+			operation:         "update",
+			expectToolResult:  false,
+			expectInternalErr: true,
+			errorContains:     "failed to update issue",
+		},
+		{
+			name:              "403 Forbidden - returns internal error",
+			err:               fmt.Errorf("forbidden"),
+			resp:              &gl.Response{Response: &http.Response{StatusCode: 403}},
+			resourceDesc:      "merge request",
+			operation:         "create",
+			expectToolResult:  false,
+			expectInternalErr: true,
+			errorContains:     "failed to create merge request",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := HandleCreateUpdateAPIError(tc.err, tc.resp, tc.resourceDesc, tc.operation)
+
+			if tc.expectInternalErr {
+				require.Error(t, err)
+				assert.Nil(t, result)
+				assert.Contains(t, err.Error(), tc.errorContains)
+			} else if tc.expectToolResult {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				textContent := getTextResult(t, result)
+				assert.Contains(t, textContent.Text, tc.errorContains)
+			} else {
+				require.NoError(t, err)
+				assert.Nil(t, result)
+			}
+		})
+	}
 }

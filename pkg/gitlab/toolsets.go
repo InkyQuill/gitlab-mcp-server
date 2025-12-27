@@ -54,12 +54,12 @@ func InitToolsets(
 	// --- Add tools to tokenManagementTS (Token management) ---
 	tokenManagementTS.AddReadTools(
 		toolsets.NewServerTool(ListTokens(tokenStore)),
-		toolsets.NewServerTool(ValidateToken(getClient, logger, tokenStore)),
+		toolsets.NewServerTool(ValidateToken(nil, logger, tokenStore)),
 		toolsets.NewServerTool(GetNotificationsTool(logger)),
 	)
 	tokenManagementTS.AddWriteTools(
-		toolsets.NewServerTool(AddToken(getClient, logger, tokenStore)),
-		toolsets.NewServerTool(UpdateToken(getClient, logger, tokenStore)),
+		toolsets.NewServerTool(AddToken(nil, logger, tokenStore)),
+		toolsets.NewServerTool(UpdateToken(nil, logger, tokenStore)),
 		toolsets.NewServerTool(RemoveToken(tokenStore)),
 		toolsets.NewServerTool(ClearNotificationsTool(logger)),
 	)

@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -42,6 +43,9 @@ type Notification struct {
 // notificationStore holds recent notifications in memory
 var notificationStore = make([]Notification, 0, 100)
 
+// notificationMu protects notificationStore from concurrent access
+var notificationMu sync.Mutex
+
 // SendNotification sends a notification to the user (via stderr) and stores it for AI retrieval
 func SendNotification(logger *log.Logger, notif Notification) {
 	notif.Timestamp = time.Now()
@@ -61,21 +65,33 @@ func SendNotification(logger *log.Logger, notif Notification) {
 		logger.Info(msg)
 	}
 
-	// Store in memory for AI to retrieve
+	// Store in memory for AI to retrieve (thread-safe)
 	// Keep only last 100 notifications
+	notificationMu.Lock()
+	defer notificationMu.Unlock()
+
 	notificationStore = append(notificationStore, notif)
 	if len(notificationStore) > 100 {
 		notificationStore = notificationStore[1:]
 	}
 }
 
-// GetNotifications returns all stored notifications
+// GetNotifications returns all stored notifications (thread-safe)
 func GetNotifications() []Notification {
-	return notificationStore
+	notificationMu.Lock()
+	defer notificationMu.Unlock()
+
+	// Return a copy to avoid race conditions
+	result := make([]Notification, len(notificationStore))
+	copy(result, notificationStore)
+	return result
 }
 
-// ClearNotifications clears all stored notifications
+// ClearNotifications clears all stored notifications (thread-safe)
 func ClearNotifications() {
+	notificationMu.Lock()
+	defer notificationMu.Unlock()
+
 	notificationStore = make([]Notification, 0, 100)
 }
 

@@ -1,0 +1,58 @@
+{
+  "annotations": {
+    "title": "Create GitLab Merge Request"
+  },
+  "description": "TOOL_CREATE_MERGE_REQUEST_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "assigneeIds": {
+        "description": "Comma-separated list of user IDs to assign the merge request to.",
+        "type": "string"
+      },
+      "description": {
+        "description": "The description of the merge request.",
+        "type": "string"
+      },
+      "labels": {
+        "description": "Comma-separated list of label names to apply to the merge request.",
+        "type": "string"
+      },
+      "milestoneId": {
+        "description": "The ID of the milestone to associate the merge request with.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "removeSourceBranch": {
+        "description": "Flag indicating if the source branch should be removed after merge.",
+        "type": "boolean"
+      },
+      "sourceBranch": {
+        "description": "The source branch name.",
+        "type": "string"
+      },
+      "squash": {
+        "description": "Flag indicating if commits should be squashed into a single commit on merge.",
+        "type": "boolean"
+      },
+      "targetBranch": {
+        "description": "The target branch name.",
+        "type": "string"
+      },
+      "title": {
+        "description": "The title of the merge request.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "sourceBranch",
+      "targetBranch",
+      "title"
+    ]
+  },
+  "name": "createMergeRequest"
+}

@@ -1,0 +1,34 @@
+{
+  "annotations": {
+    "title": "Update Issue Comment"
+  },
+  "description": "TOOL_UPDATE_ISSUE_COMMENT_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "body": {
+        "description": "The updated content of the comment.",
+        "type": "string"
+      },
+      "issueIid": {
+        "description": "The IID (internal ID, integer) of the issue within the project.",
+        "type": "number"
+      },
+      "noteId": {
+        "description": "The ID of the note (comment) to update.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "issueIid",
+      "noteId",
+      "body"
+    ]
+  },
+  "name": "updateIssueComment"
+}

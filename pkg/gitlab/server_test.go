@@ -23,6 +23,11 @@ func createMCPRequest(params map[string]interface{}) *mcp.CallToolRequest {
 	}
 }
 
+// boolPtr is a helper function to get a pointer to a bool
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 func TestRequiredParam(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -579,6 +584,213 @@ func TestOptionalPaginationParams(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tc.expectedPage, page, "page value")
 				assert.Equal(t, tc.expectedPerPage, perPage, "perPage value")
+			}
+		})
+	}
+}
+
+func TestOptionalBoolParam(t *testing.T) {
+	tests := []struct {
+		name         string
+		params       map[string]interface{}
+		paramName    string
+		expectedVal  *bool
+		expectError  bool
+		errContains  string
+	}{
+		{
+			name:      "Parameter not present",
+			params:    map[string]interface{}{},
+			paramName: "myBool",
+			expectedVal: nil,
+			expectError: false,
+		},
+		{
+			name:      "Parameter is explicitly nil",
+			params:    map[string]interface{}{"myBool": nil},
+			paramName: "myBool",
+			expectedVal: nil,
+			expectError: false,
+		},
+		{
+			name:      "Parameter is true (bool)",
+			params:    map[string]interface{}{"myBool": true},
+			paramName: "myBool",
+			expectedVal: boolPtr(true),
+			expectError: false,
+		},
+		{
+			name:      "Parameter is false (bool)",
+			params:    map[string]interface{}{"myBool": false},
+			paramName: "myBool",
+			expectedVal: boolPtr(false),
+			expectError: false,
+		},
+		{
+			name:      "Parameter is string 'true'",
+			params:    map[string]interface{}{"myBool": "true"},
+			paramName: "myBool",
+			expectedVal: boolPtr(true),
+			expectError: false,
+		},
+		{
+			name:      "Parameter is string 'false'",
+			params:    map[string]interface{}{"myBool": "false"},
+			paramName: "myBool",
+			expectedVal: boolPtr(false),
+			expectError: false,
+		},
+		{
+			name:      "Parameter is string '1'",
+			params:    map[string]interface{}{"myBool": "1"},
+			paramName: "myBool",
+			expectedVal: boolPtr(true),
+			expectError: false,
+		},
+		{
+			name:      "Parameter is string '0'",
+			params:    map[string]interface{}{"myBool": "0"},
+			paramName: "myBool",
+			expectedVal: boolPtr(false),
+			expectError: false,
+		},
+		{
+			name:      "Parameter is string 'yes'",
+			params:    map[string]interface{}{"myBool": "yes"},
+			paramName: "myBool",
+			expectedVal: boolPtr(true),
+			expectError: false,
+		},
+		{
+			name:      "Parameter is string 'no'",
+			params:    map[string]interface{}{"myBool": "no"},
+			paramName: "myBool",
+			expectedVal: boolPtr(false),
+			expectError: false,
+		},
+		{
+			name:      "Parameter is string 't'",
+			params:    map[string]interface{}{"myBool": "t"},
+			paramName: "myBool",
+			expectedVal: boolPtr(true),
+			expectError: false,
+		},
+		{
+			name:      "Parameter is string 'f'",
+			params:    map[string]interface{}{"myBool": "f"},
+			paramName: "myBool",
+			expectedVal: boolPtr(false),
+			expectError: false,
+		},
+		{
+			name:      "Parameter is string 'y'",
+			params:    map[string]interface{}{"myBool": "y"},
+			paramName: "myBool",
+			expectedVal: boolPtr(true),
+			expectError: false,
+		},
+		{
+			name:      "Parameter is string 'n'",
+			params:    map[string]interface{}{"myBool": "n"},
+			paramName: "myBool",
+			expectedVal: boolPtr(false),
+			expectError: false,
+		},
+		{
+			name:        "Parameter is invalid string",
+			params:      map[string]interface{}{"myBool": "invalid"},
+			paramName:   "myBool",
+			expectedVal: nil,
+			expectError: true,
+			errContains: "must be a boolean",
+		},
+		{
+			name:        "Parameter is invalid type (number)",
+			params:      map[string]interface{}{"myBool": 42},
+			paramName:   "myBool",
+			expectedVal: nil,
+			expectError: true,
+			errContains: "must be a boolean",
+		},
+		{
+			name:        "Parameter is invalid type (array)",
+			params:      map[string]interface{}{"myBool": []bool{}},
+			paramName:   "myBool",
+			expectedVal: nil,
+			expectError: true,
+			errContains: "must be a boolean",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := createMCPRequest(tc.params)
+			result, err := OptionalBoolParam(req, tc.paramName)
+
+			if tc.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errContains)
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				if tc.expectedVal == nil {
+					assert.Nil(t, result)
+				} else {
+					require.NotNil(t, result)
+					assert.Equal(t, tc.expectedVal, result)
+				}
+			}
+		})
+	}
+}
+
+func TestNewServer(t *testing.T) {
+	tests := []struct {
+		name        string
+		appName     string
+		appVersion  string
+		expectNil   bool
+		expectPanic bool
+	}{
+		{
+			name:       "Success - Create server with valid params",
+			appName:    "gitlab-mcp-server",
+			appVersion: "1.0.0",
+			expectNil:  false,
+		},
+		{
+			name:       "Success - Create server with empty version",
+			appName:    "gitlab-mcp-server",
+			appVersion: "",
+			expectNil:  false,
+		},
+		{
+			name:       "Success - Create server with empty name",
+			appName:    "",
+			appVersion: "1.0.0",
+			expectNil:  false,
+		},
+		{
+			name:       "Success - Create server with both empty",
+			appName:    "",
+			appVersion: "",
+			expectNil:  false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.expectPanic {
+				assert.Panics(t, func() {
+					NewServer(tc.appName, tc.appVersion)
+				})
+			} else {
+				server := NewServer(tc.appName, tc.appVersion)
+				if tc.expectNil {
+					assert.Nil(t, server)
+				} else {
+					assert.NotNil(t, server, "Server should not be nil")
+				}
 			}
 		})
 	}

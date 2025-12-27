@@ -15,10 +15,16 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	gl "gitlab.com/gitlab-org/api/client-go"
+
+	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
 )
 
 // Add tests for GetProjectCommits here
 func TestGetProjectCommitsHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := GetProjectCommits(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockCommits, ctrl := setupMockClientForCommits(t)
 	defer ctrl.Finish()
@@ -29,7 +35,7 @@ func TestGetProjectCommitsHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler ---
-	getProjectCommitsTool, getProjectCommitsHandler := GetProjectCommits(mockGetClientCommits)
+	getProjectCommitsTool, getProjectCommitsHandler := GetProjectCommits(mockGetClientCommits, nil)
 
 	projectID := "group/project"
 	ref := "main"
@@ -160,9 +166,9 @@ func TestGetProjectCommitsHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Not Found"))
 			},
 			expectedResult:     nil,
-			expectResultError:  true,
-			expectHandlerError: false,
-			errorContains:      fmt.Sprintf("project %q not found or access denied", "nonexistent/project"),
+			expectResultError:  false,
+			expectHandlerError: true,
+			errorContains:      fmt.Sprintf("failed to list commits for project %q", "nonexistent/project"),
 		},
 		{
 			name: "Error - GitLab API Error (500)",

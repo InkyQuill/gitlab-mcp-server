@@ -1,0 +1,48 @@
+{
+  "annotations": {
+    "title": "Update GitLab Milestone"
+  },
+  "description": "TOOL_UPDATE_MILESTONE_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "description": {
+        "description": "The description of the milestone.",
+        "type": "string"
+      },
+      "dueDate": {
+        "description": "The due date of the milestone (ISO 8601 format: YYYY-MM-DD).",
+        "type": "string"
+      },
+      "milestoneId": {
+        "description": "The ID of the milestone.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "startDate": {
+        "description": "The start date of the milestone (ISO 8601 format: YYYY-MM-DD).",
+        "type": "string"
+      },
+      "stateEvent": {
+        "description": "The state event to perform on the milestone (activate, close).",
+        "enum": [
+          "activate",
+          "close"
+        ],
+        "type": "string"
+      },
+      "title": {
+        "description": "The title of the milestone.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "milestoneId"
+    ]
+  },
+  "name": "updateMilestone"
+}

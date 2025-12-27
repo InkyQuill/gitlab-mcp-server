@@ -1,4 +1,4 @@
-.PHONY: setup build clean test docker-build install-mcp help
+.PHONY: setup build clean test test-toolsnaps update-toolsnaps docker-build install-mcp help
 
 # Variables
 BINARY_NAME=gitlab-mcp-server
@@ -35,6 +35,15 @@ clean: ## Clean build artifacts
 test: ## Run tests
 	@echo "Running tests..."
 	@go test ./...
+
+test-toolsnaps: ## Validate tool schema snapshots (detects breaking changes)
+	@echo "Validating tool schema snapshots..."
+	@go test ./pkg/gitlab/... ./pkg/toolsets/...
+
+update-toolsnaps: ## Update tool schema snapshots (run after intentional tool changes)
+	@echo "Updating tool schema snapshots..."
+	@UPDATE_TOOLSNAPS=true go test ./pkg/gitlab/... ./pkg/toolsets/...
+	@echo "Snapshots updated. Commit the changes to __toolsnaps__/ directory."
 
 docker-build: ## Build Docker image
 	@echo "Building Docker image..."

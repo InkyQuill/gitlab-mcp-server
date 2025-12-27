@@ -1,0 +1,99 @@
+{
+  "annotations": {
+    "title": "List GitLab Issues",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_LIST_ISSUES_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "assigneeId": {
+        "description": "Return issues assigned to the given user ID (integer).",
+        "type": "number"
+      },
+      "authorId": {
+        "description": "Return issues created by the given user ID (integer).",
+        "type": "number"
+      },
+      "createdAfter": {
+        "description": "Return issues created on or after the given time (ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ).",
+        "type": "string"
+      },
+      "createdBefore": {
+        "description": "Return issues created on or before the given time (ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ).",
+        "type": "string"
+      },
+      "labels": {
+        "description": "Comma-separated list of label names to filter by.",
+        "type": "string"
+      },
+      "milestone": {
+        "description": "Milestone title to filter by.",
+        "type": "string"
+      },
+      "orderBy": {
+        "description": "Return issues ordered by this field (created_at, updated_at, priority).",
+        "enum": [
+          "created_at",
+          "updated_at",
+          "priority"
+        ],
+        "type": "string"
+      },
+      "page": {
+        "description": "Page number of the results to retrieve (min 1).",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "Number of results to return per page (default: 20, max: 100).",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "scope": {
+        "description": "Return issues for the given scope (created_by_me, assigned_to_me, all).",
+        "enum": [
+          "created_by_me",
+          "assigned_to_me",
+          "all"
+        ],
+        "type": "string"
+      },
+      "search": {
+        "description": "Search issues against their title and description.",
+        "type": "string"
+      },
+      "sort": {
+        "description": "Return issues sorted in asc or desc order.",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "type": "string"
+      },
+      "state": {
+        "description": "Return issues with the specified state (opened, closed, all).",
+        "enum": [
+          "opened",
+          "closed",
+          "all"
+        ],
+        "type": "string"
+      },
+      "updatedAfter": {
+        "description": "Return issues updated on or after the given time (ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ).",
+        "type": "string"
+      },
+      "updatedBefore": {
+        "description": "Return issues updated on or before the given time (ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ).",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId"
+    ]
+  },
+  "name": "listIssues"
+}

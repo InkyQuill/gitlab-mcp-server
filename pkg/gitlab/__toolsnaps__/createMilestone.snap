@@ -1,0 +1,36 @@
+{
+  "annotations": {
+    "title": "Create GitLab Milestone"
+  },
+  "description": "TOOL_CREATE_MILESTONE_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "description": {
+        "description": "The description of the milestone.",
+        "type": "string"
+      },
+      "dueDate": {
+        "description": "The due date of the milestone (ISO 8601 format: YYYY-MM-DD).",
+        "type": "string"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "startDate": {
+        "description": "The start date of the milestone (ISO 8601 format: YYYY-MM-DD).",
+        "type": "string"
+      },
+      "title": {
+        "description": "The title of the milestone.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "title"
+    ]
+  },
+  "name": "createMilestone"
+}

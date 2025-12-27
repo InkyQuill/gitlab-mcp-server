@@ -1,0 +1,25 @@
+{
+  "annotations": {
+    "title": "Get GitLab Merge Request",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_MERGE_REQUEST_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "mergeRequestIid": {
+        "description": "The IID (internal ID, integer) of the merge request within the project.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "mergeRequestIid"
+    ]
+  },
+  "name": "getMergeRequest"
+}

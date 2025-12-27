@@ -1,0 +1,29 @@
+{
+  "annotations": {
+    "title": "Create Issue Comment"
+  },
+  "description": "TOOL_CREATE_ISSUE_COMMENT_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "body": {
+        "description": "The content of the comment.",
+        "type": "string"
+      },
+      "issueIid": {
+        "description": "The IID (internal ID, integer) of the issue within the project.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "issueIid",
+      "body"
+    ]
+  },
+  "name": "createIssueComment"
+}

@@ -36,7 +36,7 @@ func NewClientResolver(pool *ClientPool, defaultServer string, logger *log.Logge
 func (cr *ClientResolver) Resolve(ctx context.Context) (*gl.Client, string, error) {
 	// Try to read project config
 	config, configPath, err := FindProjectConfig()
-	if err != nil {
+	if err != nil || config == nil {
 		// No config found, use default
 		cr.logger.Debugf("No project config found, using default client: %v", err)
 		return cr.pool.GetDefaultClient()

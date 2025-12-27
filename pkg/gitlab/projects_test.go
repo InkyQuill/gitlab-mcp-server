@@ -14,9 +14,15 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	gl "gitlab.com/gitlab-org/api/client-go" // GitLab client library
+
+	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
 )
 
 func TestGetProjectHandler(t *testing.T) {
+	// Tool schema snapshot test
+	getProjectTool, _ := GetProject(nil, nil)
+	require.NoError(t, toolsnaps.Test(getProjectTool.Name, getProjectTool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	projectIDInt := 123
 	projectIDStr := "123"          // Use string for ID in tests for consistency with API calls expecting 'any'
@@ -31,7 +37,7 @@ func TestGetProjectHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler ---
-	getProjectTool, getProjectHandler := GetProject(mockGetClient)
+	getProjectTool, getProjectHandler := GetProject(mockGetClient, nil)
 
 	// --- Test Cases ---
 	tests := []struct {
@@ -116,7 +122,7 @@ func TestGetProjectHandler(t *testing.T) {
 			expectedResult:     nil,  // No result content expected when handler errors
 			expectHandlerError: true, // Handler returns an actual error
 			expectResultError:  true, // Result is nil due to handler error
-			errorContains:      "failed to get project \"123\": gitlab: 500 Internal Server Error",
+			errorContains:      "failed to process project \"123\": gitlab: 500 Internal Server Error (status: 500)",
 		},
 		{
 			name:               "Error - Missing projectId parameter",
@@ -203,6 +209,10 @@ func TestGetProjectHandler(t *testing.T) {
 
 // Add tests for ListProjects here later (Subtask 7.1)
 func TestListProjectsHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := ListProjects(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockProjects, ctrl := setupMockClient(t)
 	defer ctrl.Finish()
@@ -213,7 +223,7 @@ func TestListProjectsHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler ---
-	listProjectsTool, listProjectsHandler := ListProjects(mockGetClient)
+	listProjectsTool, listProjectsHandler := ListProjects(mockGetClient, nil)
 
 	// --- Helper for Creating Expected Projects ---
 	createMockProject := func(id int, name string) *gl.Project {

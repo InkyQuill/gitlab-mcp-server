@@ -1,0 +1,52 @@
+{
+  "annotations": {
+    "title": "Create GitLab Issue"
+  },
+  "description": "TOOL_CREATE_ISSUE_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "assigneeIds": {
+        "description": "Comma-separated list of user IDs to assign the issue to.",
+        "type": "string"
+      },
+      "description": {
+        "description": "The description of the issue.",
+        "type": "string"
+      },
+      "dueDate": {
+        "description": "The due date of the issue (ISO 8601 format: YYYY-MM-DD).",
+        "type": "string"
+      },
+      "labels": {
+        "description": "Comma-separated list of label names to apply to the issue.",
+        "type": "string"
+      },
+      "milestoneId": {
+        "description": "The ID of the milestone to associate the issue with.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "stateEvent": {
+        "description": "The state event to perform on the issue (close, reopen).",
+        "enum": [
+          "close",
+          "reopen"
+        ],
+        "type": "string"
+      },
+      "title": {
+        "description": "The title of the issue.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "title"
+    ]
+  },
+  "name": "createIssue"
+}

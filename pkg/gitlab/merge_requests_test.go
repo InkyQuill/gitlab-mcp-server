@@ -13,11 +13,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	gl "gitlab.com/gitlab-org/api/client-go"
+
+	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
 	"go.uber.org/mock/gomock"
 )
 
 // TestGetMergeRequestHandler tests the GetMergeRequest tool
 func TestGetMergeRequestHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := GetMergeRequest(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockMRs, ctrl := setupMockClientForMergeRequests(t)
 	defer ctrl.Finish()
@@ -28,7 +34,7 @@ func TestGetMergeRequestHandler(t *testing.T) {
 	}
 
 	// Define the Tool and Handler
-	getMergeRequestTool, getMergeRequestHandler := GetMergeRequest(mockGetClient)
+	getMergeRequestTool, getMergeRequestHandler := GetMergeRequest(mockGetClient, nil)
 
 	// Test data
 	projectID := "group/project"
@@ -86,7 +92,7 @@ func TestGetMergeRequestHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Not Found"))
 			},
 			expectResultError: true,
-			errorContains:     "merge request 999 not found in project",
+			errorContains:     "merge request 999 in project \"group/project\" not found or access denied (404)",
 		},
 		{
 			name: "Error - GitLab API Error (500)",
@@ -100,7 +106,7 @@ func TestGetMergeRequestHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectHandlerError: true,
-			errorContains:      "failed to get merge request",
+			errorContains:      "failed to process merge request",
 		},
 		{
 			name: "Error - Missing projectId parameter",
@@ -187,7 +193,7 @@ func TestGetMergeRequestHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := GetMergeRequest(errorGetClientFn)
+		_, handler := GetMergeRequest(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -214,6 +220,10 @@ func TestGetMergeRequestHandler(t *testing.T) {
 
 // TestGetMergeRequestCommentsHandler tests the GetMergeRequestComments tool
 func TestGetMergeRequestCommentsHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := GetMergeRequestComments(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 
 	// --- Setup Mock Client and GetClientFn once ---
@@ -226,7 +236,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler once ---
-	getMRCommentsTool, handler := GetMergeRequestComments(mockGetClient)
+	getMRCommentsTool, handler := GetMergeRequestComments(mockGetClient, nil)
 
 	// Define common test data
 	projectID := "group/project"
@@ -373,7 +383,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Merge Request Not Found"))
 			},
 			expectResultError: true,
-			errorContains:     "merge request 999 not found in project",
+			errorContains:     "merge request 999 in project \"group/project\" not found or access denied (404)",
 		},
 		{
 			name: "Error - GitLab API Error (500)",
@@ -387,7 +397,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectHandlerError: true,
-			errorContains:      "failed to get comments for merge request",
+			errorContains:      "failed to process comments for merge request",
 		},
 		{
 			name: "Error - Missing projectId parameter",
@@ -484,7 +494,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := GetMergeRequestComments(errorGetClientFn)
+		_, handler := GetMergeRequestComments(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -511,6 +521,10 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 
 // TestListMergeRequestsHandler tests the ListMergeRequests tool
 func TestListMergeRequestsHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := ListMergeRequests(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockMRs, ctrl := setupMockClientForMergeRequests(t)
 	defer ctrl.Finish()
@@ -521,7 +535,7 @@ func TestListMergeRequestsHandler(t *testing.T) {
 	}
 
 	// Define the Tool and Handler
-	listMergeRequestsTool, listMergeRequestsHandler := ListMergeRequests(mockGetClient)
+	listMergeRequestsTool, listMergeRequestsHandler := ListMergeRequests(mockGetClient, nil)
 
 	// Test data
 	projectID := "group/project"
@@ -656,8 +670,9 @@ func TestListMergeRequestsHandler(t *testing.T) {
 					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Project Not Found"))
 			},
-			expectResultError: true,
-			errorContains:     "not found or access denied",
+			expectResultError:   false,
+			expectHandlerError:  true,
+			errorContains:       "failed to list merge requests for project \"nonexistent/project\"",
 		},
 		{
 			name: "Error - GitLab API Error (500)",
@@ -752,7 +767,7 @@ func TestListMergeRequestsHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := ListMergeRequests(errorGetClientFn)
+		_, handler := ListMergeRequests(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -797,6 +812,10 @@ func convertToBasicMRs(mrs []*gl.MergeRequest) []*gl.BasicMergeRequest {
 
 // TestCreateMergeRequestHandler tests the CreateMergeRequest tool handler
 func TestCreateMergeRequestHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := CreateMergeRequest(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockMRs, ctrl := setupMockClientForMergeRequests(t)
 	defer ctrl.Finish()
@@ -805,7 +824,7 @@ func TestCreateMergeRequestHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	createMRTool, handler := CreateMergeRequest(mockGetClient)
+	createMRTool, handler := CreateMergeRequest(mockGetClient, nil)
 
 	projectID := "group/project"
 	timeNow := time.Now()
@@ -981,7 +1000,7 @@ func TestCreateMergeRequestHandler(t *testing.T) {
 			expectedResult:      nil,
 			expectResultError:   false,
 			expectInternalError: true,
-			errorContains:       "failed to create merge request in project",
+			errorContains:       "failed to create merge request project",
 		},
 	}
 
@@ -1033,6 +1052,10 @@ func TestCreateMergeRequestHandler(t *testing.T) {
 
 // TestUpdateMergeRequestHandler tests the UpdateMergeRequest tool handler
 func TestUpdateMergeRequestHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := UpdateMergeRequest(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockMRs, ctrl := setupMockClientForMergeRequests(t)
 	defer ctrl.Finish()
@@ -1041,7 +1064,7 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	updateMRTool, handler := UpdateMergeRequest(mockGetClient)
+	updateMRTool, handler := UpdateMergeRequest(mockGetClient, nil)
 
 	projectID := "group/project"
 	mrIid := 1.0
@@ -1153,7 +1176,7 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 					UpdateMergeRequest(projectID, 999, gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 MR Not Found"))
 			},
-			expectedResult:      "merge request 999 not found in project \"group/project\" or access denied (404)",
+			expectedResult:      "merge request 999 in project \"group/project\" not found or access denied (404)",
 			expectResultError:   true,
 			expectInternalError: false,
 		},
@@ -1172,6 +1195,85 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 			expectResultError:   false,
 			expectInternalError: true,
 			errorContains:       "failed to update merge request",
+		},
+		{
+			name: "Error - Invalid assignee IDs format",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"assigneeIds":     "123,abc,456",
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: invalid assignee ID \"abc\"",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Invalid milestoneId (not integer)",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid":  mrIid,
+				"milestoneId":     1.5,
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: milestoneId 1.5 is not a valid integer",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Error - Invalid mergeRequestIid (not integer)",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": 1.5,
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: mergeRequestIid 1.5 is not a valid integer",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Update with all optional fields",
+			args: map[string]any{
+				"projectId":       projectID,
+				"mergeRequestIid": mrIid,
+				"title":           "Updated MR Title",
+				"description":     "Updated description",
+				"labels":          "bug,enhancement",
+				"assigneeIds":     "123,456",
+				"milestoneId":     5.0,
+			},
+			mockSetup: func() {
+				expectedMR := &gl.MergeRequest{
+					BasicMergeRequest: gl.BasicMergeRequest{
+						ID:        123,
+						IID:       1,
+						ProjectID: 456,
+						Title:     "Updated MR Title",
+						UpdatedAt: &timeNow,
+					},
+				}
+				mockMRs.EXPECT().
+					UpdateMergeRequest(projectID, 1, gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int, opts *gl.UpdateMergeRequestOptions, _ ...gl.RequestOptionFunc) (*gl.MergeRequest, *gl.Response, error) {
+						assert.Equal(t, "Updated MR Title", *opts.Title)
+						assert.Equal(t, "Updated description", *opts.Description)
+						assert.NotNil(t, opts.Labels)
+						assert.NotNil(t, opts.AssigneeIDs)
+						assert.Equal(t, 5, *opts.MilestoneID)
+						return expectedMR, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+			expectedResult: &gl.MergeRequest{
+				BasicMergeRequest: gl.BasicMergeRequest{
+					ID:        123,
+					IID:       1,
+					ProjectID: 456,
+					Title:     "Updated MR Title",
+					UpdatedAt: &timeNow,
+				},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
 		},
 	}
 
@@ -1223,6 +1325,10 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 
 // TestCreateMergeRequestCommentHandler tests the CreateMergeRequestComment tool handler
 func TestCreateMergeRequestCommentHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := CreateMergeRequestComment(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockNotes, ctrl := setupMockClientForNotes(t)
 	defer ctrl.Finish()
@@ -1231,7 +1337,7 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	createCommentTool, handler := CreateMergeRequestComment(mockGetClient)
+	createCommentTool, handler := CreateMergeRequestComment(mockGetClient, nil)
 
 	projectID := "group/project"
 	mrIid := 1.0
@@ -1303,7 +1409,7 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 					CreateMergeRequestNote(projectID, 999, gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 MR Not Found"))
 			},
-			expectedResult:      "merge request 999 not found in project \"group/project\" or access denied (404)",
+			expectedResult:      "merge request 999 in project \"group/project\" not found or access denied (404)",
 			expectResultError:   true,
 			expectInternalError: false,
 		},
@@ -1322,7 +1428,7 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 			expectedResult:      nil,
 			expectResultError:   false,
 			expectInternalError: true,
-			errorContains:       "failed to create comment on merge request",
+			errorContains:       "failed to create comment merge request",
 		},
 	}
 
@@ -1374,6 +1480,10 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 
 // TestUpdateMergeRequestCommentHandler tests the UpdateMergeRequestComment tool handler
 func TestUpdateMergeRequestCommentHandler(t *testing.T) {
+	// Tool schema snapshot test
+	tool, _ := UpdateMergeRequestComment(nil, nil)
+	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
+
 	ctx := context.Background()
 	mockClient, mockNotes, ctrl := setupMockClientForNotes(t)
 	defer ctrl.Finish()
@@ -1382,7 +1492,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	updateCommentTool, handler := UpdateMergeRequestComment(mockGetClient)
+	updateCommentTool, handler := UpdateMergeRequestComment(mockGetClient, nil)
 
 	projectID := "group/project"
 	mrIid := 1.0
@@ -1458,7 +1568,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 					UpdateMergeRequestNote(projectID, 999, 999, gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Not Found"))
 			},
-			expectedResult:      "merge request 999 or note 999 not found in project \"group/project\" or access denied (404)",
+			expectedResult:      "merge request 999 or note 999 in project \"group/project\" not found or access denied (404)",
 			expectResultError:   true,
 			expectInternalError: false,
 		},

@@ -45,3 +45,9 @@ node_modules/
 tasks.json
 tasks/ .gmcprc
 __pycache__/
+
+# Tool Schema Snapshots
+# NOTE: __toolsnaps__/ directories SHOULD be committed to the repository.
+# These contain JSON snapshots of tool schemas that prevent breaking changes.
+# To update snapshots: UPDATE_TOOLSNAPS=true go test ./...
+# To validate snapshots: go test ./...

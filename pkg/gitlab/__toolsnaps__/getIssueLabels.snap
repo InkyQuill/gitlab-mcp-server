@@ -1,0 +1,25 @@
+{
+  "annotations": {
+    "title": "Get Issue Labels",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_ISSUE_LABELS_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "issueIid": {
+        "description": "The IID (internal ID, integer) of the issue within the project.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "issueIid"
+    ]
+  },
+  "name": "getIssueLabels"
+}

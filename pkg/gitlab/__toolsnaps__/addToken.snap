@@ -1,0 +1,29 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": true
+  },
+  "description": "Adds a new GitLab token configuration to the runtime token store. Note: This only affects the current session. For permanent configuration, use the installer.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "gitlabHost": {
+        "description": "GitLab host URL (e.g., 'https://gitlab.com'). Defaults to https://gitlab.com.",
+        "type": "string"
+      },
+      "name": {
+        "description": "Token/server name (e.g., 'work', 'personal'). Must be unique.",
+        "type": "string"
+      },
+      "token": {
+        "description": "GitLab Personal Access Token.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "name",
+      "token"
+    ]
+  },
+  "name": "addToken"
+}

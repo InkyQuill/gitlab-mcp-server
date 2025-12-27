@@ -37,7 +37,7 @@ func TestGetIssueHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler once ---
-	getIssueTool, handler := GetIssue(mockGetClient)
+	getIssueTool, handler := GetIssue(mockGetClient, nil)
 
 	// --- Test Cases ---
 	tests := []struct {
@@ -132,7 +132,7 @@ func TestGetIssueHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := GetIssue(errorGetClientFn)
+		_, handler := GetIssue(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -228,7 +228,7 @@ func TestListIssuesHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler once ---
-	listIssuesTool, handler := ListIssues(mockGetClient)
+	listIssuesTool, handler := ListIssues(mockGetClient, nil)
 
 	// --- Test Cases ---
 	tests := []struct {
@@ -443,7 +443,7 @@ func TestListIssuesHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := ListIssues(errorGetClientFn)
+		_, handler := ListIssues(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -536,7 +536,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler once ---
-	getIssueCommentsTool, handler := GetIssueComments(mockGetClient)
+	getIssueCommentsTool, handler := GetIssueComments(mockGetClient, nil)
 
 	// Define common test data
 	projectID := "group/project"
@@ -740,7 +740,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := GetIssueComments(errorGetClientFn)
+		_, handler := GetIssueComments(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -851,7 +851,7 @@ func TestGetIssueLabelsHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler once ---
-	getIssueLabelssTool, handler := GetIssueLabels(mockGetClient)
+	getIssueLabelssTool, handler := GetIssueLabels(mockGetClient, nil)
 
 	// Define common test data
 	projectID := "group/project"
@@ -1007,7 +1007,7 @@ func TestGetIssueLabelsHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := GetIssueLabels(errorGetClientFn)
+		_, handler := GetIssueLabels(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -1100,7 +1100,7 @@ func TestCreateIssueHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	createIssueTool, handler := CreateIssue(mockGetClient)
+	createIssueTool, handler := CreateIssue(mockGetClient, nil)
 
 	projectID := "group/project"
 	timeNow := time.Now()
@@ -1323,7 +1323,7 @@ func TestCreateIssueHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := CreateIssue(errorGetClientFn)
+		_, handler := CreateIssue(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -1355,7 +1355,7 @@ func TestUpdateIssueHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	updateIssueTool, handler := UpdateIssue(mockGetClient)
+	updateIssueTool, handler := UpdateIssue(mockGetClient, nil)
 
 	projectID := "group/project"
 	issueIid := 1.0
@@ -1549,7 +1549,7 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	createCommentTool, handler := CreateIssueComment(mockGetClient)
+	createCommentTool, handler := CreateIssueComment(mockGetClient, nil)
 
 	projectID := "group/project"
 	issueIid := 1.0
@@ -1711,7 +1711,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	updateCommentTool, handler := UpdateIssueComment(mockGetClient)
+	updateCommentTool, handler := UpdateIssueComment(mockGetClient, nil)
 
 	projectID := "group/project"
 	issueIid := 1.0

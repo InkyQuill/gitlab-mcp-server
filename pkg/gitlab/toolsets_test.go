@@ -24,7 +24,10 @@ func mockGetClientFn(_ context.Context) (*gitlab.Client, error) {
 
 func TestInitToolsets(t *testing.T) {
 	// Define the expected toolset names based on the implementation
+	// All 8 toolsets defined in InitToolsets
 	expectedToolsetNames := []string{
+		"token_management",
+		"project_config",
 		"projects",
 		"issues",
 		"merge_requests",
@@ -76,7 +79,7 @@ func TestInitToolsets(t *testing.T) {
 			enabledToolsets: []string{"projects", "invalid-toolset"},
 			readOnly:        false,
 			expectError:     true,
-			errContains:     "unknown toolset: invalid-toolset",
+			errContains:     "toolset 'invalid-toolset' not found",
 			expectEnabled:   []string{"projects"}, // projects should still be enabled before error
 		},
 		{
@@ -91,9 +94,9 @@ func TestInitToolsets(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Call InitToolsets using the mock function again
-			// Pass nil for the translation helper for now
-			tg, err := InitToolsets(tc.enabledToolsets, tc.readOnly, mockGetClientFn /*, nil */)
+			// Call InitToolsets using the mock function
+			// Parameters: enabledToolsets, readOnly, getClient, logger, tokenStore, translations, dynamicMode
+			tg, err := InitToolsets(tc.enabledToolsets, tc.readOnly, mockGetClientFn, nil, nil, nil, false)
 
 			if tc.expectError {
 				require.Error(t, err)

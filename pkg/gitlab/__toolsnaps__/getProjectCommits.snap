@@ -1,0 +1,48 @@
+{
+  "annotations": {
+    "title": "List Project Commits",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_PROJECT_COMMITS_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "page": {
+        "description": "Page number of the results to retrieve (min 1).",
+        "type": "number"
+      },
+      "path": {
+        "description": "The file path to retrieve commits for.",
+        "type": "string"
+      },
+      "per_page": {
+        "description": "Number of results to return per page (default: 20, max: 100).",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "ref": {
+        "description": "The name of a repository branch, tag or commit SHA. Default: the repository's default branch.",
+        "type": "string"
+      },
+      "since": {
+        "description": "Only commits after or on this date are returned (YYYY-MM-DDTHH:MM:SSZ). Format: ISO 8601",
+        "type": "string"
+      },
+      "until": {
+        "description": "Only commits before or on this date are returned (YYYY-MM-DDTHH:MM:SSZ). Format: ISO 8601",
+        "type": "string"
+      },
+      "withStats": {
+        "description": "Include commit stats (additions, deletions). Default is false.",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "projectId"
+    ]
+  },
+  "name": "getProjectCommits"
+}

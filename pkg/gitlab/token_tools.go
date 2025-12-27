@@ -11,10 +11,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// ClientFactory creates a GitLab client from a token
+type ClientFactory func(token string, opts ...gl.ClientOptionFunc) (*gl.Client, error)
+
+// DefaultClientFactory creates a real GitLab client
+func DefaultClientFactory(token string, opts ...gl.ClientOptionFunc) (*gl.Client, error) {
+	return gl.NewClient(token, opts...)
+}
+
 // AddToken adds a new GitLab token configuration
 // Note: This tool does NOT persist tokens to MCP config - that requires installer update
 // It only stores tokens in runtime memory for the current session
-func AddToken(getClient GetClientFn, logger *log.Logger, tokenStore *TokenStore) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func AddToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *TokenStore) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	// Use default factory if none provided
+	if clientFactory == nil {
+		clientFactory = DefaultClientFactory
+	}
 	return mcp.NewTool(
 			"addToken",
 			mcp.WithDescription("Adds a new GitLab token configuration to the runtime token store. Note: This only affects the current session. For permanent configuration, use the installer."),
@@ -53,7 +65,7 @@ func AddToken(getClient GetClientFn, logger *log.Logger, tokenStore *TokenStore)
 				clientOpts = append(clientOpts, gl.WithBaseURL(gitlabHost))
 			}
 
-			glClient, err := gl.NewClient(token, clientOpts...)
+			glClient, err := clientFactory(token, clientOpts...)
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Failed to create GitLab client: %v", err)), nil
 			}
@@ -138,7 +150,11 @@ func ListTokens(tokenStore *TokenStore) (tool mcp.Tool, handler server.ToolHandl
 }
 
 // UpdateToken updates an existing token configuration
-func UpdateToken(getClient GetClientFn, logger *log.Logger, tokenStore *TokenStore) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func UpdateToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *TokenStore) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	// Use default factory if none provided
+	if clientFactory == nil {
+		clientFactory = DefaultClientFactory
+	}
 	return mcp.NewTool(
 			"updateToken",
 			mcp.WithDescription("Updates an existing GitLab token. Validates the new token before updating."),
@@ -179,7 +195,7 @@ func UpdateToken(getClient GetClientFn, logger *log.Logger, tokenStore *TokenSto
 				clientOpts = append(clientOpts, gl.WithBaseURL(existing.GitLabHost))
 			}
 
-			glClient, err := gl.NewClient(tokenToValidate, clientOpts...)
+			glClient, err := clientFactory(tokenToValidate, clientOpts...)
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Failed to create GitLab client: %v", err)), nil
 			}
@@ -223,7 +239,11 @@ func UpdateToken(getClient GetClientFn, logger *log.Logger, tokenStore *TokenSto
 }
 
 // ValidateToken manually validates a token (or all tokens)
-func ValidateToken(getClient GetClientFn, logger *log.Logger, tokenStore *TokenStore) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func ValidateToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *TokenStore) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	// Use default factory if none provided
+	if clientFactory == nil {
+		clientFactory = DefaultClientFactory
+	}
 	return mcp.NewTool(
 			"validateToken",
 			mcp.WithDescription("Manually validates a GitLab token by calling the GitLab API. If no token name is provided, validates all configured tokens."),
@@ -243,12 +263,12 @@ func ValidateToken(getClient GetClientFn, logger *log.Logger, tokenStore *TokenS
 					return nil, err
 				}
 
-				// Create client
+				// Create client using factory
 				clientOpts := []gl.ClientOptionFunc{}
 				if metadata.GitLabHost != "" && metadata.GitLabHost != "https://gitlab.com" {
 					clientOpts = append(clientOpts, gl.WithBaseURL(metadata.GitLabHost))
 				}
-				return gl.NewClient(metadata.Token, clientOpts...)
+				return clientFactory(metadata.Token, clientOpts...)
 			}
 
 			if tokenName != "" {
