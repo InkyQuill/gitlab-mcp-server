@@ -3,6 +3,7 @@ package gitlab
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	gl "gitlab.com/gitlab-org/api/client-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/LuisCusihuaman/gitlab-mcp-server/internal/toolsnaps"
 )
@@ -386,7 +388,7 @@ func TestDetectProjectHandler(t *testing.T) {
 	tool, _ := DetectProject(nil)
 	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
 
-	mockClient, _, ctrl := setupMockClient(t)
+	mockClient, mockProjects, ctrl := setupMockClient(t)
 	defer ctrl.Finish()
 
 	// Mock getClient function
@@ -427,6 +429,47 @@ func TestDetectProjectHandler(t *testing.T) {
 				// We can't easily mock getClient returning error here
 				// because getClient is a function, not a mockable interface
 			},
+		},
+		{
+			name: "Success - Detect project from Git remote",
+			setupDir: func() string {
+				tmpDir := t.TempDir()
+				gitDir := filepath.Join(tmpDir, ".git")
+				err := os.MkdirAll(gitDir, 0755)
+				require.NoError(t, err)
+
+				// Create a minimal git config with a remote
+				gitConfig := filepath.Join(gitDir, "config")
+				configContent := `[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "origin"]
+	url = git@gitlab.com:group/project.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+`
+				err = os.WriteFile(gitConfig, []byte(configContent), 0644)
+				require.NoError(t, err)
+
+				// Create HEAD file
+				headFile := filepath.Join(gitDir, "HEAD")
+				err = os.WriteFile(headFile, []byte("ref: refs/heads/main\n"), 0644)
+				require.NoError(t, err)
+
+				return tmpDir
+			},
+			mockSetup: func() {
+				expectedProject := &gl.Project{
+					ID:                123,
+					Name:              "project",
+					PathWithNamespace: "group/project",
+				}
+				mockProjects.EXPECT().
+					GetProject("group/project", gomock.Any(), gomock.Any()).
+					Return(expectedProject, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+			expectResultError: false,
 		},
 	}
 
@@ -481,7 +524,7 @@ func TestAutoDetectAndSetProjectHandler(t *testing.T) {
 	tool, _ := AutoDetectAndSetProject(nil)
 	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
 
-	mockClient, _, ctrl := setupMockClient(t)
+	mockClient, mockProjects, ctrl := setupMockClient(t)
 	defer ctrl.Finish()
 
 	mockGetClient := func(_ context.Context) (*gl.Client, error) {
@@ -517,6 +560,79 @@ func TestAutoDetectAndSetProjectHandler(t *testing.T) {
 
 		textContent := getTextResult(t, result)
 		assert.Contains(t, textContent.Text, "Failed to detect project")
+	})
+
+	t.Run("Success - Auto-detect and create .gmcprc", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		oldWd, err := os.Getwd()
+		require.NoError(t, err)
+		defer os.Chdir(oldWd)
+
+		err = os.Chdir(tmpDir)
+		require.NoError(t, err)
+
+		// Create a minimal git repo with remote
+		gitDir := filepath.Join(tmpDir, ".git")
+		err = os.MkdirAll(gitDir, 0755)
+		require.NoError(t, err)
+
+		gitConfig := filepath.Join(gitDir, "config")
+		configContent := `[core]
+	repositoryformatversion = 0
+	filemode = true
+[remote "origin"]
+	url = https://gitlab.com/group/project.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+`
+		err = os.WriteFile(gitConfig, []byte(configContent), 0644)
+		require.NoError(t, err)
+
+		headFile := filepath.Join(gitDir, "HEAD")
+		err = os.WriteFile(headFile, []byte("ref: refs/heads/main\n"), 0644)
+		require.NoError(t, err)
+
+		// Setup mock expectation
+		expectedProject := &gl.Project{
+			ID:                123,
+			Name:              "project",
+			PathWithNamespace: "group/project",
+		}
+		mockProjects.EXPECT().
+			GetProject("group/project", gomock.Any(), gomock.Any()).
+			Return(expectedProject, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+
+		req := mcp.CallToolRequest{
+			Params: struct {
+				Name      string                 `json:"name"`
+				Arguments map[string]interface{} `json:"arguments,omitempty"`
+				Meta      *struct {
+					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+				} `json:"_meta,omitempty"`
+			}{
+				Name: tool.Name,
+			},
+		}
+
+		result, err := handler(context.Background(), req)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+
+		textContent := getTextResult(t, result)
+
+		// Verify the result contains expected fields
+		assert.Contains(t, textContent.Text, "success")
+		assert.Contains(t, textContent.Text, "projectId")
+		assert.Contains(t, textContent.Text, "group/project")
+		assert.Contains(t, textContent.Text, "configPath")
+
+		// Verify .gmcprc file was created
+		configPath := filepath.Join(tmpDir, ".gmcprc")
+		assert.FileExists(t, configPath)
+
+		// Verify config file content
+		configData, err := os.ReadFile(configPath)
+		require.NoError(t, err)
+		assert.Contains(t, string(configData), "group/project")
 	})
 }
 
