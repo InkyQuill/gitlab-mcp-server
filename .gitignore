@@ -51,3 +51,9 @@ __pycache__/
 # These contain JSON snapshots of tool schemas that prevent breaking changes.
 # To update snapshots: UPDATE_TOOLSNAPS=true go test ./...
 # To validate snapshots: go test ./...
+
+# Coverage Artifacts
+coverage.out
+coverage.html
+*.out
+*.test
