@@ -131,6 +131,18 @@ func InitToolsets(
 		toolsets.NewServerTool(SearchMergeRequests(getClient, translations)),
 		toolsets.NewServerTool(SearchBlobs(getClient, translations)),
 		toolsets.NewServerTool(SearchCommits(getClient, translations)),
+		// Group-scoped searches
+		toolsets.NewServerTool(SearchProjectsByGroup(getClient, translations)),
+		toolsets.NewServerTool(SearchIssuesByGroup(getClient, translations)),
+		toolsets.NewServerTool(SearchMergeRequestsByGroup(getClient, translations)),
+		toolsets.NewServerTool(SearchMilestonesByGroup(getClient, translations)),
+		toolsets.NewServerTool(SearchBlobsByGroup(getClient, translations)),
+		// Project-scoped searches
+		toolsets.NewServerTool(SearchIssuesByProject(getClient, translations)),
+		toolsets.NewServerTool(SearchMergeRequestsByProject(getClient, translations)),
+		toolsets.NewServerTool(SearchMilestonesByProject(getClient, translations)),
+		toolsets.NewServerTool(SearchBlobsByProject(getClient, translations)),
+		toolsets.NewServerTool(SearchCommitsByProject(getClient, translations)),
 	)
 
 	// 4. Add defined Toolsets to the Group
