@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	gl "gitlab.com/gitlab-org/api/client-go"
-	gltesting "gitlab.com/gitlab-org/api/client-go/testing"
-	"go.uber.org/mock/gomock"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gl "gitlab.com/gitlab-org/api/client-go"
+	gltesting "gitlab.com/gitlab-org/api/client-go/testing"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNewClientPool(t *testing.T) {
@@ -475,12 +475,12 @@ func TestClientPool_ValidateAllClients(t *testing.T) {
 
 		// Add tokens to store
 		metadata1 := &TokenMetadata{
-			Token:     "glpat-token1",
+			Token:      "glpat-token1",
 			GitLabHost: "https://gitlab.example.com",
 			CreatedAt:  time.Now(),
 		}
 		metadata2 := &TokenMetadata{
-			Token:     "glpat-token2",
+			Token:      "glpat-token2",
 			GitLabHost: "https://gitlab.com",
 			CreatedAt:  time.Now(),
 		}
@@ -544,12 +544,12 @@ func TestClientPool_ValidateAllClients(t *testing.T) {
 
 		// Add tokens
 		metadata1 := &TokenMetadata{
-			Token:     "glpat-valid",
+			Token:      "glpat-valid",
 			GitLabHost: "https://gitlab.example.com",
 			CreatedAt:  time.Now(),
 		}
 		metadata2 := &TokenMetadata{
-			Token:     "glpat-invalid",
+			Token:      "glpat-invalid",
 			GitLabHost: "https://gitlab.com",
 			CreatedAt:  time.Now(),
 		}
@@ -591,4 +591,3 @@ func findResult(results []TokenValidationResult, tokenName string) *TokenValidat
 	}
 	return nil
 }
-

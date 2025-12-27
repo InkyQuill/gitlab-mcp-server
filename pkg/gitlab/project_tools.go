@@ -119,12 +119,12 @@ func DetectProject(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHan
 			}
 
 			result := map[string]interface{}{
-				"success":      true,
-				"projectId":    projectID,
-				"gitlabHost":   gitlabHost,
-				"projectName":  project.Name,
-				"projectPath":  project.PathWithNamespace,
-				"message":      fmt.Sprintf("Project detected successfully. Use 'setCurrentProject' with projectId='%s' to save it.", projectID),
+				"success":     true,
+				"projectId":   projectID,
+				"gitlabHost":  gitlabHost,
+				"projectName": project.Name,
+				"projectPath": project.PathWithNamespace,
+				"message":     fmt.Sprintf("Project detected successfully. Use 'setCurrentProject' with projectId='%s' to save it.", projectID),
 			}
 
 			data, _ := json.MarshalIndent(result, "", "  ")
@@ -173,13 +173,13 @@ func AutoDetectAndSetProject(getClient GetClientFn) (tool mcp.Tool, handler serv
 			}
 
 			result := map[string]interface{}{
-				"success":      true,
-				"configPath":   configPath,
-				"projectId":    projectID,
-				"gitlabHost":   gitlabHost,
-				"projectName":  project.Name,
-				"projectPath":  project.PathWithNamespace,
-				"message":      "Project detected and configured successfully!",
+				"success":     true,
+				"configPath":  configPath,
+				"projectId":   projectID,
+				"gitlabHost":  gitlabHost,
+				"projectName": project.Name,
+				"projectPath": project.PathWithNamespace,
+				"message":     "Project detected and configured successfully!",
 			}
 
 			data, _ := json.MarshalIndent(result, "", "  ")

@@ -1,10 +1,10 @@
 package gitlab
 
 import (
-	"github.com/InkyQuill/gitlab-mcp-server/pkg/translations"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/translations"
 	"strconv"
 	"strings"
 	"time"

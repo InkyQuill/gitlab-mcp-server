@@ -11,15 +11,15 @@ import (
 
 // TokenMetadata stores information about a GitLab access token
 type TokenMetadata struct {
-	Token          string     `json:"-"`                // Token value (not persisted to JSON)
-	Name           string     `json:"name"`              // Server/token name (e.g., "work", "personal")
-	GitLabHost     string     `json:"gitlabHost"`        // GitLab host URL
-	ExpiresAt      *time.Time `json:"expiresAt,omitempty"` // Token expiration time
-	CreatedAt      time.Time  `json:"createdAt"`         // When token was added to store
-	LastValidated  time.Time  `json:"lastValidated"`     // Last successful validation
-	UserID         int        `json:"userId,omitempty"`  // GitLab user ID
-	Username       string     `json:"username,omitempty"` // GitLab username
-	IsExpiredFlag  bool       `json:"isExpired"`         // Flag indicating if token is expired
+	Token         string     `json:"-"`                   // Token value (not persisted to JSON)
+	Name          string     `json:"name"`                // Server/token name (e.g., "work", "personal")
+	GitLabHost    string     `json:"gitlabHost"`          // GitLab host URL
+	ExpiresAt     *time.Time `json:"expiresAt,omitempty"` // Token expiration time
+	CreatedAt     time.Time  `json:"createdAt"`           // When token was added to store
+	LastValidated time.Time  `json:"lastValidated"`       // Last successful validation
+	UserID        int        `json:"userId,omitempty"`    // GitLab user ID
+	Username      string     `json:"username,omitempty"`  // GitLab username
+	IsExpiredFlag bool       `json:"isExpired"`           // Flag indicating if token is expired
 }
 
 // IsExpired checks if the token is expired or close to expiration
@@ -134,10 +134,10 @@ func (ts *TokenStore) ValidateToken(ctx context.Context, name string, glClient *
 	if !ok {
 		// Token not in store, create new metadata
 		token = &TokenMetadata{
-			Name:           name,
-			CreatedAt:      time.Now(),
-			LastValidated:  time.Now(),
-			IsExpiredFlag:  false,
+			Name:          name,
+			CreatedAt:     time.Now(),
+			LastValidated: time.Now(),
+			IsExpiredFlag: false,
 		}
 		ts.tokens[name] = token
 	}
@@ -201,11 +201,11 @@ func (ts *TokenStore) CheckAllTokens(ctx context.Context, getClientFunc func(nam
 
 // TokenValidationResult represents the result of token validation
 type TokenValidationResult struct {
-	TokenName         string `json:"tokenName"`
-	Success           bool   `json:"success"`
-	Error             string `json:"error,omitempty"`
-	IsExpired         bool   `json:"isExpired"`
-	UserID            int    `json:"userId,omitempty"`
-	Username          string `json:"username,omitempty"`
-	DaysUntilExpiry   int    `json:"daysUntilExpiry,omitempty"`
+	TokenName       string `json:"tokenName"`
+	Success         bool   `json:"success"`
+	Error           string `json:"error,omitempty"`
+	IsExpired       bool   `json:"isExpired"`
+	UserID          int    `json:"userId,omitempty"`
+	Username        string `json:"username,omitempty"`
+	DaysUntilExpiry int    `json:"daysUntilExpiry,omitempty"`
 }

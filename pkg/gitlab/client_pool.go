@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	gl "gitlab.com/gitlab-org/api/client-go"
 	log "github.com/sirupsen/logrus"
+	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
 // ClientPool manages multiple GitLab clients for different servers

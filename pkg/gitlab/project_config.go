@@ -150,8 +150,6 @@ func parseGitRemotes(configData []byte) (projectID, gitlabHost string, err error
 
 		// Check for remote section
 		if bytes.HasPrefix(trimmed, []byte("[remote ")) {
-			// Reset URL when entering a new remote section
-			url = ""
 			continue
 		}
 

@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	gl "gitlab.com/gitlab-org/api/client-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gl "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/mock/gomock"
 
 	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
@@ -76,13 +76,13 @@ func TestSetCurrentProjectHandler(t *testing.T) {
 			},
 		},
 		{
-			name:               "Error - Missing projectId",
-			inputArgs:          map[string]any{},
-			setupDir:           func() string { return t.TempDir() },
-			mockSetup:          func() {},
-			expectedResult:     nil,
-			expectResultError:  true,
-			errorContains:      "Validation Error: missing required parameter: projectId",
+			name:              "Error - Missing projectId",
+			inputArgs:         map[string]any{},
+			setupDir:          func() string { return t.TempDir() },
+			mockSetup:         func() {},
+			expectedResult:    nil,
+			expectResultError: true,
+			errorContains:     "Validation Error: missing required parameter: projectId",
 		},
 	}
 
@@ -163,11 +163,11 @@ func TestGetCurrentProjectHandler(t *testing.T) {
 	tool, handler := GetCurrentProject(mockGetClient)
 
 	tests := []struct {
-		name               string
-		setupDir           func() string
-		expectedResult     map[string]interface{}
-		expectResultError  bool
-		errorContains      string
+		name              string
+		setupDir          func() string
+		expectedResult    map[string]interface{}
+		expectResultError bool
+		errorContains     string
 	}{
 		{
 			name: "Success - Found .gmcprc file",
@@ -214,8 +214,8 @@ func TestGetCurrentProjectHandler(t *testing.T) {
 				return subDir
 			},
 			expectedResult: map[string]interface{}{
-				"found":      true,
-				"projectId":  "parent/project",
+				"found":     true,
+				"projectId": "parent/project",
 			},
 		},
 	}

@@ -12,9 +12,9 @@ import (
 	"time"      // Added for token validation
 
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/gitlab"       // Reference pkg/gitlab
-	iolog "github.com/InkyQuill/gitlab-mcp-server/pkg/log"     // Command logging I/O wrapper
+	iolog "github.com/InkyQuill/gitlab-mcp-server/pkg/log"    // Command logging I/O wrapper
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/translations" // i18n support
-	"github.com/mark3labs/mcp-go/server"                           // MCP server components
+	"github.com/mark3labs/mcp-go/server"                      // MCP server components
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -242,10 +242,10 @@ func init() {
 	// Note the mapping from flag name (kebab-case) to viper key (often snake_case or kept kebab-case) and ENV var (UPPER_SNAKE_CASE)
 	_ = viper.BindPFlag("toolsets", rootCmd.PersistentFlags().Lookup("toolsets"))
 	_ = viper.BindPFlag("read-only", rootCmd.PersistentFlags().Lookup("read-only"))
-	_ = viper.BindPFlag("host", rootCmd.PersistentFlags().Lookup("gitlab-host"))    // Viper key "host" -> GITLAB_HOST
-	_ = viper.BindPFlag("token", rootCmd.PersistentFlags().Lookup("gitlab-token"))  // Viper key "token" -> GITLAB_TOKEN
-	_ = viper.BindPFlag("log.file", rootCmd.PersistentFlags().Lookup("log-file"))   // Viper key "log.file" -> GITLAB_LOG_FILE
-	_ = viper.BindPFlag("log.level", rootCmd.PersistentFlags().Lookup("log-level")) // Viper key "log.level" -> GITLAB_LOG_LEVEL
+	_ = viper.BindPFlag("host", rootCmd.PersistentFlags().Lookup("gitlab-host"))                              // Viper key "host" -> GITLAB_HOST
+	_ = viper.BindPFlag("token", rootCmd.PersistentFlags().Lookup("gitlab-token"))                            // Viper key "token" -> GITLAB_TOKEN
+	_ = viper.BindPFlag("log.file", rootCmd.PersistentFlags().Lookup("log-file"))                             // Viper key "log.file" -> GITLAB_LOG_FILE
+	_ = viper.BindPFlag("log.level", rootCmd.PersistentFlags().Lookup("log-level"))                           // Viper key "log.level" -> GITLAB_LOG_LEVEL
 	_ = viper.BindPFlag("enable-command-logging", rootCmd.PersistentFlags().Lookup("enable-command-logging")) // Viper key "enable-command-logging" -> GITLAB_ENABLE_COMMAND_LOGGING
 	_ = viper.BindPFlag("export-translations", rootCmd.PersistentFlags().Lookup("export-translations"))       // Viper key "export-translations" -> GITLAB_EXPORT_TRANSLATIONS
 	_ = viper.BindPFlag("dynamic-toolsets", rootCmd.PersistentFlags().Lookup("dynamic-toolsets"))             // Viper key "dynamic-toolsets" -> GITLAB_DYNAMIC_TOOLSETS

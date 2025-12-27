@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"testing"
 
-	gl "gitlab.com/gitlab-org/api/client-go"
-	gltesting "gitlab.com/gitlab-org/api/client-go/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gl "gitlab.com/gitlab-org/api/client-go"
+	gltesting "gitlab.com/gitlab-org/api/client-go/testing"
 	"go.uber.org/mock/gomock"
 )
 

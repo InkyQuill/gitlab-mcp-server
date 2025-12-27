@@ -4,8 +4,8 @@ import (
 	"context" // Added for GetClientFn
 	// Import necessary packages, including your toolsets package
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/toolsets" // Adjust path if needed
-	gl "gitlab.com/gitlab-org/api/client-go"                   // Import the GitLab client library
-	log "github.com/sirupsen/logrus"                           // Import logger
+	log "github.com/sirupsen/logrus"                      // Import logger
+	gl "gitlab.com/gitlab-org/api/client-go"              // Import the GitLab client library
 	// "github.com/InkyQuill/gitlab-mcp-server/pkg/translations" // Removed for now
 )
 
@@ -21,9 +21,9 @@ var DefaultTools = []string{"all"}
 func InitToolsets(
 	enabledToolsets []string,
 	readOnly bool,
-	getClient GetClientFn,   // Restore parameter name
-	logger *log.Logger,      // Logger for notifications
-	tokenStore *TokenStore,  // Token store for token management
+	getClient GetClientFn, // Restore parameter name
+	logger *log.Logger, // Logger for notifications
+	tokenStore *TokenStore, // Token store for token management
 	translations map[string]string, // Translation map for i18n
 	dynamicMode bool, // Enable dynamic toolset discovery mode
 ) (*toolsets.ToolsetGroup, error) {

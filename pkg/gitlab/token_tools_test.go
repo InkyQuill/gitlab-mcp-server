@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	gl "gitlab.com/gitlab-org/api/client-go"
-	gltesting "gitlab.com/gitlab-org/api/client-go/testing"
-	"go.uber.org/mock/gomock"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gl "gitlab.com/gitlab-org/api/client-go"
+	gltesting "gitlab.com/gitlab-org/api/client-go/testing"
+	"go.uber.org/mock/gomock"
 
 	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
 )
@@ -1093,15 +1093,15 @@ func TestTokenManagementIntegration(t *testing.T) {
 func TestDefaultClientFactory(t *testing.T) {
 	t.Run("Success - Create client with token", func(t *testing.T) {
 		token := "glpat-test123"
-		
+
 		client, err := DefaultClientFactory(token)
 		require.NoError(t, err)
 		assert.NotNil(t, client)
 	})
-	
+
 	t.Run("Success - Create client with options", func(t *testing.T) {
 		token := "glpat-test456"
-		
+
 		// Create client with custom base URL
 		client, err := DefaultClientFactory(token, gl.WithBaseURL("https://gitlab.example.com"))
 		require.NoError(t, err)

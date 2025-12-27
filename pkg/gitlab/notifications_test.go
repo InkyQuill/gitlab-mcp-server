@@ -53,7 +53,7 @@ func TestSendNotification(t *testing.T) {
 	logger.SetLevel(log.ErrorLevel) // Only log errors to reduce noise
 
 	tests := []struct {
-		name        string
+		name         string
 		notification Notification
 		validate     func(t *testing.T, notif Notification)
 	}{
@@ -76,9 +76,9 @@ func TestSendNotification(t *testing.T) {
 		{
 			name: "Warning notification",
 			notification: Notification{
-				Level:     NotificationWarning,
-				Title:     "Test Warning",
-				Message:   "This is a warning message",
+				Level:   NotificationWarning,
+				Title:   "Test Warning",
+				Message: "This is a warning message",
 			},
 			validate: func(t *testing.T, notif Notification) {
 				assert.Equal(t, NotificationWarning, notif.Level)

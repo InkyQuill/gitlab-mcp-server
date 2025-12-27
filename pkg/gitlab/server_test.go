@@ -591,108 +591,108 @@ func TestOptionalPaginationParams(t *testing.T) {
 
 func TestOptionalBoolParam(t *testing.T) {
 	tests := []struct {
-		name         string
-		params       map[string]interface{}
-		paramName    string
-		expectedVal  *bool
-		expectError  bool
-		errContains  string
+		name        string
+		params      map[string]interface{}
+		paramName   string
+		expectedVal *bool
+		expectError bool
+		errContains string
 	}{
 		{
-			name:      "Parameter not present",
-			params:    map[string]interface{}{},
-			paramName: "myBool",
+			name:        "Parameter not present",
+			params:      map[string]interface{}{},
+			paramName:   "myBool",
 			expectedVal: nil,
 			expectError: false,
 		},
 		{
-			name:      "Parameter is explicitly nil",
-			params:    map[string]interface{}{"myBool": nil},
-			paramName: "myBool",
+			name:        "Parameter is explicitly nil",
+			params:      map[string]interface{}{"myBool": nil},
+			paramName:   "myBool",
 			expectedVal: nil,
 			expectError: false,
 		},
 		{
-			name:      "Parameter is true (bool)",
-			params:    map[string]interface{}{"myBool": true},
-			paramName: "myBool",
+			name:        "Parameter is true (bool)",
+			params:      map[string]interface{}{"myBool": true},
+			paramName:   "myBool",
 			expectedVal: boolPtr(true),
 			expectError: false,
 		},
 		{
-			name:      "Parameter is false (bool)",
-			params:    map[string]interface{}{"myBool": false},
-			paramName: "myBool",
+			name:        "Parameter is false (bool)",
+			params:      map[string]interface{}{"myBool": false},
+			paramName:   "myBool",
 			expectedVal: boolPtr(false),
 			expectError: false,
 		},
 		{
-			name:      "Parameter is string 'true'",
-			params:    map[string]interface{}{"myBool": "true"},
-			paramName: "myBool",
+			name:        "Parameter is string 'true'",
+			params:      map[string]interface{}{"myBool": "true"},
+			paramName:   "myBool",
 			expectedVal: boolPtr(true),
 			expectError: false,
 		},
 		{
-			name:      "Parameter is string 'false'",
-			params:    map[string]interface{}{"myBool": "false"},
-			paramName: "myBool",
+			name:        "Parameter is string 'false'",
+			params:      map[string]interface{}{"myBool": "false"},
+			paramName:   "myBool",
 			expectedVal: boolPtr(false),
 			expectError: false,
 		},
 		{
-			name:      "Parameter is string '1'",
-			params:    map[string]interface{}{"myBool": "1"},
-			paramName: "myBool",
+			name:        "Parameter is string '1'",
+			params:      map[string]interface{}{"myBool": "1"},
+			paramName:   "myBool",
 			expectedVal: boolPtr(true),
 			expectError: false,
 		},
 		{
-			name:      "Parameter is string '0'",
-			params:    map[string]interface{}{"myBool": "0"},
-			paramName: "myBool",
+			name:        "Parameter is string '0'",
+			params:      map[string]interface{}{"myBool": "0"},
+			paramName:   "myBool",
 			expectedVal: boolPtr(false),
 			expectError: false,
 		},
 		{
-			name:      "Parameter is string 'yes'",
-			params:    map[string]interface{}{"myBool": "yes"},
-			paramName: "myBool",
+			name:        "Parameter is string 'yes'",
+			params:      map[string]interface{}{"myBool": "yes"},
+			paramName:   "myBool",
 			expectedVal: boolPtr(true),
 			expectError: false,
 		},
 		{
-			name:      "Parameter is string 'no'",
-			params:    map[string]interface{}{"myBool": "no"},
-			paramName: "myBool",
+			name:        "Parameter is string 'no'",
+			params:      map[string]interface{}{"myBool": "no"},
+			paramName:   "myBool",
 			expectedVal: boolPtr(false),
 			expectError: false,
 		},
 		{
-			name:      "Parameter is string 't'",
-			params:    map[string]interface{}{"myBool": "t"},
-			paramName: "myBool",
+			name:        "Parameter is string 't'",
+			params:      map[string]interface{}{"myBool": "t"},
+			paramName:   "myBool",
 			expectedVal: boolPtr(true),
 			expectError: false,
 		},
 		{
-			name:      "Parameter is string 'f'",
-			params:    map[string]interface{}{"myBool": "f"},
-			paramName: "myBool",
+			name:        "Parameter is string 'f'",
+			params:      map[string]interface{}{"myBool": "f"},
+			paramName:   "myBool",
 			expectedVal: boolPtr(false),
 			expectError: false,
 		},
 		{
-			name:      "Parameter is string 'y'",
-			params:    map[string]interface{}{"myBool": "y"},
-			paramName: "myBool",
+			name:        "Parameter is string 'y'",
+			params:      map[string]interface{}{"myBool": "y"},
+			paramName:   "myBool",
 			expectedVal: boolPtr(true),
 			expectError: false,
 		},
 		{
-			name:      "Parameter is string 'n'",
-			params:    map[string]interface{}{"myBool": "n"},
-			paramName: "myBool",
+			name:        "Parameter is string 'n'",
+			params:      map[string]interface{}{"myBool": "n"},
+			paramName:   "myBool",
 			expectedVal: boolPtr(false),
 			expectError: false,
 		},

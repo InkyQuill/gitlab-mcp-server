@@ -153,11 +153,11 @@ func TestIOLogger_Write(t *testing.T) {
 
 func TestRedactSensitive(t *testing.T) {
 	tests := []struct {
-		name             string
-		input            string
-		expectRedacted   bool
-		redactedFields   []string // fields that should be redacted
-		expectUnchanged  bool
+		name            string
+		input           string
+		expectRedacted  bool
+		redactedFields  []string // fields that should be redacted
+		expectUnchanged bool
 	}{
 		{
 			name:            "Non-JSON input",

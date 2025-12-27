@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	gl "gitlab.com/gitlab-org/api/client-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
 func TestNewClientResolver(t *testing.T) {

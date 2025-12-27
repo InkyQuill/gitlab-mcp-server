@@ -3,8 +3,8 @@ package gitlab
 import (
 	"context"
 
-	gl "gitlab.com/gitlab-org/api/client-go"
 	log "github.com/sirupsen/logrus"
+	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
 // ClientResolver resolves which GitLab client to use for a given context

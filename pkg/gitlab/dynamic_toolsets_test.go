@@ -76,9 +76,9 @@ func TestDynamicToolsetManager_handleListToolsets(t *testing.T) {
 	logger.SetLevel(log.ErrorLevel)
 
 	tests := []struct {
-		name               string
-		setupToolsets      func(*toolsets.ToolsetGroup)
-		expectedInResult   []string
+		name                string
+		setupToolsets       func(*toolsets.ToolsetGroup)
+		expectedInResult    []string
 		notExpectedInResult []string
 	}{
 		{
@@ -86,7 +86,7 @@ func TestDynamicToolsetManager_handleListToolsets(t *testing.T) {
 			setupToolsets: func(tg *toolsets.ToolsetGroup) {
 				// No toolsets added
 			},
-			expectedInResult:   []string{"Available Toolsets (0):"},
+			expectedInResult:    []string{"Available Toolsets (0):"},
 			notExpectedInResult: []string{},
 		},
 		{
@@ -97,7 +97,7 @@ func TestDynamicToolsetManager_handleListToolsets(t *testing.T) {
 				tg.AddToolset(ts1)
 				tg.AddToolset(ts2)
 			},
-			expectedInResult:   []string{"Available Toolsets (2):", "projects: Project tools", "issues: Issue tools", "(disabled)"},
+			expectedInResult:    []string{"Available Toolsets (2):", "projects: Project tools", "issues: Issue tools", "(disabled)"},
 			notExpectedInResult: []string{"(enabled)"},
 		},
 		{
@@ -114,7 +114,7 @@ func TestDynamicToolsetManager_handleListToolsets(t *testing.T) {
 				// Enable issues toolset
 				tg.EnableToolset("issues")
 			},
-			expectedInResult:   []string{"Available Toolsets (3):", "projects: Project tools", "issues: Issue tools", "merge_requests: MR tools", "(disabled)", "(enabled)"},
+			expectedInResult:    []string{"Available Toolsets (3):", "projects: Project tools", "issues: Issue tools", "merge_requests: MR tools", "(disabled)", "(enabled)"},
 			notExpectedInResult: []string{},
 		},
 	}
@@ -158,11 +158,11 @@ func TestDynamicToolsetManager_handleEnableToolset(t *testing.T) {
 	logger.SetLevel(log.ErrorLevel)
 
 	tests := []struct {
-		name              string
-		setupToolsets     func(*toolsets.ToolsetGroup)
-		requestArgs       map[string]interface{}
-		expectError       bool
-		expectedInResult  string
+		name                string
+		setupToolsets       func(*toolsets.ToolsetGroup)
+		requestArgs         map[string]interface{}
+		expectError         bool
+		expectedInResult    string
 		notExpectedInResult string
 	}{
 		{
@@ -171,9 +171,9 @@ func TestDynamicToolsetManager_handleEnableToolset(t *testing.T) {
 				ts := toolsets.NewToolset("projects", "Project tools")
 				tg.AddToolset(ts)
 			},
-			requestArgs:       map[string]interface{}{},
-			expectError:       false,
-			expectedInResult:  "Missing required parameter: toolset",
+			requestArgs:         map[string]interface{}{},
+			expectError:         false,
+			expectedInResult:    "Missing required parameter: toolset",
 			notExpectedInResult: "Successfully enabled",
 		},
 		{
@@ -182,9 +182,9 @@ func TestDynamicToolsetManager_handleEnableToolset(t *testing.T) {
 				ts := toolsets.NewToolset("projects", "Project tools")
 				tg.AddToolset(ts)
 			},
-			requestArgs:       map[string]interface{}{"toolset": 123},
-			expectError:       false,
-			expectedInResult:  "Parameter 'toolset' must be a string",
+			requestArgs:         map[string]interface{}{"toolset": 123},
+			expectError:         false,
+			expectedInResult:    "Parameter 'toolset' must be a string",
 			notExpectedInResult: "Successfully enabled",
 		},
 		{
@@ -193,9 +193,9 @@ func TestDynamicToolsetManager_handleEnableToolset(t *testing.T) {
 				ts := toolsets.NewToolset("projects", "Project tools")
 				tg.AddToolset(ts)
 			},
-			requestArgs:       map[string]interface{}{"toolset": "nonexistent"},
-			expectError:       false,
-			expectedInResult:  "Failed to enable toolset 'nonexistent'",
+			requestArgs:         map[string]interface{}{"toolset": "nonexistent"},
+			expectError:         false,
+			expectedInResult:    "Failed to enable toolset 'nonexistent'",
 			notExpectedInResult: "Successfully enabled",
 		},
 		{
@@ -204,9 +204,9 @@ func TestDynamicToolsetManager_handleEnableToolset(t *testing.T) {
 				ts := toolsets.NewToolset("projects", "Project tools")
 				tg.AddToolset(ts)
 			},
-			requestArgs:       map[string]interface{}{"toolset": "projects"},
-			expectError:       false,
-			expectedInResult:  "Successfully enabled toolset 'projects'. Tools are now available.",
+			requestArgs:         map[string]interface{}{"toolset": "projects"},
+			expectError:         false,
+			expectedInResult:    "Successfully enabled toolset 'projects'. Tools are now available.",
 			notExpectedInResult: "Failed",
 		},
 		{
@@ -216,9 +216,9 @@ func TestDynamicToolsetManager_handleEnableToolset(t *testing.T) {
 				tg.AddToolset(ts)
 				tg.EnableToolset("projects")
 			},
-			requestArgs:       map[string]interface{}{"toolset": "projects"},
-			expectError:       false,
-			expectedInResult:  "Failed to enable toolset 'projects'",
+			requestArgs:         map[string]interface{}{"toolset": "projects"},
+			expectError:         false,
+			expectedInResult:    "Failed to enable toolset 'projects'",
 			notExpectedInResult: "Successfully enabled",
 		},
 	}
@@ -276,10 +276,10 @@ func TestDynamicToolsetManager_registerToolsetTools(t *testing.T) {
 	logger.SetLevel(log.ErrorLevel)
 
 	tests := []struct {
-		name        string
+		name          string
 		setupToolsets func(*toolsets.ToolsetGroup)
-		toolsetName  string
-		expectError bool
+		toolsetName   string
+		expectError   bool
 		errorContains string
 	}{
 		{
@@ -288,7 +288,7 @@ func TestDynamicToolsetManager_registerToolsetTools(t *testing.T) {
 				ts := toolsets.NewToolset("projects", "Project tools")
 				tg.AddToolset(ts)
 			},
-			toolsetName:  "projects",
+			toolsetName: "projects",
 			expectError: false,
 		},
 		{
@@ -297,8 +297,8 @@ func TestDynamicToolsetManager_registerToolsetTools(t *testing.T) {
 				ts := toolsets.NewToolset("projects", "Project tools")
 				tg.AddToolset(ts)
 			},
-			toolsetName:  "nonexistent",
-			expectError: true,
+			toolsetName:   "nonexistent",
+			expectError:   true,
 			errorContains: "toolset 'nonexistent' not found",
 		},
 		{
@@ -309,7 +309,7 @@ func TestDynamicToolsetManager_registerToolsetTools(t *testing.T) {
 				tg.AddToolset(ts1)
 				tg.AddToolset(ts2)
 			},
-			toolsetName:  "projects",
+			toolsetName: "projects",
 			expectError: false,
 		},
 	}

@@ -151,13 +151,13 @@ func setupMockClientForMilestones(t *testing.T) (*gl.Client, *mock_gitlab.MockMi
 // Tests for HandleAPIError
 func TestHandleAPIError(t *testing.T) {
 	tests := []struct {
-		name               string
-		err                error
-		resp               *gl.Response
-		resourceDesc       string
-		expectToolResult   bool
-		expectInternalErr  bool
-		errorContains      string
+		name              string
+		err               error
+		resp              *gl.Response
+		resourceDesc      string
+		expectToolResult  bool
+		expectInternalErr bool
+		errorContains     string
 	}{
 		{
 			name:              "No error - nil error",
@@ -256,13 +256,13 @@ func TestHandleAPIError(t *testing.T) {
 // Tests for HandleListAPIError
 func TestHandleListAPIError(t *testing.T) {
 	tests := []struct {
-		name               string
-		err                error
-		resp               *gl.Response
-		resourceDesc       string
-		expectToolResult   bool
-		expectInternalErr  bool
-		errorContains      string
+		name              string
+		err               error
+		resp              *gl.Response
+		resourceDesc      string
+		expectToolResult  bool
+		expectInternalErr bool
+		errorContains     string
 	}{
 		{
 			name:              "No error - nil error",
@@ -343,14 +343,14 @@ func TestHandleListAPIError(t *testing.T) {
 // Tests for HandleCreateUpdateAPIError
 func TestHandleCreateUpdateAPIError(t *testing.T) {
 	tests := []struct {
-		name               string
-		err                error
-		resp               *gl.Response
-		resourceDesc       string
-		operation          string
-		expectToolResult   bool
-		expectInternalErr  bool
-		errorContains      string
+		name              string
+		err               error
+		resp              *gl.Response
+		resourceDesc      string
+		operation         string
+		expectToolResult  bool
+		expectInternalErr bool
+		errorContains     string
 	}{
 		{
 			name:              "No error - nil error",

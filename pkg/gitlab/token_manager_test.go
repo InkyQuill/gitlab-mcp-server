@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	gl "gitlab.com/gitlab-org/api/client-go"
 	gltesting "gitlab.com/gitlab-org/api/client-go/testing"
 	"go.uber.org/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestTokenMetadata_IsExpired(t *testing.T) {
@@ -57,8 +57,8 @@ func TestTokenMetadata_IsExpired(t *testing.T) {
 
 func TestTokenMetadata_DaysUntilExpiry(t *testing.T) {
 	now := time.Now()
-	past := now.Add(-48 * time.Hour) // 2 days ago
-	future := now.Add(72 * time.Hour)  // 3 days from now
+	past := now.Add(-48 * time.Hour)  // 2 days ago
+	future := now.Add(72 * time.Hour) // 3 days from now
 
 	tests := []struct {
 		name     string
@@ -500,7 +500,6 @@ func TestTokenStore_ValidateToken(t *testing.T) {
 		assert.Contains(t, err.Error(), "network timeout")
 	})
 }
-
 
 func TestTokenStore_CheckAllTokens(t *testing.T) {
 	ts := NewTokenStore()

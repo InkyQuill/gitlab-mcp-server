@@ -7,8 +7,8 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	gl "gitlab.com/gitlab-org/api/client-go"
 	log "github.com/sirupsen/logrus"
+	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
 // ClientFactory creates a GitLab client from a token
@@ -287,7 +287,7 @@ func ValidateToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *
 				notifyTokenValidated(logger, tokenName, validated.UserID, validated.Username)
 
 				result := map[string]interface{}{
-					"success":  true,
+					"success":   true,
 					"tokenName": tokenName,
 					"userId":    validated.UserID,
 					"username":  validated.Username,
@@ -313,10 +313,10 @@ func ValidateToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *
 
 				result := map[string]interface{}{
 					"results":      results,
-					"total":         len(results),
-					"successCount":  successCount,
-					"failureCount":  failureCount,
-					"message":       fmt.Sprintf("Validated %d token(s): %d succeeded, %d failed", len(results), successCount, failureCount),
+					"total":        len(results),
+					"successCount": successCount,
+					"failureCount": failureCount,
+					"message":      fmt.Sprintf("Validated %d token(s): %d succeeded, %d failed", len(results), successCount, failureCount),
 				}
 
 				data, _ := json.MarshalIndent(result, "", "  ")
@@ -343,7 +343,7 @@ func GetNotificationsTool(logger *log.Logger) (tool mcp.Tool, handler server.Too
 
 			result := map[string]interface{}{
 				"notifications": notifications,
-				"count":          len(notifications),
+				"count":         len(notifications),
 			}
 
 			data, _ := json.MarshalIndent(result, "", "  ")

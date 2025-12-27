@@ -119,9 +119,9 @@ func TestGetIssueHandler(t *testing.T) {
 					GetIssue("group/project", 2, gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
-			expectedResult:      nil,                                                                                       // No result content expected when handler errors
-			expectResultError:   true,                                                                                      // Result is nil due to handler error
-			expectInternalError: true,                                                                                      // Handler returns an actual error
+			expectedResult:      nil,                                                                                         // No result content expected when handler errors
+			expectResultError:   true,                                                                                        // Result is nil due to handler error
+			expectInternalError: true,                                                                                        // Handler returns an actual error
 			errorContains:       "failed to process issue 2 in project \"group/project\": gitlab: 500 Internal Server Error", // Check internal error here
 		},
 	}
@@ -1689,8 +1689,8 @@ func TestUpdateIssueHandler(t *testing.T) {
 		{
 			name: "Success - Update multiple fields",
 			args: map[string]any{
-				"projectId":  projectID,
-				"issueIid":   issueIid,
+				"projectId":   projectID,
+				"issueIid":    issueIid,
 				"title":       "Updated Title",
 				"description": "Updated description",
 				"labels":      "bug,enhancement",

@@ -120,7 +120,7 @@ func TestWriteProjectConfig(t *testing.T) {
 			config: &ProjectConfig{
 				ProjectID:  "group/project",
 				GitLabHost: "https://gitlab.example.com",
-				TokenName:   "my-token",
+				TokenName:  "my-token",
 			},
 			expectError: false,
 			validate: func(t *testing.T, configPath string, config *ProjectConfig) {
@@ -524,8 +524,8 @@ func TestParseGitRemotes(t *testing.T) {
 			configContent: `[remote "origin"]
 	url = https://gitlab.com/owner/repo.git
 `,
-			expectError: false,
-			expectedID:  "owner/repo",
+			expectError:  false,
+			expectedID:   "owner/repo",
 			expectedHost: "https://gitlab.com",
 		},
 		{
@@ -533,8 +533,8 @@ func TestParseGitRemotes(t *testing.T) {
 			configContent: `[remote "origin"]
 	url = git@gitlab.com:owner/repo.git
 `,
-			expectError: false,
-			expectedID:  "owner/repo",
+			expectError:  false,
+			expectedID:   "owner/repo",
 			expectedHost: "https://gitlab.com",
 		},
 		{
@@ -544,8 +544,8 @@ func TestParseGitRemotes(t *testing.T) {
 [remote "upstream"]
 	url = https://github.com/upstream/repo.git
 `,
-			expectError: false,
-			expectedID:  "owner/repo",
+			expectError:  false,
+			expectedID:   "owner/repo",
 			expectedHost: "https://gitlab.com",
 		},
 		{
@@ -553,8 +553,8 @@ func TestParseGitRemotes(t *testing.T) {
 			configContent: `[remote "origin"]
 	url = https://gitlab.example.com/group/project.git
 `,
-			expectError: false,
-			expectedID:  "group/project",
+			expectError:  false,
+			expectedID:   "group/project",
 			expectedHost: "https://gitlab.example.com",
 		},
 		{
@@ -570,24 +570,24 @@ func TestParseGitRemotes(t *testing.T) {
 			configContent: `[remote "origin"]
 	url = https://bitbucket.org/owner/repo.git
 `,
-			expectError: false,
-			expectedID:  "owner/repo",
+			expectError:  false,
+			expectedID:   "owner/repo",
 			expectedHost: "https://bitbucket.org",
 		},
 		{
-			name: "Success - Empty config",
+			name:          "Success - Empty config",
 			configContent: ``,
-			expectError:  false,
-			expectedID:  "",
-			expectedHost: "",
+			expectError:   false,
+			expectedID:    "",
+			expectedHost:  "",
 		},
 		{
 			name: "Success - Config without remotes",
 			configContent: `[core]
 	bare = false
 `,
-			expectError: false,
-			expectedID:  "",
+			expectError:  false,
+			expectedID:   "",
 			expectedHost: "",
 		},
 	}
@@ -636,8 +636,8 @@ func TestDetectProjectFromGit(t *testing.T) {
 
 				return tmpDir
 			},
-			expectError: false,
-			expectedID:  "owner/repo",
+			expectError:  false,
+			expectedID:   "owner/repo",
 			expectedHost: "https://gitlab.com",
 		},
 		{
@@ -657,8 +657,8 @@ func TestDetectProjectFromGit(t *testing.T) {
 
 				return tmpDir
 			},
-			expectError: false,
-			expectedID:  "group/project",
+			expectError:  false,
+			expectedID:   "group/project",
 			expectedHost: "https://gitlab.com",
 		},
 		{
@@ -678,8 +678,8 @@ func TestDetectProjectFromGit(t *testing.T) {
 
 				return tmpDir
 			},
-			expectError: false,
-			expectedID:  "team/repo",
+			expectError:  false,
+			expectedID:   "team/repo",
 			expectedHost: "https://gitlab.example.com",
 		},
 		{
@@ -766,7 +766,7 @@ func TestProjectConfig_LastUpdated(t *testing.T) {
 	config := &ProjectConfig{
 		ProjectID:  "test/project",
 		GitLabHost: "https://gitlab.com",
-		TokenName:   "test-token",
+		TokenName:  "test-token",
 	}
 
 	// Write config

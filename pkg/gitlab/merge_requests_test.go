@@ -670,9 +670,9 @@ func TestListMergeRequestsHandler(t *testing.T) {
 					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Project Not Found"))
 			},
-			expectResultError:   false,
-			expectHandlerError:  true,
-			errorContains:       "failed to list merge requests for project \"nonexistent/project\"",
+			expectResultError:  false,
+			expectHandlerError: true,
+			errorContains:      "failed to list merge requests for project \"nonexistent/project\"",
 		},
 		{
 			name: "Error - GitLab API Error (500)",
@@ -758,7 +758,7 @@ func TestListMergeRequestsHandler(t *testing.T) {
 		{
 			name: "Success - Filter by assignee ID",
 			inputArgs: map[string]any{
-				"projectId":  projectID,
+				"projectId":   projectID,
 				"assignee_id": "456",
 			},
 			mockSetup: func() {
@@ -1400,7 +1400,7 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 			name: "Error - Invalid milestoneId (not integer)",
 			args: map[string]any{
 				"projectId":       projectID,
-				"mergeRequestIid":  mrIid,
+				"mergeRequestIid": mrIid,
 				"milestoneId":     1.5,
 			},
 			mockSetup:           func() {},
@@ -1902,7 +1902,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 			errorContains:       "failed to update comment merge request 1 or note 123 in project \"group/project\"",
 		},
 		{
-			name:               "Error - Empty Body",
+			name: "Error - Empty Body",
 			args: map[string]any{
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,

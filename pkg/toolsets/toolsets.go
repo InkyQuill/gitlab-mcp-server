@@ -30,8 +30,8 @@ type ToolsetInfo struct {
 // ToolsetGroup manages a collection of Toolsets.
 type ToolsetGroup struct {
 	Toolsets     map[string]*Toolset
-	everythingOn bool   // Flag if "all" toolsets were requested
-	readOnly     bool   // Global read-only flag propagated to added toolsets
+	everythingOn bool         // Flag if "all" toolsets were requested
+	readOnly     bool         // Global read-only flag propagated to added toolsets
 	mu           sync.RWMutex // Mutex for thread-safe operations
 }
 
