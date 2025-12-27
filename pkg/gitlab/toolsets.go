@@ -124,8 +124,14 @@ func InitToolsets(
 	// --- Add tools to usersTS (Task 10) ---
 	// usersTS.AddReadTools(...) // Likely read-only
 
-	// --- Add tools to searchTS (Task 10/11) ---
-	// searchTS.AddReadTools(...) // Likely read-only
+	// --- Add tools to searchTS (Search capabilities) ---
+	searchTS.AddReadTools(
+		toolsets.NewServerTool(SearchProjects(getClient, translations)),
+		toolsets.NewServerTool(SearchIssues(getClient, translations)),
+		toolsets.NewServerTool(SearchMergeRequests(getClient, translations)),
+		toolsets.NewServerTool(SearchBlobs(getClient, translations)),
+		toolsets.NewServerTool(SearchCommits(getClient, translations)),
+	)
 
 	// 4. Add defined Toolsets to the Group
 	tg.AddToolset(tokenManagementTS)
