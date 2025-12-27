@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	gl "gitlab.com/gitlab-org/api/client-go" // GitLab client library
@@ -14,10 +15,10 @@ import (
 // GetProject defines the MCP tool for retrieving a single GitLab project.
 // Uses named return values to match the expected signature pattern.
 // GetProject defines the MCP tool for retrieving a single GitLab project.
-func GetProject(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func GetProject(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"getProject",
-			mcp.WithDescription("Retrieves details for a specific GitLab project."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get Project Details",
 				ReadOnlyHint: true,
@@ -46,15 +47,11 @@ func GetProject(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandle
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleAPIError(err, resp, fmt.Sprintf("project %q", projectIDStr))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					msg := fmt.Sprintf("project %q not found or access denied (%d)", projectIDStr, code)
-					return mcp.NewToolResultError(msg), nil
-				}
-				return nil, fmt.Errorf("failed to get project %q: %w (status: %d)", projectIDStr, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -67,10 +64,10 @@ func GetProject(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandle
 }
 
 // ListProjects defines the MCP tool for listing GitLab projects.
-func ListProjects(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func ListProjects(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"listProjects",
-			mcp.WithDescription("Retrieves a list of projects based on specified criteria."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_LIST_PROJECTS_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List Projects",
 				ReadOnlyHint: true,
@@ -168,11 +165,16 @@ func ListProjects(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHand
 
 			// --- Handle API errors
 			if err != nil {
+				// For list operations, we don't return 404 as an error since empty list is valid
+				// Only handle auth errors specifically
 				code := http.StatusInternalServerError
 				if resp != nil {
 					code = resp.StatusCode
 				}
-				// Don't return specific 404-like errors here, as an empty list is a valid result
+				if code == http.StatusUnauthorized {
+					msg := fmt.Sprintf("Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.")
+					return mcp.NewToolResultError(msg), nil
+				}
 				return nil, fmt.Errorf("failed to list projects: %w (status: %d)", err, code)
 			}
 

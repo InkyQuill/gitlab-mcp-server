@@ -4,18 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
+	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	gl "gitlab.com/gitlab-org/api/client-go" // GitLab client library
 )
 
 // GetProjectCommits defines the MCP tool for listing commits in a project.
-func GetProjectCommits(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func GetProjectCommits(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"getProjectCommits",
-			mcp.WithDescription("Retrieves a list of repository commits in a project, optionally filtered by ref, path, dates, and stats."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_COMMITS_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List Project Commits",
 				ReadOnlyHint: true,
@@ -102,15 +102,11 @@ func GetProjectCommits(getClient GetClientFn) (tool mcp.Tool, handler server.Too
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleListAPIError(err, resp, fmt.Sprintf("commits for project %q", projectIDStr))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					msg := fmt.Sprintf("project %q not found or access denied (%d)", projectIDStr, code)
-					return mcp.NewToolResultError(msg), nil
-				}
-				return nil, fmt.Errorf("failed to list commits for project %q: %w (status: %d)", projectIDStr, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success

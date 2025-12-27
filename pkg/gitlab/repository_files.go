@@ -5,18 +5,18 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
+	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	gl "gitlab.com/gitlab-org/api/client-go" // GitLab client library
 )
 
 // GetProjectFile defines the MCP tool for retrieving the content of a file in a project.
-func GetProjectFile(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func GetProjectFile(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"getProjectFile",
-			mcp.WithDescription("Retrieves the content of a specific file within a GitLab project repository."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_FILE_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get Project File Content",
 				ReadOnlyHint: true,
@@ -66,16 +66,11 @@ func GetProjectFile(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHa
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleAPIError(err, resp, fmt.Sprintf("file %q in project %q (ref: %q)", filePath, projectIDStr, ref))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					// Could be project not found or file not found
-					msg := fmt.Sprintf("project %q or file %q not found, or access denied (ref: %q) (%d)", projectIDStr, filePath, ref, code)
-					return mcp.NewToolResultError(msg), nil
-				}
-				return nil, fmt.Errorf("failed to get file %q from project %q (ref: %q): %w (status: %d)", filePath, projectIDStr, ref, err, code)
+				return nil, apiErr
 			}
 
 			// --- Decode Base64 content
@@ -91,10 +86,10 @@ func GetProjectFile(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHa
 }
 
 // ListProjectFiles defines the MCP tool for listing files in a project directory.
-func ListProjectFiles(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func ListProjectFiles(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"listProjectFiles",
-			mcp.WithDescription("Retrieves a list of files and directories within a specific path in a GitLab project repository."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_LIST_PROJECT_FILES_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List Project Files/Directories",
 				ReadOnlyHint: true,
@@ -165,16 +160,11 @@ func ListProjectFiles(getClient GetClientFn) (tool mcp.Tool, handler server.Tool
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleListAPIError(err, resp, fmt.Sprintf("repository tree for project %q (path: %q, ref: %q)", projectIDStr, path, ref))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					// Could be project not found or path not found
-					msg := fmt.Sprintf("project %q or path %q not found, or access denied (ref: %q) (%d)", projectIDStr, path, ref, code)
-					return mcp.NewToolResultError(msg), nil
-				}
-				return nil, fmt.Errorf("failed to list repository tree for project %q (path: %q, ref: %q): %w (status: %d)", projectIDStr, path, ref, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success

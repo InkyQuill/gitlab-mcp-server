@@ -4,23 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	gl "gitlab.com/gitlab-org/api/client-go"
-	// "github.com/your-org/gitlab-mcp-server/pkg/translations" // Uncomment if translations are ready
 )
 
 // func getIssueTool(getClient GetClientFn, t translations.TranslationHelperFunc) (mcp.Tool, server.ToolHandlerFunc) {
-func GetIssue(getClient GetClientFn) (mcp.Tool, server.ToolHandlerFunc) { // Simplified for now
+func GetIssue(getClient GetClientFn, t map[string]string) (mcp.Tool, server.ToolHandlerFunc) { // Simplified for now
 	return mcp.NewTool(
 			"getIssue",
 
-			mcp.WithDescription("Retrieves details for a specific GitLab issue."), // Plain text for now
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_ISSUE_DESCRIPTION)),
 			// Use WithString, WithNumber for parameters
 			mcp.WithString("projectId",
 				// t("mcp_gitlab_getIssue.projectId.description", "The ID (integer) or URL-encoded path (string) of the project."),
@@ -70,17 +69,11 @@ func GetIssue(getClient GetClientFn) (mcp.Tool, server.ToolHandlerFunc) { // Sim
 
 			// Handle Errors (pattern from projects.go)
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleAPIError(err, resp, fmt.Sprintf("issue %d in project %q", issueIid, projectID))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					msg := fmt.Sprintf("issue %d not found in project %q or access denied (%d)", issueIid, projectID, code)
-					// Return user-facing error directly
-					return mcp.NewToolResultError(msg), nil
-				}
-				// Return internal error using fmt.Errorf
-				return nil, fmt.Errorf("failed to get issue %d from project %q: %w (status code: %d)", issueIid, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// Format Success Response (pattern from projects.go)
@@ -97,10 +90,10 @@ func GetIssue(getClient GetClientFn) (mcp.Tool, server.ToolHandlerFunc) { // Sim
 // Add other issue tool functions here later (e.g., ListIssues)
 
 // ListIssues defines the MCP tool for listing issues with filtering and pagination.
-func ListIssues(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func ListIssues(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"listIssues",
-			mcp.WithDescription("Retrieves a list of issues in a GitLab project with pagination and filtering."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_LIST_ISSUES_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List GitLab Issues",
 				ReadOnlyHint: true,
@@ -308,15 +301,11 @@ func ListIssues(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandle
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleListAPIError(err, resp, fmt.Sprintf("issues from project %q", projectID))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("project %q not found or access denied (%d)", projectID, code)), nil
-				}
-				// For other errors, return internal error
-				return nil, fmt.Errorf("failed to list issues from project %q: %w (status: %d)", projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Handle empty result gracefully
@@ -334,10 +323,10 @@ func ListIssues(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandle
 }
 
 // GetIssueComments defines the MCP tool for retrieving issue comments/notes.
-func GetIssueComments(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func GetIssueComments(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"getIssueComments",
-			mcp.WithDescription("Retrieves comments or notes from a specific issue in a GitLab project."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_ISSUE_COMMENTS_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get Issue Comments",
 				ReadOnlyHint: true,
@@ -397,15 +386,11 @@ func GetIssueComments(getClient GetClientFn) (tool mcp.Tool, handler server.Tool
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleAPIError(err, resp, fmt.Sprintf("comments for issue %d in project %q", issueIid, projectID))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					msg := fmt.Sprintf("issue %d not found in project %q or access denied (%d)", issueIid, projectID, code)
-					return mcp.NewToolResultError(msg), nil
-				}
-				return nil, fmt.Errorf("failed to get comments for issue %d from project %q: %w (status: %d)", issueIid, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -423,10 +408,10 @@ func GetIssueComments(getClient GetClientFn) (tool mcp.Tool, handler server.Tool
 }
 
 // GetIssueLabels defines the MCP tool for retrieving the labels associated with an issue.
-func GetIssueLabels(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func GetIssueLabels(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"getIssueLabels",
-			mcp.WithDescription("Retrieves the labels associated with a specific GitLab issue."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_ISSUE_LABELS_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get Issue Labels",
 				ReadOnlyHint: true,
@@ -471,15 +456,11 @@ func GetIssueLabels(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHa
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleAPIError(err, resp, fmt.Sprintf("labels for issue %d in project %q", issueIid, projectID))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					msg := fmt.Sprintf("issue %d not found in project %q or access denied (%d)", issueIid, projectID, code)
-					return mcp.NewToolResultError(msg), nil
-				}
-				return nil, fmt.Errorf("failed to get labels for issue %d from project %q: %w (status: %d)", issueIid, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Extract and return labels
@@ -497,10 +478,10 @@ func GetIssueLabels(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHa
 }
 
 // CreateIssue defines the MCP tool for creating a new GitLab issue.
-func CreateIssue(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func CreateIssue(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"createIssue",
-			mcp.WithDescription("Creates a new issue in a GitLab project."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_CREATE_ISSUE_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title: "Create GitLab Issue",
 			}),
@@ -639,17 +620,11 @@ func CreateIssue(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandl
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("project %q", projectID), "create issue")
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("project %q not found or access denied (%d)", projectID, code)), nil
-				}
-				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to create issue: %v (status: %d)", err, code)), nil
-				}
-				return nil, fmt.Errorf("failed to create issue in project %q: %w (status: %d)", projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -662,10 +637,10 @@ func CreateIssue(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandl
 }
 
 // UpdateIssue defines the MCP tool for updating an existing GitLab issue.
-func UpdateIssue(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func UpdateIssue(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"updateIssue",
-			mcp.WithDescription("Updates an existing issue in a GitLab project."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_UPDATE_ISSUE_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title: "Update GitLab Issue",
 			}),
@@ -827,17 +802,11 @@ func UpdateIssue(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandl
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("issue %d in project %q", issueIid, projectID), "update issue")
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("issue %d not found in project %q or access denied (%d)", issueIid, projectID, code)), nil
-				}
-				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to update issue: %v (status: %d)", err, code)), nil
-				}
-				return nil, fmt.Errorf("failed to update issue %d in project %q: %w (status: %d)", issueIid, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -850,10 +819,10 @@ func UpdateIssue(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandl
 }
 
 // CreateIssueComment defines the MCP tool for creating a comment (note) on a GitLab issue.
-func CreateIssueComment(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func CreateIssueComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"createIssueComment",
-			mcp.WithDescription("Creates a comment (note) on a specific GitLab issue."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_CREATE_ISSUE_COMMENT_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title: "Create Issue Comment",
 			}),
@@ -909,17 +878,11 @@ func CreateIssueComment(getClient GetClientFn) (tool mcp.Tool, handler server.To
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("issue %d in project %q", issueIid, projectID), "create comment")
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("issue %d not found in project %q or access denied (%d)", issueIid, projectID, code)), nil
-				}
-				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to create comment: %v (status: %d)", err, code)), nil
-				}
-				return nil, fmt.Errorf("failed to create comment on issue %d in project %q: %w (status: %d)", issueIid, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -932,10 +895,10 @@ func CreateIssueComment(getClient GetClientFn) (tool mcp.Tool, handler server.To
 }
 
 // UpdateIssueComment defines the MCP tool for updating a comment on a GitLab issue.
-func UpdateIssueComment(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func UpdateIssueComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"updateIssueComment",
-			mcp.WithDescription("Updates an existing comment (note) on a specific GitLab issue."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_UPDATE_ISSUE_COMMENT_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title: "Update Issue Comment",
 			}),
@@ -1004,17 +967,11 @@ func UpdateIssueComment(getClient GetClientFn) (tool mcp.Tool, handler server.To
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("issue %d or note %d in project %q", issueIid, noteID, projectID), "update comment")
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("issue %d or note %d not found in project %q or access denied (%d)", issueIid, noteID, projectID, code)), nil
-				}
-				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to update comment: %v (status: %d)", err, code)), nil
-				}
-				return nil, fmt.Errorf("failed to update comment %d on issue %d in project %q: %w (status: %d)", noteID, issueIid, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success

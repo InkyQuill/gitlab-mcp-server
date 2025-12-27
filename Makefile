@@ -3,7 +3,7 @@
 # Variables
 BINARY_NAME=gitlab-mcp-server
 BINARY_PATH=bin/$(BINARY_NAME)
-INSTALLER_BINARY=bin/install
+INSTALLER_SCRIPT=scripts/install.py
 GO_VERSION_MIN=1.23
 
 help: ## Show this help message
@@ -41,10 +41,8 @@ docker-build: ## Build Docker image
 	@docker build -t gitlab-mcp-server:latest .
 	@echo "Docker image built: gitlab-mcp-server:latest"
 
-install-mcp: build ## Build installer and run MCP configuration
-	@echo "Building installer..."
-	@mkdir -p bin
-	@go build -o $(INSTALLER_BINARY) ./cmd/install
-	@echo "Running installer..."
-	@$(INSTALLER_BINARY)
+install-mcp: build ## Run MCP configuration (Python installer)
+	@echo "Running MCP installer..."
+	@chmod +x $(INSTALLER_SCRIPT)
+	@python3 $(INSTALLER_SCRIPT)
 

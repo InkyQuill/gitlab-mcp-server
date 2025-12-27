@@ -6,7 +6,7 @@ setlocal enabledelayedexpansion
 
 set GO_VERSION_MIN=1.23
 set BINARY_NAME=gitlab-mcp-server
-set INSTALLER_BINARY=bin\install.exe
+set INSTALLER_SCRIPT=scripts\install.py
 
 echo === GitLab MCP Server Setup ===
 echo.
@@ -21,7 +21,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 for /f "tokens=3" %%i in ('go version') do set GO_VERSION=%%i
-echo Go found: 
+echo Go found:
 go version
 
 REM Download dependencies
@@ -40,15 +40,30 @@ echo.
 REM Ask if user wants to run installer
 set /p RUN_INSTALLER="Do you want to configure MCP servers now? (y/n) "
 if /i "%RUN_INSTALLER%"=="y" (
-    echo Building installer...
+    REM Check for Python 3
+    echo Checking for Python 3...
+    where python >nul 2>&1
+    if %ERRORLEVEL% NEQ 0 (
+        echo Error: Python is not installed.
+        echo Please install Python 3 to run the MCP installer.
+        exit /b 1
+    )
+    echo Python found:
+    python --version
+
+    REM Build the main binary first
+    echo.
+    echo Building GitLab MCP server binary...
     if not exist bin mkdir bin
-    go build -o "%INSTALLER_BINARY%" ./cmd/install
-    
-    if exist "%INSTALLER_BINARY%" (
-        echo Running installer...
-        "%INSTALLER_BINARY%"
+    go build -o "bin\%BINARY_NAME%.exe" ./cmd/gitlab-mcp-server
+
+    if exist "bin\%BINARY_NAME%.exe" (
+        echo Binary built successfully!
+        echo.
+        echo Running MCP installer...
+        python "%INSTALLER_SCRIPT%"
     ) else (
-        echo Error: Failed to build installer
+        echo Error: Failed to build binary
         exit /b 1
     )
 ) else (

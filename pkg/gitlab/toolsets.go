@@ -5,6 +5,7 @@ import (
 	// Import necessary packages, including your toolsets package
 	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/toolsets" // Adjust path if needed
 	gl "gitlab.com/gitlab-org/api/client-go"                   // Import the GitLab client library
+	log "github.com/sirupsen/logrus"                           // Import logger
 	// "github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations" // Removed for now
 )
 
@@ -20,14 +21,24 @@ var DefaultTools = []string{"all"}
 func InitToolsets(
 	enabledToolsets []string,
 	readOnly bool,
-	getClient GetClientFn, // Restore parameter name
-	// t translations.TranslationHelperFunc, // Removed for now
+	getClient GetClientFn,   // Restore parameter name
+	logger *log.Logger,      // Logger for notifications
+	tokenStore *TokenStore,  // Token store for token management
+	translations map[string]string, // Translation map for i18n
+	dynamicMode bool, // Enable dynamic toolset discovery mode
 ) (*toolsets.ToolsetGroup, error) {
 
 	// 1. Create the ToolsetGroup
 	tg := toolsets.NewToolsetGroup(readOnly)
 
+	// Log dynamic mode status
+	if dynamicMode {
+		logger.Info("Dynamic toolset mode enabled - toolsets will be loaded on-demand")
+	}
+
 	// 2. Define Toolsets (as per PDR section 5.3)
+	tokenManagementTS := toolsets.NewToolset("token_management", "Tools for managing GitLab tokens and authentication.")
+	projectConfigTS := toolsets.NewToolset("project_config", "Tools for managing GitLab project configuration and auto-detection.")
 	projectsTS := toolsets.NewToolset("projects", "Tools for interacting with GitLab projects, repositories, branches, commits, tags.")
 	issuesTS := toolsets.NewToolset("issues", "Tools for CRUD operations on GitLab issues, comments, labels.")
 	mergeRequestsTS := toolsets.NewToolset("merge_requests", "Tools for CRUD operations on GitLab merge requests, comments, approvals, diffs.")
@@ -40,48 +51,71 @@ func InitToolsets(
 	//    Example (placeholder):
 	//    getProjectTool := toolsets.NewServerTool(GetProject(getClient, t))
 
+	// --- Add tools to tokenManagementTS (Token management) ---
+	tokenManagementTS.AddReadTools(
+		toolsets.NewServerTool(ListTokens(tokenStore)),
+		toolsets.NewServerTool(ValidateToken(getClient, logger, tokenStore)),
+		toolsets.NewServerTool(GetNotificationsTool(logger)),
+	)
+	tokenManagementTS.AddWriteTools(
+		toolsets.NewServerTool(AddToken(getClient, logger, tokenStore)),
+		toolsets.NewServerTool(UpdateToken(getClient, logger, tokenStore)),
+		toolsets.NewServerTool(RemoveToken(tokenStore)),
+		toolsets.NewServerTool(ClearNotificationsTool(logger)),
+	)
+
+	// --- Add tools to projectConfigTS (Project configuration management) ---
+	projectConfigTS.AddReadTools(
+		toolsets.NewServerTool(GetCurrentProject(getClient)),
+		toolsets.NewServerTool(DetectProject(getClient)),
+	)
+	projectConfigTS.AddWriteTools(
+		toolsets.NewServerTool(SetCurrentProject(getClient)),
+		toolsets.NewServerTool(AutoDetectAndSetProject(getClient)),
+	)
+
 	// --- Add tools to projectsTS (Task 7 & 12) ---
 	projectsTS.AddReadTools(
-		toolsets.NewServerTool(GetProject(getClient /*, t */)),
-		toolsets.NewServerTool(ListProjects(getClient /*, t */)),
-		toolsets.NewServerTool(GetProjectFile(getClient /*, t */)),
-		toolsets.NewServerTool(ListProjectFiles(getClient /*, t */)),
-		toolsets.NewServerTool(GetProjectBranches(getClient /*, t */)),
-		toolsets.NewServerTool(GetProjectCommits(getClient /*, t */)),
+		toolsets.NewServerTool(GetProject(getClient, translations)),
+		toolsets.NewServerTool(ListProjects(getClient, translations)),
+		toolsets.NewServerTool(GetProjectFile(getClient, translations)),
+		toolsets.NewServerTool(ListProjectFiles(getClient, translations)),
+		toolsets.NewServerTool(GetProjectBranches(getClient, translations)),
+		toolsets.NewServerTool(GetProjectCommits(getClient, translations)),
 	)
 	// projectsTS.AddWriteTools(...)
 
 	// --- Add tools to issuesTS (Task 8 & 13) ---
 	issuesTS.AddReadTools(
-		toolsets.NewServerTool(GetIssue(getClient)),
-		toolsets.NewServerTool(ListIssues(getClient)),
-		toolsets.NewServerTool(GetIssueComments(getClient)),
-		toolsets.NewServerTool(GetIssueLabels(getClient)),
+		toolsets.NewServerTool(GetIssue(getClient, translations)),
+		toolsets.NewServerTool(ListIssues(getClient, translations)),
+		toolsets.NewServerTool(GetIssueComments(getClient, translations)),
+		toolsets.NewServerTool(GetIssueLabels(getClient, translations)),
 		// Milestones read tools (milestones are related to issues)
-		toolsets.NewServerTool(GetMilestone(getClient)),
-		toolsets.NewServerTool(ListMilestones(getClient)),
+		toolsets.NewServerTool(GetMilestone(getClient, translations)),
+		toolsets.NewServerTool(ListMilestones(getClient, translations)),
 	)
 	issuesTS.AddWriteTools(
-		toolsets.NewServerTool(CreateIssue(getClient)),
-		toolsets.NewServerTool(UpdateIssue(getClient)),
-		toolsets.NewServerTool(CreateIssueComment(getClient)),
-		toolsets.NewServerTool(UpdateIssueComment(getClient)),
+		toolsets.NewServerTool(CreateIssue(getClient, translations)),
+		toolsets.NewServerTool(UpdateIssue(getClient, translations)),
+		toolsets.NewServerTool(CreateIssueComment(getClient, translations)),
+		toolsets.NewServerTool(UpdateIssueComment(getClient, translations)),
 		// Milestones write tools
-		toolsets.NewServerTool(CreateMilestone(getClient)),
-		toolsets.NewServerTool(UpdateMilestone(getClient)),
+		toolsets.NewServerTool(CreateMilestone(getClient, translations)),
+		toolsets.NewServerTool(UpdateMilestone(getClient, translations)),
 	)
 
 	// --- Add tools to mergeRequestsTS (Task 9 & 14) ---
 	mergeRequestsTS.AddReadTools(
-		toolsets.NewServerTool(GetMergeRequest(getClient)),
-		toolsets.NewServerTool(ListMergeRequests(getClient)),
-		toolsets.NewServerTool(GetMergeRequestComments(getClient)),
+		toolsets.NewServerTool(GetMergeRequest(getClient, translations)),
+		toolsets.NewServerTool(ListMergeRequests(getClient, translations)),
+		toolsets.NewServerTool(GetMergeRequestComments(getClient, translations)),
 	)
 	mergeRequestsTS.AddWriteTools(
-		toolsets.NewServerTool(CreateMergeRequest(getClient)),
-		toolsets.NewServerTool(UpdateMergeRequest(getClient)),
-		toolsets.NewServerTool(CreateMergeRequestComment(getClient)),
-		toolsets.NewServerTool(UpdateMergeRequestComment(getClient)),
+		toolsets.NewServerTool(CreateMergeRequest(getClient, translations)),
+		toolsets.NewServerTool(UpdateMergeRequest(getClient, translations)),
+		toolsets.NewServerTool(CreateMergeRequestComment(getClient, translations)),
+		toolsets.NewServerTool(UpdateMergeRequestComment(getClient, translations)),
 	)
 
 	// --- Add tools to securityTS (Part of future tasks?) ---
@@ -94,6 +128,8 @@ func InitToolsets(
 	// searchTS.AddReadTools(...) // Likely read-only
 
 	// 4. Add defined Toolsets to the Group
+	tg.AddToolset(tokenManagementTS)
+	tg.AddToolset(projectConfigTS)
 	tg.AddToolset(projectsTS)
 	tg.AddToolset(issuesTS)
 	tg.AddToolset(mergeRequestsTS)
@@ -102,10 +138,13 @@ func InitToolsets(
 	tg.AddToolset(searchTS)
 
 	// 5. Enable Toolsets based on configuration
-	err := tg.EnableToolsets(enabledToolsets)
-	if err != nil {
-		// Consider logging the error here in a real implementation
-		return nil, err // Return error if enabling failed (e.g., unknown toolset name)
+	// In dynamic mode, toolsets are enabled on-demand, so we skip this step
+	if !dynamicMode {
+		err := tg.EnableToolsets(enabledToolsets)
+		if err != nil {
+			// Consider logging the error here in a real implementation
+			return nil, err // Return error if enabling failed (e.g., unknown toolset name)
+		}
 	}
 
 	// 6. Return the configured group

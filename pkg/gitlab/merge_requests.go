@@ -1,10 +1,10 @@
 package gitlab
 
 import (
+	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations"
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -15,10 +15,10 @@ import (
 )
 
 // GetMergeRequest defines the MCP tool for retrieving details of a specific merge request.
-func GetMergeRequest(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func GetMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"getMergeRequest",
-			mcp.WithDescription("Retrieves details for a specific GitLab merge request."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_MERGE_REQUEST_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab Merge Request",
 				ReadOnlyHint: true,
@@ -61,15 +61,11 @@ func GetMergeRequest(getClient GetClientFn) (tool mcp.Tool, handler server.ToolH
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleAPIError(err, resp, fmt.Sprintf("merge request %d in project %q", mrIid, projectID))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					msg := fmt.Sprintf("merge request %d not found in project %q or access denied (%d)", mrIid, projectID, code)
-					return mcp.NewToolResultError(msg), nil
-				}
-				return nil, fmt.Errorf("failed to get merge request %d from project %q: %w (status: %d)", mrIid, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -82,7 +78,7 @@ func GetMergeRequest(getClient GetClientFn) (tool mcp.Tool, handler server.ToolH
 }
 
 // GetMergeRequestComments defines the MCP tool for retrieving comments/notes for a specific merge request.
-func GetMergeRequestComments(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func GetMergeRequestComments(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"getMergeRequestComments",
 			mcp.WithDescription("Retrieves comments or notes from a specific merge request in a GitLab project."),
@@ -145,15 +141,11 @@ func GetMergeRequestComments(getClient GetClientFn) (tool mcp.Tool, handler serv
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleAPIError(err, resp, fmt.Sprintf("comments for merge request %d in project %q", mrIid, projectID))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					msg := fmt.Sprintf("merge request %d not found in project %q or access denied (%d)", mrIid, projectID, code)
-					return mcp.NewToolResultError(msg), nil
-				}
-				return nil, fmt.Errorf("failed to get comments for merge request %d from project %q: %w (status: %d)", mrIid, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -171,7 +163,7 @@ func GetMergeRequestComments(getClient GetClientFn) (tool mcp.Tool, handler serv
 }
 
 // ListMergeRequests defines the MCP tool for listing merge requests with pagination and filtering.
-func ListMergeRequests(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func ListMergeRequests(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"listMergeRequests",
 			mcp.WithDescription("Lists merge requests for a GitLab project with filtering and pagination options."),
@@ -344,15 +336,11 @@ func ListMergeRequests(getClient GetClientFn) (tool mcp.Tool, handler server.Too
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleListAPIError(err, resp, fmt.Sprintf("merge requests for project %q", projectID))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					msg := fmt.Sprintf("project %q not found or access denied (%d)", projectID, code)
-					return mcp.NewToolResultError(msg), nil
-				}
-				return nil, fmt.Errorf("failed to list merge requests for project %q: %w (status: %d)", projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -370,10 +358,10 @@ func ListMergeRequests(getClient GetClientFn) (tool mcp.Tool, handler server.Too
 }
 
 // CreateMergeRequest defines the MCP tool for creating a new GitLab merge request.
-func CreateMergeRequest(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func CreateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"createMergeRequest",
-			mcp.WithDescription("Creates a new merge request in a GitLab project."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_CREATE_MERGE_REQUEST_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title: "Create GitLab Merge Request",
 			}),
@@ -535,17 +523,11 @@ func CreateMergeRequest(getClient GetClientFn) (tool mcp.Tool, handler server.To
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("project %q", projectID), "create merge request")
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("project %q not found or access denied (%d)", projectID, code)), nil
-				}
-				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to create merge request: %v (status: %d)", err, code)), nil
-				}
-				return nil, fmt.Errorf("failed to create merge request in project %q: %w (status: %d)", projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -558,7 +540,7 @@ func CreateMergeRequest(getClient GetClientFn) (tool mcp.Tool, handler server.To
 }
 
 // UpdateMergeRequest defines the MCP tool for updating an existing GitLab merge request.
-func UpdateMergeRequest(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func UpdateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"updateMergeRequest",
 			mcp.WithDescription("Updates an existing merge request in a GitLab project."),
@@ -742,17 +724,11 @@ func UpdateMergeRequest(getClient GetClientFn) (tool mcp.Tool, handler server.To
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("merge request %d in project %q", mrIid, projectID), "update merge request")
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("merge request %d not found in project %q or access denied (%d)", mrIid, projectID, code)), nil
-				}
-				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to update merge request: %v (status: %d)", err, code)), nil
-				}
-				return nil, fmt.Errorf("failed to update merge request %d in project %q: %w (status: %d)", mrIid, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -765,7 +741,7 @@ func UpdateMergeRequest(getClient GetClientFn) (tool mcp.Tool, handler server.To
 }
 
 // CreateMergeRequestComment defines the MCP tool for creating a comment on a GitLab merge request.
-func CreateMergeRequestComment(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func CreateMergeRequestComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"createMergeRequestComment",
 			mcp.WithDescription("Creates a comment (note) on a specific GitLab merge request."),
@@ -824,17 +800,11 @@ func CreateMergeRequestComment(getClient GetClientFn) (tool mcp.Tool, handler se
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("merge request %d in project %q", mrIid, projectID), "create comment")
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("merge request %d not found in project %q or access denied (%d)", mrIid, projectID, code)), nil
-				}
-				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to create comment: %v (status: %d)", err, code)), nil
-				}
-				return nil, fmt.Errorf("failed to create comment on merge request %d in project %q: %w (status: %d)", mrIid, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -847,7 +817,7 @@ func CreateMergeRequestComment(getClient GetClientFn) (tool mcp.Tool, handler se
 }
 
 // UpdateMergeRequestComment defines the MCP tool for updating a comment on a GitLab merge request.
-func UpdateMergeRequestComment(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func UpdateMergeRequestComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"updateMergeRequestComment",
 			mcp.WithDescription("Updates an existing comment (note) on a specific GitLab merge request."),
@@ -919,17 +889,11 @@ func UpdateMergeRequestComment(getClient GetClientFn) (tool mcp.Tool, handler se
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("merge request %d or note %d in project %q", mrIid, noteID, projectID), "update comment")
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("merge request %d or note %d not found in project %q or access denied (%d)", mrIid, noteID, projectID, code)), nil
-				}
-				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to update comment: %v (status: %d)", err, code)), nil
-				}
-				return nil, fmt.Errorf("failed to update comment %d on merge request %d in project %q: %w (status: %d)", noteID, mrIid, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success

@@ -1,10 +1,10 @@
 package gitlab
 
 import (
+	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations"
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -13,10 +13,10 @@ import (
 )
 
 // CreateMilestone defines the MCP tool for creating a new GitLab milestone.
-func CreateMilestone(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func CreateMilestone(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"createMilestone",
-			mcp.WithDescription("Creates a new milestone in a GitLab project."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_CREATE_MILESTONE_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title: "Create GitLab Milestone",
 			}),
@@ -107,17 +107,11 @@ func CreateMilestone(getClient GetClientFn) (tool mcp.Tool, handler server.ToolH
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("project %q", projectID), "create milestone")
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("project %q not found or access denied (%d)", projectID, code)), nil
-				}
-				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to create milestone: %v (status: %d)", err, code)), nil
-				}
-				return nil, fmt.Errorf("failed to create milestone in project %q: %w (status: %d)", projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -130,10 +124,10 @@ func CreateMilestone(getClient GetClientFn) (tool mcp.Tool, handler server.ToolH
 }
 
 // UpdateMilestone defines the MCP tool for updating an existing GitLab milestone.
-func UpdateMilestone(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func UpdateMilestone(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"updateMilestone",
-			mcp.WithDescription("Updates an existing milestone in a GitLab project."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_UPDATE_MILESTONE_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title: "Update GitLab Milestone",
 			}),
@@ -251,17 +245,11 @@ func UpdateMilestone(getClient GetClientFn) (tool mcp.Tool, handler server.ToolH
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("milestone %d in project %q", milestoneID, projectID), "update milestone")
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("milestone %d not found in project %q or access denied (%d)", milestoneID, projectID, code)), nil
-				}
-				if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to update milestone: %v (status: %d)", err, code)), nil
-				}
-				return nil, fmt.Errorf("failed to update milestone %d in project %q: %w (status: %d)", milestoneID, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -274,10 +262,10 @@ func UpdateMilestone(getClient GetClientFn) (tool mcp.Tool, handler server.ToolH
 }
 
 // GetMilestone defines the MCP tool for retrieving a specific GitLab milestone.
-func GetMilestone(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func GetMilestone(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"getMilestone",
-			mcp.WithDescription("Retrieves details for a specific GitLab milestone."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_MILESTONE_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab Milestone",
 				ReadOnlyHint: true,
@@ -320,14 +308,11 @@ func GetMilestone(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHand
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleAPIError(err, resp, fmt.Sprintf("milestone %d in project %q", milestoneID, projectID))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("milestone %d not found in project %q or access denied (%d)", milestoneID, projectID, code)), nil
-				}
-				return nil, fmt.Errorf("failed to get milestone %d from project %q: %w (status: %d)", milestoneID, projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Marshal and return success
@@ -340,10 +325,10 @@ func GetMilestone(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHand
 }
 
 // ListMilestones defines the MCP tool for listing milestones in a GitLab project.
-func ListMilestones(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+func ListMilestones(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"listMilestones",
-			mcp.WithDescription("Retrieves a list of milestones in a GitLab project with pagination and filtering."),
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_LIST_MILESTONES_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List GitLab Milestones",
 				ReadOnlyHint: true,
@@ -416,14 +401,11 @@ func ListMilestones(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHa
 
 			// --- Handle API errors
 			if err != nil {
-				code := http.StatusInternalServerError
-				if resp != nil {
-					code = resp.StatusCode
+				result, apiErr := HandleListAPIError(err, resp, fmt.Sprintf("milestones from project %q", projectID))
+				if result != nil {
+					return result, nil
 				}
-				if code == http.StatusNotFound {
-					return mcp.NewToolResultError(fmt.Sprintf("project %q not found or access denied (%d)", projectID, code)), nil
-				}
-				return nil, fmt.Errorf("failed to list milestones from project %q: %w (status: %d)", projectID, err, code)
+				return nil, apiErr
 			}
 
 			// --- Handle empty result gracefully

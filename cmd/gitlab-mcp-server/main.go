@@ -3,16 +3,18 @@ package main
 import (
 	"context"    // Added for signal handling
 	"fmt"        // Added for stdio logging
+	"io"         // Added for io.Reader/io.Writer interfaces
 	stdlog "log" // Use standard log for initial fatal errors
 	"os"
 	"os/signal" // Added for signal handling
 	"strings"   // Added for toolset parsing
 	"syscall"   // Added for signal handling
+	"time"      // Added for token validation
 
-	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/gitlab" // Reference pkg/gitlab
-	// Reference pkg/toolsets
-	// iolog "github.com/github/github-mcp-server/pkg/log" // TODO: Consider adding if command logging is needed
-	"github.com/mark3labs/mcp-go/server" // MCP server components
+	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/gitlab"       // Reference pkg/gitlab
+	iolog "github.com/LuisCusihuaman/gitlab-mcp-server/pkg/log"     // Command logging I/O wrapper
+	"github.com/LuisCusihuaman/gitlab-mcp-server/pkg/translations" // i18n support
+	"github.com/mark3labs/mcp-go/server"                           // MCP server components
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -46,6 +48,22 @@ var (
 				stdlog.Fatalf("Failed to initialize logger: %v", err) // Use stdlog before logger is ready
 			}
 			logger.Info("Logger initialized")
+
+			// --- Initialize Translations ---
+			t, dumpTranslations := translations.TranslationHelper(logger)
+			defer func() {
+				if viper.GetBool("export-translations") {
+					logger.Info("Exporting translations...")
+					dumpTranslations()
+				}
+			}()
+
+			// Handle export-translations flag
+			if viper.GetBool("export-translations") {
+				logger.Info("Exporting translations and exiting...")
+				dumpTranslations()
+				return
+			}
 
 			// --- Subtask 6.2: Initialize Signal Handling ---
 			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -84,27 +102,60 @@ var (
 				logger.Infof("Using custom GitLab host: %s", host)
 			}
 
-			// Initialize GitLab Client directly
-			clientOpts := []gl.ClientOptionFunc{}
-			if host != "" {
-				clientOpts = append(clientOpts, gl.WithBaseURL(host))
+			// Initialize Token Store
+			tokenStore := gitlab.NewTokenStore()
+			logger.Info("Token store initialized")
+
+			// Initialize Client Pool
+			clientPool := gitlab.NewClientPool(tokenStore, logger)
+			logger.Info("Client pool initialized")
+
+			// Initialize client from environment
+			if err := clientPool.InitializeFromEnv(ctx, token, host); err != nil {
+				logger.Fatalf("Failed to initialize client from environment: %v", err)
 			}
-			glClient, err := gl.NewClient(token, clientOpts...)
+			logger.Info("GitLab client initialized and added to pool")
+
+			// Validate token on startup and get metadata
+			logger.Info("Validating GitLab token...")
+			glClient, serverName, err := clientPool.GetDefaultClient()
 			if err != nil {
-				logger.Fatalf("Failed to initialize GitLab client: %v", err)
-			}
-			logger.Info("GitLab client initialized")
-
-			// Define GetClientFn closure again
-			getClient := func(_ context.Context) (*gl.Client, error) {
-				return glClient, nil // Provide the initialized client via closure
+				logger.Fatalf("Failed to get default client: %v", err)
 			}
 
-			// TODO: Initialize Translations (deferring for now)
-			// t, dumpTranslations := translations.TranslationHelper()
+			tokenMetadata, err := validateTokenOnStartup(ctx, glClient, token)
+			if err != nil {
+				// Token is invalid or expired - send notification but don't fail
+				logger.Warnf("Token validation warning: %v", err)
+				// Note: Notifications are sent internally via logger
+			} else {
+				// Store token metadata
+				tokenMetadata.Name = serverName
+				tokenMetadata.GitLabHost = host
+				if addErr := tokenStore.AddToken(serverName, tokenMetadata); addErr != nil {
+					logger.Warnf("Failed to store token metadata: %v", addErr)
+				} else {
+					logger.Infof("Token validated successfully for user %s (ID: %d) on server '%s'",
+						tokenMetadata.Username, tokenMetadata.UserID, serverName)
+					// Check if token is expiring soon (less than 30 days)
+					if tokenMetadata.ExpiresAt != nil {
+						daysUntil := tokenMetadata.DaysUntilExpiry()
+						if daysUntil > 0 && daysUntil <= 30 {
+							logger.Warnf("Token will expire in %d days. Please create a new token and update it.", daysUntil)
+						}
+					}
+				}
+			}
 
-			// Initialize Toolsets, passing the getClient function
-			toolsetGroup, err := gitlab.InitToolsets(enabledToolsets, readOnly, getClient /*, t */)
+			// Create Client Resolver
+			resolver := gitlab.NewClientResolver(clientPool, serverName, logger)
+			logger.Infof("Client resolver initialized with default server '%s'", serverName)
+
+			// Check if dynamic toolsets mode is enabled
+			dynamicToolsets := viper.GetBool("dynamic-toolsets")
+
+			// Initialize Toolsets, passing the getClient function from resolver, logger, tokenStore and translations
+			toolsetGroup, err := gitlab.InitToolsets(enabledToolsets, readOnly, resolver.GetClientFn(), logger, tokenStore, t, dynamicToolsets)
 			if err != nil {
 				logger.Fatalf("Failed to initialize toolsets: %v", err)
 			}
@@ -115,9 +166,18 @@ var (
 			mcpServer := gitlab.NewServer("gitlab-mcp-server", version)
 			logger.Info("MCP server wrapper created")
 
-			// Register Toolsets with the server (does not return error)
-			toolsetGroup.RegisterTools(mcpServer)
-			logger.Info("Toolsets registered with MCP server")
+			// Register toolsets with the server
+			if dynamicToolsets {
+				// Dynamic mode: only register discovery tools initially
+				dynamicManager := gitlab.NewDynamicToolsetManager(toolsetGroup, mcpServer, logger)
+				dynamicManager.SetDynamicMode(true)
+				dynamicManager.RegisterDiscoveryTools()
+				logger.Info("Dynamic toolset discovery tools registered")
+			} else {
+				// Traditional mode: register all enabled toolsets
+				toolsetGroup.RegisterTools(mcpServer)
+				logger.Info("Toolsets registered with MCP server")
+			}
 
 			// Create Stdio Server
 			stdioServer := server.NewStdioServer(mcpServer)
@@ -130,13 +190,13 @@ var (
 			errC := make(chan error, 1)
 			go func() {
 				logger.Info("Starting to listen on stdio...")
-				// TODO: Add command logging wrapper if flag is enabled
-				// in, out := io.Reader(os.Stdin), io.Writer(os.Stdout)
-				// if viper.GetBool("enable-command-logging") {
-				// 	 loggedIO := iolog.NewIOLogger(in, out, logger)
-				// 	 in, out = loggedIO, loggedIO
-				// }
-				errC <- stdioServer.Listen(ctx, os.Stdin, os.Stdout)
+				in, out := io.Reader(os.Stdin), io.Writer(os.Stdout)
+				if viper.GetBool("enable-command-logging") {
+					logger.Warn("Command logging enabled - sensitive data will be redacted but not guaranteed")
+					loggedIO := iolog.NewIOLogger(in, out, logger)
+					in, out = loggedIO, loggedIO
+				}
+				errC <- stdioServer.Listen(ctx, in, out)
 			}()
 
 			// Announce readiness on stderr
@@ -174,7 +234,9 @@ func init() {
 	rootCmd.PersistentFlags().String("gitlab-token", "", "GitLab Personal Access Token (required)")
 	rootCmd.PersistentFlags().String("log-file", "", "Optional: Path to write log output to a file")
 	rootCmd.PersistentFlags().String("log-level", "info", "Log level (e.g., debug, info, warn, error)")
-	// TODO: Add optional flags like --enable-command-logging if needed later
+	rootCmd.PersistentFlags().Bool("enable-command-logging", false, "Enable logging of all MCP JSON-RPC requests/responses to stderr (WARNING: may contain sensitive data)")
+	rootCmd.PersistentFlags().Bool("export-translations", false, "Generate gitlab-mcp-server-config.json with all translation keys and exit")
+	rootCmd.PersistentFlags().Bool("dynamic-toolsets", false, "Enable dynamic toolset discovery (toolsets loaded on-demand)")
 
 	// Bind persistent flags to Viper
 	// Note the mapping from flag name (kebab-case) to viper key (often snake_case or kept kebab-case) and ENV var (UPPER_SNAKE_CASE)
@@ -184,6 +246,9 @@ func init() {
 	_ = viper.BindPFlag("token", rootCmd.PersistentFlags().Lookup("gitlab-token"))  // Viper key "token" -> GITLAB_TOKEN
 	_ = viper.BindPFlag("log.file", rootCmd.PersistentFlags().Lookup("log-file"))   // Viper key "log.file" -> GITLAB_LOG_FILE
 	_ = viper.BindPFlag("log.level", rootCmd.PersistentFlags().Lookup("log-level")) // Viper key "log.level" -> GITLAB_LOG_LEVEL
+	_ = viper.BindPFlag("enable-command-logging", rootCmd.PersistentFlags().Lookup("enable-command-logging")) // Viper key "enable-command-logging" -> GITLAB_ENABLE_COMMAND_LOGGING
+	_ = viper.BindPFlag("export-translations", rootCmd.PersistentFlags().Lookup("export-translations"))       // Viper key "export-translations" -> GITLAB_EXPORT_TRANSLATIONS
+	_ = viper.BindPFlag("dynamic-toolsets", rootCmd.PersistentFlags().Lookup("dynamic-toolsets"))             // Viper key "dynamic-toolsets" -> GITLAB_DYNAMIC_TOOLSETS
 
 	// Add subcommands
 	rootCmd.AddCommand(stdioCmd)
@@ -237,6 +302,32 @@ func initLogger(level string, filePath string) (*log.Logger, error) {
 	})
 
 	return logger, nil
+}
+
+// validateTokenOnStartup validates the GitLab token by calling the API
+// Returns TokenMetadata with user information if successful
+func validateTokenOnStartup(ctx context.Context, client *gl.Client, tokenStr string) (*gitlab.TokenMetadata, error) {
+	// Call GitLab API /user to validate token
+	user, resp, err := client.Users.CurrentUser(gl.WithContext(ctx))
+
+	if err != nil {
+		if resp != nil && resp.StatusCode == 401 {
+			return nil, fmt.Errorf("token is invalid or expired (401 Unauthorized)")
+		}
+		return nil, fmt.Errorf("token validation failed: %w", err)
+	}
+
+	// Create token metadata with user info
+	metadata := &gitlab.TokenMetadata{
+		Token:         tokenStr,
+		CreatedAt:     time.Now(), // Approximation - we don't know actual creation date
+		LastValidated: time.Now(),
+		UserID:        user.ID,
+		Username:      user.Username,
+		IsExpiredFlag: false,
+	}
+
+	return metadata, nil
 }
 
 func main() {

@@ -3,6 +3,7 @@ package toolsets
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -18,11 +19,20 @@ type Toolset struct {
 	readTools   []server.ServerTool
 }
 
+// ToolsetInfo provides metadata about a toolset.
+type ToolsetInfo struct {
+	Name        string
+	Description string
+	Enabled     bool
+	ToolCount   int
+}
+
 // ToolsetGroup manages a collection of Toolsets.
 type ToolsetGroup struct {
 	Toolsets     map[string]*Toolset
-	everythingOn bool // Flag if "all" toolsets were requested
-	readOnly     bool // Global read-only flag propagated to added toolsets
+	everythingOn bool   // Flag if "all" toolsets were requested
+	readOnly     bool   // Global read-only flag propagated to added toolsets
+	mu           sync.RWMutex // Mutex for thread-safe operations
 }
 
 // NewServerTool creates a ServerTool struct containing the MCP tool definition and its handler.
@@ -108,6 +118,34 @@ func (t *Toolset) SetReadOnly() {
 	t.readOnly = true
 }
 
+// GetDescription returns the toolset's description.
+func (t *Toolset) GetDescription() string {
+	return t.Description
+}
+
+// Tools returns all tools (both read and write) in the toolset.
+func (t *Toolset) Tools() []server.ServerTool {
+	allTools := make([]server.ServerTool, 0, len(t.readTools)+len(t.writeTools))
+	allTools = append(allTools, t.readTools...)
+	allTools = append(allTools, t.writeTools...)
+	return allTools
+}
+
+// IsEnabled returns whether the toolset is currently enabled.
+func (t *Toolset) IsEnabled() bool {
+	return t.Enabled
+}
+
+// Enable enables the toolset.
+func (t *Toolset) Enable() {
+	t.Enabled = true
+}
+
+// Disable disables the toolset.
+func (t *Toolset) Disable() {
+	t.Enabled = false
+}
+
 // NewToolsetGroup creates a new manager for multiple Toolsets.
 // The readOnly flag applies globally to all toolsets added subsequently.
 func NewToolsetGroup(readOnly bool) *ToolsetGroup {
@@ -120,6 +158,9 @@ func NewToolsetGroup(readOnly bool) *ToolsetGroup {
 // AddToolset adds a pre-configured Toolset to the group.
 // It applies the group's global readOnly setting if it's true.
 func (tg *ToolsetGroup) AddToolset(ts *Toolset) {
+	tg.mu.Lock()
+	defer tg.mu.Unlock()
+
 	if tg.readOnly {
 		ts.SetReadOnly() // Propagate global read-only setting
 	}
@@ -127,12 +168,21 @@ func (tg *ToolsetGroup) AddToolset(ts *Toolset) {
 }
 
 // EnableToolset enables a single toolset by name.
+// Returns an error if the toolset is not found or is already enabled.
 func (tg *ToolsetGroup) EnableToolset(name string) error {
+	tg.mu.Lock()
+	defer tg.mu.Unlock()
+
 	ts, ok := tg.Toolsets[name]
 	if !ok {
-		return fmt.Errorf("unknown toolset: %s", name)
+		return fmt.Errorf("toolset '%s' not found", name)
 	}
-	ts.Enabled = true
+
+	if ts.IsEnabled() {
+		return fmt.Errorf("toolset '%s' already enabled", name)
+	}
+
+	ts.Enable()
 	return nil
 }
 
@@ -144,6 +194,8 @@ func (tg *ToolsetGroup) EnableToolsets(names []string) error {
 	}
 
 	if len(names) == 1 && names[0] == "all" {
+		tg.mu.Lock()
+		defer tg.mu.Unlock()
 		tg.everythingOn = true
 		for _, ts := range tg.Toolsets {
 			ts.Enabled = true
@@ -172,9 +224,30 @@ func (tg *ToolsetGroup) EnableToolsets(names []string) error {
 // RegisterTools iterates through all managed Toolsets and registers the active tools
 // of the *enabled* ones with the provided MCP server.
 func (tg *ToolsetGroup) RegisterTools(s *server.MCPServer) {
+	tg.mu.RLock()
+	defer tg.mu.RUnlock()
+
 	for _, ts := range tg.Toolsets {
 		if ts.Enabled {
 			ts.RegisterTools(s)
 		}
 	}
+}
+
+// ListToolsets returns information about all available toolsets.
+func (tg *ToolsetGroup) ListToolsets() []ToolsetInfo {
+	tg.mu.RLock()
+	defer tg.mu.RUnlock()
+
+	infos := make([]ToolsetInfo, 0, len(tg.Toolsets))
+	for name, ts := range tg.Toolsets {
+		info := ToolsetInfo{
+			Name:        name,
+			Description: ts.GetDescription(),
+			Enabled:     ts.IsEnabled(),
+			ToolCount:   len(ts.Tools()),
+		}
+		infos = append(infos, info)
+	}
+	return infos
 }

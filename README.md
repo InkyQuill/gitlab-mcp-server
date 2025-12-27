@@ -485,6 +485,26 @@ docker run -i --rm \
   gitlab-mcp-server:latest
 ```
 
+## Command Logging 🔍
+
+For debugging purposes, you can enable logging of all MCP JSON-RPC protocol messages (requests and responses) to stderr.
+
+**⚠️ WARNING**: Command logging may expose sensitive data. Only enable in secure environments. Tokens and passwords are redacted, but other sensitive data may leak.
+
+```bash
+./gitlab-mcp-server stdio --enable-command-logging
+# or
+export GITLAB_ENABLE_COMMAND_LOGGING=true
+./gitlab-mcp-server stdio
+# or with Docker
+docker run -i --rm \
+  -e GITLAB_TOKEN=<your-token> \
+  -e GITLAB_ENABLE_COMMAND_LOGGING=true \
+  gitlab-mcp-server:latest
+```
+
+**Note**: This feature is intended for development and debugging. When enabled, all JSON-RPC messages will be logged at DEBUG level. Ensure your `--log-level` is set to `debug` to see the logs.
+
 ## GitLab Self-Managed Instances 🏢
 
 To connect to a self-managed GitLab instance instead of `gitlab.com`, use the `--gitlab-host` flag or the `GITLAB_HOST` environment variable. Provide the base URL of your instance (e.g., `https://gitlab.example.com`).
@@ -497,42 +517,143 @@ If the variable/flag is empty or omitted, the server defaults to `https://gitlab
 
 ## Dynamic Tool Discovery 💡
 
-*(This feature might be implemented later, following the pattern from github-mcp-server)*
+Dynamic toolset discovery allows the MCP host (like VS Code or Claude) to list available toolsets and enable them selectively in response to user needs. This prevents overwhelming the language model with too many tools initially and improves performance.
 
-Instead of starting with a fixed set of enabled tools, dynamic toolset discovery allows the MCP host (like VS Code or Claude) to list available toolsets and enable them selectively in response to user needs. This can prevent overwhelming the language model with too many tools initially.
+### How It Works
+
+When dynamic tool discovery is enabled:
+- The server starts with **only 2 tools** available: `list_available_toolsets` and `enable_toolset`
+- You can query which toolsets are available and their descriptions
+- Toolsets are loaded on-demand when you enable them
+- Once enabled, all tools from that toolset become available
 
 ### Using Dynamic Tool Discovery
 
-If implemented, enable it via:
+Enable it via:
 
 * **Flag:** `./gitlab-mcp-server stdio --dynamic-toolsets`
-* **Environment Variable:** `export GITLAB_DYNAMIC_TOOLSETS=1`
-* **Docker:** `docker run -i --rm -e GITLAB_TOKEN=... -e GITLAB_DYNAMIC_TOOLSETS=1 gitlab-mcp-server:latest`
+* **Environment Variable:** `export GITLAB_DYNAMIC_TOOLSETS=true`
+* **Docker:** `docker run -i --rm -e GITLAB_TOKEN=... -e GITLAB_DYNAMIC_TOOLSETS=true gitlab-mcp-server:latest`
 
-When enabled, the server initially exposes only minimal tools, including tools to list and enable other toolsets dynamically.
+### Available Discovery Tools
+
+#### `list_available_toolsets`
+Lists all available GitLab MCP toolsets that can be enabled.
+
+**Example Output:**
+```
+Available Toolsets (8):
+- token_management: Tools for managing GitLab tokens and authentication. [6 tools] (enabled)
+- project_config: Tools for managing GitLab project configuration and auto-detection. [4 tools] (disabled)
+- projects: Tools for interacting with GitLab projects, repositories, branches, commits, tags. [6 tools] (disabled)
+- issues: Tools for CRUD operations on GitLab issues, comments, labels. [10 tools] (disabled)
+- merge_requests: Tools for CRUD operations on GitLab merge requests, comments, approvals, diffs. [7 tools] (disabled)
+- security: Tools for accessing GitLab security scan results (SAST, DAST, etc.). [0 tools] (disabled)
+- users: Tools for looking up GitLab user information. [0 tools] (disabled)
+- search: Tools for utilizing GitLab's scoped search capabilities. [0 tools] (disabled)
+```
+
+#### `enable_toolset`
+Enables a specific GitLab MCP toolset, making its tools available.
+
+**Parameters:**
+- `toolset` (required, string): Name of the toolset to enable (e.g., 'projects', 'issues', 'merge_requests')
+
+**Example Workflow:**
+1. Start server with `--dynamic-toolsets`
+2. Call `list_available_toolsets` to see available toolsets
+3. Call `enable_toolset` with toolset name (e.g., "projects") to load it
+4. Use the newly available tools from that toolset
+5. Repeat step 3 for additional toolsets as needed
+
+**Note:** Token management and project configuration toolsets are enabled by default even in dynamic mode, as they're essential for server operation.
 
 ## i18n / Overriding Descriptions 🌍
 
-Tool names and descriptions can be customized or translated. Create a `gitlab-mcp-server-config.json` file in the *same directory* as the server binary (or mount it into the container).
+Tool names and descriptions can be customized or translated to better suit your workflow or language preferences.
 
-The file should contain a JSON object mapping internal translation keys (which correspond to tool names/descriptions) to your desired strings.
+### How It Works
 
-**Example `gitlab-mcp-server-config.json`:**
+1. **Generate Translation Template**: Run the server with `--export-translations` flag
+2. **Customize Descriptions**: Edit the generated `gitlab-mcp-server-config.json` file
+3. **Restart Server**: The server automatically loads translations on startup
+
+### Generating Translation Template
+
+Create a configuration file with all available translation keys:
+
+```bash
+./gitlab-mcp-server stdio --export-translations
+```
+
+This creates `gitlab-mcp-server-config.json` in the same directory as the binary with all 29+ translation keys.
+
+### Example: Russian Translation
+
+Create a `gitlab-mcp-server-config.json` file:
+
 ```json
 {
-  "TOOL_GET_ISSUE_DESCRIPTION": "Fetch details for a specific GitLab issue.",
-  "TOOL_CREATE_MERGE_REQUEST_USER_TITLE": "Open New MR"
+  "TOOL_GET_PROJECT_DESCRIPTION": "Получает детали конкретного проекта GitLab.",
+  "TOOL_LIST_PROJECTS_DESCRIPTION": "Возвращает список проектов GitLab с возможностью фильтрации.",
+  "TOOL_GET_ISSUE_DESCRIPTION": "Получает информацию о конкретной задаче GitLab.",
+  "TOOL_CREATE_ISSUE_DESCRIPTION": "Создает новую задачу в проекте GitLab."
 }
 ```
 
-You can generate a template file containing all current translation keys by running the server with the `--export-translations` flag:
+### Example: Custom English Descriptions
 
-```bash
-./gitlab-mcp-server --export-translations
-# This will create/update gitlab-mcp-server-config.json
+Make tool descriptions more specific for your team:
+
+```json
+{
+  "TOOL_GET_ISSUE_DESCRIPTION": "Fetch issue details including assignees, labels, and milestone status",
+  "TOOL_CREATE_ISSUE_DESCRIPTION": "Create a new issue. Required: title. Optional: description, assignee, labels, milestone",
+  "TOOL_LIST_ISSUES_DESCRIPTION": "List issues with filters. Supports: scope (assigned_to_me, created_by_me, all), labels, milestone, state, search"
+}
 ```
 
-This flag preserves existing overrides while adding any new keys introduced in the server.
+### Translation Keys Reference
+
+The server supports 29+ translation keys covering:
+- **Projects** (6 keys): `getProject`, `listProjects`, `getProjectFile`, `listProjectFiles`, `getProjectBranches`, `getProjectCommits`
+- **Issues** (8 keys): `getIssue`, `listIssues`, `getIssueComments`, `getIssueLabels`, `createIssue`, `updateIssue`, `createIssueComment`, `updateIssueComment`
+- **Merge Requests** (7 keys): `getMergeRequest`, `listMergeRequests`, `getMergeRequestComments`, `createMergeRequest`, `updateMergeRequest`, `createMergeRequestComment`, `updateMergeRequestComment`
+- **Milestones** (4 keys): `getMilestone`, `listMilestones`, `createMilestone`, `updateMilestone`
+- **Token Management** (4+ keys): `listTokens`, `validateToken`, `addToken`, `updateToken`, `removeToken`
+
+### Configuration File Location
+
+The server looks for `gitlab-mcp-server-config.json` in:
+1. **Standalone binary**: Same directory as the binary
+2. **Docker**: Mount the config file to `/app/gitlab-mcp-server-config.json`
+
+**Docker Example:**
+```bash
+docker run -i --rm \
+  -v $(pwd)/gitlab-mcp-server-config.json:/app/gitlab-mcp-server-config.json \
+  -e GITLAB_TOKEN=<your-token> \
+  gitlab-mcp-server:latest
+```
+
+## Documentation 📚
+
+For detailed information on specific features, see:
+
+- **[Token Management](docs/TOKEN_MANAGEMENT.md)** - How tokens are validated, tracked, and managed
+- **[Multi-Server Setup](docs/MULTI_SERVER_SETUP.md)** - Configure multiple GitLab instances
+- **[GitHub Detection](docs/GITHUB_DETECTION.md)** - Why GitHub isn't supported and error handling
+- **[Project Configuration](docs/PROJECT_CONFIG.md)** - Using `.gmcprc` files for project-specific settings
+
+### Quick Links
+
+| Topic | Description |
+|-------|-------------|
+| **Token Validation** | Automatic token validation on startup, expiration tracking, and 401 error handling |
+| **Multiple GitLab Servers** | Configure work, personal, and other GitLab instances simultaneously |
+| **Project Auto-Detection** | Automatically detect GitLab project from Git remotes |
+| **GitHub Detection** | Clear error messages when GitHub repositories are detected |
+| **Runtime Token Management** | Add, update, remove tokens using MCP tools (`addToken`, `updateToken`, etc.) |
 
 ## Contributing & License 🤝
 
