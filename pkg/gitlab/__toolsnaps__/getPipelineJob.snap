@@ -1,0 +1,25 @@
+{
+  "annotations": {
+    "title": "Get Pipeline Job",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_PIPELINE_JOB_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "jobId": {
+        "description": "The ID of the job.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "jobId"
+    ]
+  },
+  "name": "getPipelineJob"
+}

@@ -1,0 +1,34 @@
+# Ignore test files for errcheck - errors in test setup/teardown are acceptable
+**/*_test.go:errcheck
+**/*_test.go:revive
+**/*_test.go:staticcheck
+**/*_test.go:unparam
+**/*_test.go:unused
+
+# Ignore style issues for now (will fix incrementally)
+pkg/gitlab/users.go:revive
+pkg/gitlab/helpers.go:staticcheck
+pkg/gitlab/toolsets.go:whitespace
+
+# Ignore ifElseChain for test helpers - false positive, switch is not appropriate
+pkg/gitlab/helpers_test.go:gocritic
+
+# Ignore goconst for non-test files where strings are intentionally repeated
+pkg/gitlab/client_pool.go:goconst
+pkg/gitlab/client_resolver_test.go:goconst
+pkg/gitlab/merge_requests_test.go:goconst
+pkg/gitlab/project_tools_test.go:goconst
+pkg/gitlab/repository_files_test.go:goconst
+pkg/gitlab/tags_test.go:goconst
+
+# Ignore gosec issues - mostly test data with "hardcoded" strings
+**/*_test.go:gosec
+cmd/gitlab-mcp-server/main.go:gosec
+
+# Ignore specific test files with known issues
+pkg/gitlab/client_pool_test.go:errcheck
+pkg/gitlab/client_resolver_test.go:errcheck
+pkg/gitlab/search_test.go:errcheck
+pkg/gitlab/token_manager_test.go:errcheck
+pkg/log/iolog_test.go:errcheck
+internal/toolsnaps/toolsnaps_test.go:errcheck

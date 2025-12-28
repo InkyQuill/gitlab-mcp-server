@@ -194,10 +194,10 @@ Tokens are configured via environment variables in your MCP configuration:
 
 ### Using the Installer
 
-The installer (`python scripts/install.py`) helps you configure MCP servers:
+The installer (`node scripts/install.js`) helps you configure MCP servers:
 
 ```bash
-python scripts/install.py
+node scripts/install.js
 ```
 
 For multiple GitLab servers, select "Configure multiple GitLab servers? (y/n): y" when prompted.

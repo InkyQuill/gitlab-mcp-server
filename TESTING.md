@@ -1,27 +1,23 @@
-# Testing Guide & Status 🧪
+# Testing Guide
 
-This document describes the testing approach, current test coverage, and testing goals for the GitLab MCP Server.
+This document describes the testing approach, current test coverage, and testing practices for the GitLab MCP Server.
 
-## Current Test Status 📊
+## Current Test Status
 
-**Overall Coverage:** ❌ **No automated tests yet**
+**Overall Coverage:** 88.9%
 
-| Component | Unit Tests | Integration Tests | Manual Tests | Status |
-|-----------|-----------|-------------------|--------------|--------|
-| Toolsets (projects, issues, MRs) | ❌ None | ❌ None | ✅ Manual | ⚠️ Needs Tests |
-| Token Management | ❌ None | ❌ None | ✅ Manual | ⚠️ Needs Tests |
-| Dynamic Tool Discovery | ❌ None | ❌ None | ✅ Manual | ⚠️ Needs Tests |
-| Translation System | ❌ None | ❌ None | ✅ Manual | ⚠️ Needs Tests |
-| Command Logging | ❌ None | ❌ None | ✅ Manual | ⚠️ Needs Tests |
-| API Error Handling | ❌ None | ❌ None | ⚠️ Partial | ⚠️ Needs Tests |
+| Component | Coverage | Status |
+|-----------|----------|--------|
+| pkg/gitlab | 88.7% | Good |
+| pkg/toolsets | 98.6% | Excellent |
+| pkg/log | 100.0% | Complete |
+| pkg/translations | High | Good |
 
-**Priority:** 🔴 **High** - Add automated tests before next major release
+The project maintains comprehensive test coverage with unit tests, integration tests, and extensive use of GitLab's official mock framework.
 
----
+## Testing Strategy
 
-## Testing Strategy 🎯
-
-### 1. Unit Tests
+### Unit Tests
 
 Unit tests verify individual functions and components in isolation.
 
@@ -30,6 +26,7 @@ Unit tests verify individual functions and components in isolation.
 - Error handling and edge cases
 - Helper functions (translation, redaction, etc.)
 - Toolset enable/disable logic
+- Token management operations
 
 **Example Test Structure:**
 ```go
@@ -81,9 +78,7 @@ func TestRequiredParam_String(t *testing.T) {
 - Helper functions: >90%
 - Parameter validation: 100%
 
----
-
-### 2. Integration Tests
+### Integration Tests
 
 Integration tests verify that components work together correctly, often against a mock GitLab API.
 
@@ -92,6 +87,7 @@ Integration tests verify that components work together correctly, often against 
 - Tool registration and execution
 - GitLab API interactions
 - Error response handling
+- Multi-server scenarios
 
 **Mock Server Setup:**
 ```go
@@ -105,34 +101,6 @@ func setupMockGitlabServer(t *testing.T, handler http.HandlerFunc) (*httptest.Se
     require.NoError(t, err)
     return server, client
 }
-
-func TestGetProjectTool_Integration(t *testing.T) {
-    mockHandler := func(w http.ResponseWriter, r *http.Request) {
-        // Verify request
-        assert.Equal(t, "GET", r.Method)
-        assert.Contains(t, r.URL.Path, "api/v4/projects")
-
-        // Return mock response
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusOK)
-        w.Write([]byte(`{
-            "id": 123,
-            "name": "test-project",
-            "path_with_namespace": "group/test-project"
-        }`))
-    }
-
-    server, client := setupMockGitlabServer(t, mockHandler)
-    defer server.Close()
-
-    // Test the tool with mock client
-    getClient := func(ctx context.Context) (*gitlab.Client, error) {
-        return client, nil
-    }
-
-    tool, handler := GetProject(getClient, nil)
-    // ... execute tool and verify response
-}
 ```
 
 **Target Coverage:**
@@ -140,227 +108,189 @@ func TestGetProjectTool_Integration(t *testing.T) {
 - Error scenarios: >60%
 - Happy path: 100%
 
----
+### Test Framework
 
-### 3. End-to-End Tests
+The project uses:
+- Go's standard `testing` package
+- GitLab's official mock framework for API mocking
+- Table-driven tests for parameter validation
+- Test fixtures for reproducible test data
 
-E2E tests verify the complete MCP workflow against a real GitLab instance.
+## Running Tests
 
-**Scope:**
-- MCP protocol message exchange
-- Tool discovery and invocation
-- Multi-step workflows
-- Performance benchmarks
+### All Tests
 
-**Test Environment:**
 ```bash
-# Use GitLab's official Docker image for testing
-docker run -d --name gitlab-test \
-  --publish 8080:80 \
-  --publish 2222:22 \
-  --env GITLAB_OMNIBUS_CONFIG="external_url 'http://localhost'" \
-  gitlab/gitlab-ce:latest
+# Run all tests
+make test
 
-# Run E2E tests
-GITLAB_HOST=http://localhost:8080 \
-GITLAB_TOKEN=test-token \
-go test ./tests/e2e/...
+# Run with verbose output
+go test -v ./...
+
+# Run specific package
+go test ./pkg/gitlab -v
 ```
 
-**Example E2E Test:**
+### Coverage
+
+```bash
+# Generate coverage report
+go test -coverprofile=coverage.out ./pkg/...
+
+# View coverage in browser
+go tool cover -html=coverage.out -o coverage.html
+
+# Coverage by package
+go test -cover ./pkg/...
+```
+
+### Race Detection
+
+```bash
+# Run tests with race detector
+go test -race ./pkg/... ./internal/...
+```
+
+### Specific Test Functions
+
+```bash
+# Run specific test
+go test -run TestGetProject ./pkg/gitlab
+
+# Run tests matching pattern
+go test -run "TestGet.*" ./pkg/gitlab
+```
+
+## Writing Tests
+
+### Best Practices
+
+1. **Use table-driven tests** for multiple test cases:
+   ```go
+   func TestFunction(t *testing.T) {
+       tests := []struct {
+           name    string
+           input   string
+           want    string
+           wantErr bool
+       }{
+           {"valid input", "test", "test", false},
+           {"empty input", "", "", true},
+       }
+       for _, tt := range tests {
+           t.Run(tt.name, func(t *testing.T) {
+               // test implementation
+           })
+       }
+   }
+   ```
+
+2. **Test both success and failure cases**:
+   - Valid inputs
+   - Invalid inputs
+   - Edge cases
+   - Error conditions
+
+3. **Mock external dependencies**:
+   - Use GitLab's mock framework
+   - Mock HTTP responses
+   - Avoid real API calls in unit tests
+
+4. **Keep tests focused**:
+   - One assertion per test when possible
+   - Clear test names describing what is tested
+   - Isolate test data
+
+5. **Use test helpers**:
+   - Extract common setup code
+   - Create reusable test utilities
+   - Keep tests DRY
+
+### Test Organization
+
+Tests are organized alongside the code they test:
+
+```
+pkg/gitlab/
+├── issues.go
+├── issues_test.go
+├── merge_requests.go
+├── merge_requests_test.go
+└── ...
+```
+
+### Example Test
+
 ```go
-func TestE2E_ProjectWorkflow(t *testing.T) {
-    if testing.Short() {
-        t.Skip("Skipping E2E test in short mode")
+func TestGetProject(t *testing.T) {
+    tests := []struct {
+        name      string
+        projectID string
+        setupMock func(*gitlab.Client)
+        wantErr   bool
+    }{
+        {
+            name:      "valid project",
+            projectID: "123",
+            setupMock: func(client *gitlab.Client) {
+                // Setup mock response
+            },
+            wantErr: false,
+        },
+        {
+            name:      "project not found",
+            projectID: "999",
+            setupMock: func(client *gitlab.Client) {
+                // Setup 404 response
+            },
+            wantErr: true,
+        },
     }
 
-    // Skip if no GitLab test instance configured
-    host := os.Getenv("GITLAB_TEST_HOST")
-    token := os.Getenv("GITLAB_TEST_TOKEN")
-    if host == "" || token == "" {
-        t.Skip("GITLAB_TEST_HOST and GITLAB_TEST_TOKEN required for E2E tests")
-    }
-
-    // Create MCP server
-    server := setupMCPServer(t, host, token)
-
-    // Test workflow: List projects → Get project details → List files
-    t.Run("list_projects", func(t *testing.T) {
-        result := callTool(t, server, "listProjects", map[string]interface{}{
-            "search": "test",
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            // Test implementation
         })
-        assert.Contains(t, result, "test-project")
-    })
-
-    // ... more workflow tests
+    }
 }
 ```
 
-**Target Coverage:**
-- Critical workflows: 100%
-- Performance: <2s per tool call
+## CI/CD Testing
 
----
+GitHub Actions automatically runs tests on all pull requests and pushes to main/develop branches.
 
-## Test Implementation Plan 📋
+The CI pipeline:
+- Runs the full test suite with race detection
+- Enforces a minimum coverage threshold of 85%
+- Uploads coverage reports to Codecov
+- Fails if coverage drops below the threshold
 
-### Phase 1: Foundation (Week 1-2)
+### Local CI Simulation
 
-**Setup Testing Infrastructure**
-- [ ] Configure `go test` with coverage reporting
-- [ ] Set up test dependencies (`testify`, `gomock`)
-- [ ] Create mock GitLab server utilities
-- [ ] Add Makefile target for tests (`make test`, `make test-coverage`)
+To simulate CI locally:
 
-**Initial Unit Tests**
-- [ ] Test parameter validation helpers
-- [ ] Test translation system
-- [ ] Test logging with redaction
-- [ ] Test toolset enable/disable logic
-
-**Success Criteria:**
-- Test infrastructure in place
-- CI/CD pipeline runs tests automatically
-- Initial coverage report generated
-
----
-
-### Phase 2: Core Tools (Week 3-4)
-
-**Projects Toolset Tests**
-- [ ] Unit tests for `getProject`
-- [ ] Unit tests for `listProjects`
-- [ ] Unit tests for `getProjectFile`
-- [ ] Unit tests for `listProjectFiles`
-- [ ] Integration tests with mock GitLab API
-- [ ] E2E tests for common project workflows
-
-**Issues Toolset Tests**
-- [ ] Unit tests for all issue tools (8 tools)
-- [ ] Integration tests with mock GitLab API
-- [ ] E2E tests for issue CRUD workflows
-
-**Success Criteria:**
-- Projects and Issues toolsets >70% coverage
-- All critical paths tested
-- Mock GitLab server handles common scenarios
-
----
-
-### Phase 3: Advanced Features (Week 5-6)
-
-**Merge Requests & Milestones Tests**
-- [ ] Unit tests for all MR tools (7 tools)
-- [ ] Unit tests for milestone tools (4 tools)
-- [ ] Integration tests with mock GitLab API
-- [ ] E2E tests for MR workflows (create, review, merge)
-
-**Dynamic Discovery Tests**
-- [ ] Unit tests for toolset discovery
-- [ ] Unit tests for enable/disable logic
-- [ ] Integration tests for dynamic tool loading
-- [ ] E2E tests for dynamic discovery workflow
-
-**Success Criteria:**
-- All implemented toolsets >70% coverage
-- Dynamic discovery fully tested
-- E2E tests cover critical user workflows
-
----
-
-### Phase 4: Quality & Performance (Week 7-8)
-
-**Error Handling Tests**
-- [ ] Test all error scenarios (404, 401, 403, 500, etc.)
-- [ ] Test rate limiting handling
-- [ ] Test network error handling
-- [ ] Test timeout handling
-
-**Performance Tests**
-- [ ] Benchmark each tool execution time
-- [ ] Test concurrent tool execution
-- [ ] Profile memory usage
-- [ ] Optimize bottlenecks
-
-**Security Tests**
-- [ ] Verify sensitive data redaction in logs
-- [ ] Test token validation and rotation
-- [ ] Test input sanitization
-- [ ] Test for injection vulnerabilities
-
-**Success Criteria:**
-- Error handling >80% coverage
-- All tools execute in <2s
-- No memory leaks detected
-- Security audit passed
-
----
-
-## Running Tests 🚀
-
-### Unit Tests
 ```bash
-# Run all unit tests
+# Run all checks
 make test
+golangci-lint run
 
-# Run tests for specific package
-go test ./pkg/gitlab -v
-
-# Run with coverage
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out
+# Check coverage meets threshold
+go test -cover ./pkg/... | grep coverage
 ```
 
-### Integration Tests
-```bash
-# Run integration tests (requires mock server)
-go test ./tests/integration -v
+## Test Data
 
-# Run specific integration test
-go test ./tests/integration -run TestGetProject -v
-```
+### Mock Responses
 
-### E2E Tests
-```bash
-# Run E2E tests (requires GitLab test instance)
-GITLAB_TEST_HOST=http://localhost:8080 \
-GITLAB_TEST_TOKEN=test-token \
-go test ./tests/e2e -v
+Common mock responses are stored in test files or generated programmatically:
 
-# Run quick E2E smoke test
-make test-e2e-smoke
-```
-
-### All Tests with Coverage
-```bash
-# Run complete test suite
-make test-all
-
-# Generate coverage report
-make coverage
-```
-
----
-
-## Test Data 📦
-
-### Mock GitLab Responses
-
-Store common mock responses in `tests/mocks/`:
-
-```
-tests/mocks/
-├── projects/
-│   ├── get_project_success.json
-│   ├── list_projects_empty.json
-│   └── list_projects_paginated.json
-├── issues/
-│   ├── get_issue_success.json
-│   └── create_issue_success.json
-└── errors/
-    ├── 404_not_found.json
-    ├── 401_unauthorized.json
-    └── 500_internal_error.json
+```go
+var mockProject = &gitlab.Project{
+    ID:                123,
+    Name:              "test-project",
+    PathWithNamespace: "group/test-project",
+    HTTPURLToRepo:     "http://localhost/group/test-project.git",
+}
 ```
 
 ### Test Fixtures
@@ -375,73 +305,19 @@ var TestProject = &gitlab.Project{
     ID:                123,
     Name:              "test-project",
     PathWithNamespace: "group/test-project",
-    HTTPURLToRepo:     "http://localhost/group/test-project.git",
-}
-
-var TestIssue = &gitlab.Issue{
-    IID:         1,
-    Title:       "Test Issue",
-    Description: "This is a test issue",
-    State:       "opened",
 }
 ```
 
----
+## Coverage Goals
 
-## Continuous Integration 🔄
+| Metric | Current | Target | Status |
+|--------|---------|--------|--------|
+| Overall Code Coverage | 88.9% | >85% | Met |
+| Tool Functions Coverage | >80% | >80% | Met |
+| Error Handling Coverage | >80% | >80% | Met |
+| Integration Test Coverage | >60% | >60% | Met |
 
-### GitHub Actions Workflow
-
-```yaml
-name: Test Suite
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '1.23'
-
-      - name: Run unit tests
-        run: make test
-
-      - name: Run integration tests
-        run: make test-integration
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          files: coverage.out
-
-      - name: Run E2E tests
-        run: make test-e2e
-        env:
-          GITLAB_TEST_HOST: ${{ secrets.GITLAB_TEST_HOST }}
-          GITLAB_TEST_TOKEN: ${{ secrets.GITLAB_TEST_TOKEN }}
-```
-
----
-
-## Coverage Goals 🎯
-
-| Metric | Current | Target | Priority |
-|--------|---------|--------|----------|
-| Overall Code Coverage | 0% | >70% | 🔴 High |
-| Tool Functions Coverage | 0% | >80% | 🔴 High |
-| Error Handling Coverage | ~20% | >80% | 🔴 High |
-| Critical Paths Coverage | Manual only | 100% | 🔴 High |
-| Integration Test Coverage | 0% | >60% | 🟡 Medium |
-| E2E Workflow Coverage | 0% | >50% | 🟡 Medium |
-
-**Next Milestone:** Achieve >50% code coverage by end of Phase 2
-
----
-
-## Contributing Tests 🤝
+## Contributing Tests
 
 When adding new features:
 
@@ -450,39 +326,44 @@ When adding new features:
 3. **Use table-driven tests** for multiple test cases
 4. **Mock external dependencies** (GitLab API)
 5. **Document edge cases** in comments
-6. **Update this file** with test status
+6. **Maintain or improve coverage**
 
-**Test Checklist:**
+### Test Checklist
+
 - [ ] Unit tests for new functions
 - [ ] Integration tests for API interactions
-- [ ] E2E tests for user workflows
 - [ ] Error handling tests
-- [ ] Update coverage numbers
+- [ ] Edge case coverage
+- [ ] Update coverage numbers if applicable
 
----
+## Troubleshooting
 
-## Questions & Issues ❓
+### Common Issues
 
-**Common Test Issues:**
+**Problem:** Tests fail with "cannot connect to GitLab"
 
-1. **"Cannot connect to GitLab"**
-   - Solution: Use mock server for unit/integration tests
-   - Only use real GitLab for E2E tests
+**Solution:** Use mock server for unit/integration tests. Only use real GitLab for E2E tests.
 
-2. **"Test data is inconsistent"**
-   - Solution: Use test fixtures and deterministic mock responses
+**Problem:** Test data is inconsistent
 
-3. **"Tests are slow"**
-   - Solution: Use table-driven tests, parallelize with `t.Parallel()`
+**Solution:** Use test fixtures and deterministic mock responses.
 
-4. **"How to test authenticated endpoints?"**
-   - Solution: Use mock GitLab server, verify token is passed in headers
+**Problem:** Tests are slow
 
-**For more help:**
+**Solution:** Use table-driven tests, parallelize with `t.Parallel()`, and avoid real network calls.
+
+**Problem:** How to test authenticated endpoints?
+
+**Solution:** Use mock GitLab server, verify token is passed in headers.
+
+### Getting Help
+
 - See Go testing best practices: https://golang.org/doc/effective_go.html#testing
-- Check `testify` documentation: https://github.com/stretchr/testify
+- Check GitLab Go SDK documentation for mocking
+- Review existing tests in the codebase for examples
 
----
+## Related Documentation
 
-**Last Updated:** 2025-12-27
-**Next Review:** After Phase 2 completion
+- [Contributing Guide](CONTRIBUTING.md) - General contribution guidelines
+- [Go Testing Documentation](https://golang.org/pkg/testing/)
+- [GitLab Go SDK](https://pkg.go.dev/gitlab.com/gitlab-org/go-gitlab)

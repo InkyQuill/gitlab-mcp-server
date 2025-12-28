@@ -19,6 +19,7 @@ gitlab_openapi_v2.yaml
 scripts/task-complexity-report.json
 github-mcp-server
 .cursor
+.claude
 
 # Added by Claude Task Master
 # Logs
@@ -57,3 +58,6 @@ coverage.out
 coverage.html
 *.out
 *.test
+
+# Claude Development Documentation (local rules)
+CLAUDE.md

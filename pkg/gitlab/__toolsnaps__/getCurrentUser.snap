@@ -1,0 +1,11 @@
+{
+  "annotations": {
+    "title": "Get Current GitLab User",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_CURRENT_USER_DESCRIPTION",
+  "inputSchema": {
+    "type": "object"
+  },
+  "name": "getCurrentUser"
+}

@@ -1,0 +1,25 @@
+{
+  "annotations": {
+    "title": "List GitLab Users",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_LIST_USERS_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "page": {
+        "description": "The page number to retrieve (default: 1)",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "The number of results per page (default: 20, max: 100)",
+        "type": "number"
+      },
+      "search": {
+        "description": "Search users by username, name or email",
+        "type": "string"
+      }
+    }
+  },
+  "name": "listUsers"
+}

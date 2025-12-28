@@ -110,3 +110,37 @@ func HandleCreateUpdateAPIError(err error, resp *gl.Response, resourceDescriptio
 	// For all other errors, return as internal error
 	return nil, fmt.Errorf("failed to %s %s: %w (status: %d)", operation, resourceDescription, err, code)
 }
+
+// HandleGraphQLError provides error handling for GraphQL queries
+func HandleGraphQLError(err error, resp *gl.Response, resourceDescription string) (*mcp.CallToolResult, error) {
+	if err == nil {
+		return nil, nil
+	}
+
+	// Check if it's a GraphQL response error
+	// GraphQL errors may be returned even when HTTP status is 200
+	if resp != nil && resp.Response != nil {
+		code := resp.Response.StatusCode
+
+		// Handle 401 Unauthorized - token expired or invalid
+		if code == http.StatusUnauthorized {
+			msg := fmt.Sprintf("Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.")
+			return mcp.NewToolResultError(msg), nil
+		}
+
+		// Handle 404 Not Found
+		if code == http.StatusNotFound {
+			msg := fmt.Sprintf("%s not found or access denied (404)", resourceDescription)
+			return mcp.NewToolResultError(msg), nil
+		}
+
+		// Handle 400 Bad Request / 422 Unprocessable Entity
+		if code == http.StatusBadRequest || code == http.StatusUnprocessableEntity {
+			msg := fmt.Sprintf("failed to process %s: %v (status: %d)", resourceDescription, err, code)
+			return mcp.NewToolResultError(msg), nil
+		}
+	}
+
+	// For all other errors, return as internal error
+	return nil, fmt.Errorf("failed to process %s: %w", resourceDescription, err)
+}

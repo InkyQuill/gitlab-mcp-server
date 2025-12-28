@@ -1,0 +1,24 @@
+{
+  "annotations": {
+    "title": "Delete Repository Tag"
+  },
+  "description": "TOOL_DELETE_REPOSITORY_TAG_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "tagName": {
+        "description": "The name of the tag to delete.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "tagName"
+    ]
+  },
+  "name": "deleteRepositoryTag"
+}

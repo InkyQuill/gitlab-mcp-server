@@ -1,0 +1,33 @@
+{
+  "annotations": {
+    "title": "Create Repository Tag"
+  },
+  "description": "TOOL_CREATE_REPOSITORY_TAG_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "message": {
+        "description": "The message for the tag annotation (creates annotated tag).",
+        "type": "string"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "ref": {
+        "description": "The branch name or commit SHA to create the tag from.",
+        "type": "string"
+      },
+      "tagName": {
+        "description": "The name of the tag.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "tagName",
+      "ref"
+    ]
+  },
+  "name": "createRepositoryTag"
+}

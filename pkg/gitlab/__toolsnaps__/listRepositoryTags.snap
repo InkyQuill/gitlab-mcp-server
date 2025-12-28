@@ -1,0 +1,32 @@
+{
+  "annotations": {
+    "title": "List Repository Tags",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_LIST_REPOSITORY_TAGS_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "page": {
+        "description": "Page number of the results to retrieve (min 1).",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "Number of results to return per page (default: 20, max: 100).",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "search": {
+        "description": "Return list of tags matching the search criteria.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId"
+    ]
+  },
+  "name": "listRepositoryTags"
+}

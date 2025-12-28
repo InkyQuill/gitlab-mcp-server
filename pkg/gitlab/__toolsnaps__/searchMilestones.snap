@@ -1,0 +1,28 @@
+{
+  "annotations": {
+    "title": "Search GitLab Milestones",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_SEARCH_MILESTONES_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "page": {
+        "description": "The page number to retrieve (default: 1)",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "The number of results per page (default: 20, max: 100)",
+        "type": "number"
+      },
+      "search": {
+        "description": "The search query string",
+        "type": "string"
+      }
+    },
+    "required": [
+      "search"
+    ]
+  },
+  "name": "searchMilestones"
+}

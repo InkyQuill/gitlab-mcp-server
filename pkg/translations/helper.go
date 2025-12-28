@@ -62,7 +62,7 @@ func dumpAllTranslations(logger *log.Logger, configPath string) {
 	// Merge with existing config
 	existing := make(map[string]string)
 	if data, err := os.ReadFile(configPath); err == nil {
-		json.Unmarshal(data, &existing)
+		_ = json.Unmarshal(data, &existing)
 	}
 
 	// Add any missing keys

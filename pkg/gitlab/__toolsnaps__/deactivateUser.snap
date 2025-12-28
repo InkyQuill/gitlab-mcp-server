@@ -1,0 +1,19 @@
+{
+  "annotations": {
+    "title": "Deactivate GitLab User"
+  },
+  "description": "TOOL_DEACTIVATE_USER_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "description": "The ID of the user to deactivate",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  },
+  "name": "deactivateUser"
+}

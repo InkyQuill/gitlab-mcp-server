@@ -1,0 +1,20 @@
+{
+  "annotations": {
+    "title": "Get GitLab User Status",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_USER_STATUS_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "description": "The ID of the user",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  },
+  "name": "getUserStatus"
+}

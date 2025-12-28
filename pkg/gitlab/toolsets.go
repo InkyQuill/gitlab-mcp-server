@@ -45,6 +45,8 @@ func InitToolsets(
 	securityTS := toolsets.NewToolset("security", "Tools for accessing GitLab security scan results (SAST, DAST, etc.).")
 	usersTS := toolsets.NewToolset("users", "Tools for looking up GitLab user information.")
 	searchTS := toolsets.NewToolset("search", "Tools for utilizing GitLab's scoped search capabilities.")
+	tagsTS := toolsets.NewToolset("tags", "Tools for managing GitLab repository tags and releases.")
+	pipelineJobsTS := toolsets.NewToolset("pipeline_jobs", "Tools for monitoring and controlling GitLab CI/CD pipeline jobs.")
 
 	// 3. Add Tools to Toolsets (Actual tool implementation TBD in separate tasks)
 	//    Tool definition functions will need to accept GetClientFn or call it.
@@ -118,14 +120,83 @@ func InitToolsets(
 		toolsets.NewServerTool(UpdateMergeRequestComment(getClient, translations)),
 	)
 
-	// --- Add tools to securityTS (Part of future tasks?) ---
-	// securityTS.AddReadTools(...) // Likely read-only
+	// --- Add tools to securityTS (Security scanning reports) ---
+	securityTS.AddReadTools(
+		toolsets.NewServerTool(GetProjectSAST(getClient, translations)),
+		toolsets.NewServerTool(GetProjectDAST(getClient, translations)),
+		toolsets.NewServerTool(GetProjectDependencyScanning(getClient, translations)),
+		toolsets.NewServerTool(GetProjectContainerScanning(getClient, translations)),
+		toolsets.NewServerTool(GetProjectSecretDetection(getClient, translations)),
+		toolsets.NewServerTool(GetProjectLicenseCompliance(getClient, translations)),
+	)
 
-	// --- Add tools to usersTS (Task 10) ---
-	// usersTS.AddReadTools(...) // Likely read-only
+	// --- Add tools to usersTS (User management) ---
+	usersTS.AddReadTools(
+		toolsets.NewServerTool(GetCurrentUser(getClient, translations)),
+		toolsets.NewServerTool(GetUser(getClient, translations)),
+		toolsets.NewServerTool(GetUserStatus(getClient, translations)),
+		toolsets.NewServerTool(ListUsers(getClient, translations)),
+		toolsets.NewServerTool(ListProjectUsers(getClient, translations)),
+	)
+	usersTS.AddWriteTools(
+		toolsets.NewServerTool(BlockUser(getClient, translations)),
+		toolsets.NewServerTool(UnblockUser(getClient, translations)),
+		toolsets.NewServerTool(BanUser(getClient, translations)),
+		toolsets.NewServerTool(UnbanUser(getClient, translations)),
+		toolsets.NewServerTool(ActivateUser(getClient, translations)),
+		toolsets.NewServerTool(DeactivateUser(getClient, translations)),
+		toolsets.NewServerTool(ApproveUser(getClient, translations)),
+	)
 
-	// --- Add tools to searchTS (Task 10/11) ---
-	// searchTS.AddReadTools(...) // Likely read-only
+	// --- Add tools to searchTS (Search capabilities) ---
+	searchTS.AddReadTools(
+		toolsets.NewServerTool(SearchProjects(getClient, translations)),
+		toolsets.NewServerTool(SearchIssues(getClient, translations)),
+		toolsets.NewServerTool(SearchMergeRequests(getClient, translations)),
+		toolsets.NewServerTool(SearchBlobs(getClient, translations)),
+		toolsets.NewServerTool(SearchCommits(getClient, translations)),
+		toolsets.NewServerTool(SearchMilestones(getClient, translations)),
+		toolsets.NewServerTool(SearchSnippetTitles(getClient, translations)),
+		toolsets.NewServerTool(SearchSnippetBlobs(getClient, translations)),
+		toolsets.NewServerTool(SearchWikiBlobs(getClient, translations)),
+		// Group-scoped searches
+		toolsets.NewServerTool(SearchProjectsByGroup(getClient, translations)),
+		toolsets.NewServerTool(SearchIssuesByGroup(getClient, translations)),
+		toolsets.NewServerTool(SearchMergeRequestsByGroup(getClient, translations)),
+		toolsets.NewServerTool(SearchMilestonesByGroup(getClient, translations)),
+		toolsets.NewServerTool(SearchBlobsByGroup(getClient, translations)),
+		// Project-scoped searches
+		toolsets.NewServerTool(SearchIssuesByProject(getClient, translations)),
+		toolsets.NewServerTool(SearchMergeRequestsByProject(getClient, translations)),
+		toolsets.NewServerTool(SearchMilestonesByProject(getClient, translations)),
+		toolsets.NewServerTool(SearchBlobsByProject(getClient, translations)),
+		toolsets.NewServerTool(SearchCommitsByProject(getClient, translations)),
+		toolsets.NewServerTool(SearchNotesByProject(getClient, translations)),
+	)
+
+	// --- Add tools to tagsTS (Tags Management) ---
+	tagsTS.AddReadTools(
+		toolsets.NewServerTool(ListRepositoryTags(getClient, translations)),
+		toolsets.NewServerTool(GetRepositoryTag(getClient, translations)),
+		toolsets.NewServerTool(GetTagCommit(getClient, translations)),
+	)
+	tagsTS.AddWriteTools(
+		toolsets.NewServerTool(CreateRepositoryTag(getClient, translations)),
+		toolsets.NewServerTool(DeleteRepositoryTag(getClient, translations)),
+	)
+
+	// --- Add tools to pipelineJobsTS (CI/CD Pipeline Jobs) ---
+	pipelineJobsTS.AddReadTools(
+		toolsets.NewServerTool(ListPipelineJobs(getClient, translations)),
+		toolsets.NewServerTool(GetPipelineJob(getClient, translations)),
+		toolsets.NewServerTool(GetPipelineJobTrace(getClient, translations)),
+	)
+	pipelineJobsTS.AddWriteTools(
+		toolsets.NewServerTool(RetryPipelineJob(getClient, translations)),
+		toolsets.NewServerTool(PlayPipelineJob(getClient, translations)),
+		toolsets.NewServerTool(CancelPipeline(getClient, translations)),
+		toolsets.NewServerTool(RetryPipeline(getClient, translations)),
+	)
 
 	// 4. Add defined Toolsets to the Group
 	tg.AddToolset(tokenManagementTS)
@@ -136,6 +207,8 @@ func InitToolsets(
 	tg.AddToolset(securityTS)
 	tg.AddToolset(usersTS)
 	tg.AddToolset(searchTS)
+	tg.AddToolset(tagsTS)
+	tg.AddToolset(pipelineJobsTS)
 
 	// 5. Enable Toolsets based on configuration
 	// In dynamic mode, toolsets are enabled on-demand, so we skip this step

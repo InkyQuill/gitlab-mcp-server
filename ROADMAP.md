@@ -1,86 +1,87 @@
-# GitLab MCP Server - Development Roadmap 🗺️
+# Development Roadmap
 
 This document outlines the planned features and improvements for the GitLab MCP Server.
 
-## Current Status ✅
+## Current Status
 
-### Completed Features
+### Phase 1: Core Infrastructure ✅ Completed
 
-**Phase 1: Core Infrastructure (Completed ✅)**
-- ✅ Command Logging - MCP JSON-RPC protocol message logging with sensitive data redaction
-- ✅ i18n / Translations - Customizable tool descriptions via JSON config
-- ✅ Dynamic Tool Discovery - Lazy-load toolsets on-demand
+**Implemented Components:**
+- Command Logging - MCP JSON-RPC protocol message logging with sensitive data redaction
+- i18n / Translations - Customizable tool descriptions via JSON config
+- Dynamic Tool Discovery - Lazy-load toolsets on-demand
 
-**Implemented Toolsets (29 tools across 3 major toolsets)**
-- ✅ **Projects Toolset** (6 tools): `getProject`, `listProjects`, `getProjectFile`, `listProjectFiles`, `getProjectBranches`, `getProjectCommits`
-- ✅ **Issues Toolset** (8 tools): `getIssue`, `listIssues`, `getIssueComments`, `getIssueLabels`, `createIssue`, `updateIssue`, `createIssueComment`, `updateIssueComment`
-- ✅ **Merge Requests Toolset** (7 tools): `getMergeRequest`, `listMergeRequests`, `getMergeRequestComments`, `createMergeRequest`, `updateMergeRequest`, `createMergeRequestComment`, `updateMergeRequestComment`
-- ✅ **Milestones** (4 tools): `getMilestone`, `listMilestones`, `createMilestone`, `updateMilestone`
-- ✅ **Token Management** (6 tools): Runtime token CRUD operations
-- ✅ **Project Configuration** (4 tools): Auto-detection, `.gmcprc` file management
+**Implemented Toolsets (69 tools total):**
 
----
+- **Projects Toolset** (6 tools): `getProject`, `listProjects`, `getProjectFile`, `listProjectFiles`, `getProjectBranches`, `getProjectCommits`
+- **Issues Toolset** (8 tools): `getIssue`, `listIssues`, `getIssueComments`, `getIssueLabels`, `createIssue`, `updateIssue`, `createIssueComment`, `updateIssueComment`
+- **Merge Requests Toolset** (7 tools): `getMergeRequest`, `listMergeRequests`, `getMergeRequestComments`, `createMergeRequest`, `updateMergeRequest`, `createMergeRequestComment`, `updateMergeRequestComment`
+- **Milestones Toolset** (4 tools): `getMilestone`, `listMilestones`, `createMilestone`, `updateMilestone`
+- **Search Toolset** (20 tools): Comprehensive search across projects, issues, MRs, code, commits, milestones, snippets, wiki, notes with global, group-scoped, and project-scoped variants
+- **Users Toolset** (12 tools): User information lookup and admin operations (block, unblock, ban, unban, activate, deactivate, approve)
+- **Security Toolset** (6 tools): Security scan results (SAST, DAST, dependency scanning, container scanning, secret detection, license compliance)
+- **Token Management Toolset** (6 tools): Runtime token CRUD operations and validation
+- **Project Configuration Toolset** (4 tools): Auto-detection, `.gmcprc` file management, multi-server support
+- **Tags Toolset** (5 tools): `listRepositoryTags`, `getRepositoryTag`, `createRepositoryTag`, `deleteRepositoryTag`, `getTagCommit`
+- **Pipeline Jobs Toolset** (7 tools): `listPipelineJobs`, `getPipelineJob`, `getPipelineJobTrace`, `retryPipelineJob`, `playPipelineJob`, `cancelPipeline`, `retryPipeline`
 
-## Upcoming Features 🔜
+**Quality Metrics:**
+- Test Coverage: 86.9% (pkg/gitlab)
+- Tool Schema Snapshots: 86
+- Test Functions: 174
+- Test Cases: 886
+- Documentation Files: 11 (comprehensive docs/ folder)
 
-### Phase 2: Repository & Code Management
+## Upcoming Features
 
-#### Tags Management 🔖
-**Priority: High**
-**Estimated Effort: 1-2 days**
+### Phase 2: Repository & Code Management ✅ Completed
 
-Tools needed:
-- `listRepositoryTags` - List all tags in a repository
+#### Tags Management
+
+**Priority:** High
+**Status:** Completed
+
+Implemented Tools:
+- `listRepositoryTags` - List all tags in a repository (with search and pagination)
 - `getRepositoryTag` - Get details of a specific tag
 - `createRepositoryTag` - Create a new tag (annotated or lightweight)
 - `deleteRepositoryTag` - Delete a tag
-- `getTagCommit` - Get commit details for a tag
+- `getTagCommit` - Get release/commit info for a tag
 
-**Use Cases:**
-- Release management automation
-- Version tagging workflows
-- Cleaning up old tags
+**Implementation Details:**
+- Comprehensive error handling for 401, 403, 404, 400, 422, 500 status codes
+- Pagination support for listing tags
+- Search functionality for filtering tags
+- Schema snapshot tests for all 5 tools
+- 33 test cases covering success paths, error cases, validation, and edge cases
 
-**GitLab API Endpoints:**
-- `GET /projects/:id/repository/tags`
-- `GET /projects/:id/repository/tags/:tag_name`
-- `POST /projects/:id/repository/tags`
-- `DELETE /projects/:id/repository/tags/:tag_name`
+### Phase 3: CI/CD Pipeline Management ✅ Completed
 
----
+#### Pipeline Status & Control
 
-### Phase 3: CI/CD Pipeline Management
+**Priority:** High
+**Status:** Completed
 
-#### Pipeline Status & Control 🚀
-**Priority: High**
-**Estimated Effort: 2-3 days**
-
-Tools needed:
+Implemented Tools:
 - `listPipelineJobs` - List jobs for a pipeline
-- `getPipelineJob` - Get details of a specific job (including logs)
+- `getPipelineJob` - Get details of a specific job
 - `getPipelineJobTrace` - Get job logs/trace output
 - `retryPipelineJob` - Retry a failed job
 - `playPipelineJob` - Trigger a manual job
 - `cancelPipeline` - Cancel a running pipeline
 - `retryPipeline` - Retry all jobs in a pipeline
 
-**Use Cases:**
-- Monitor CI/CD status from AI assistants
-- Debug failed pipelines by retrieving logs
-- Automate pipeline retries and cleanups
+**Implementation Details:**
+- Integer ID validation for pipelineId/jobId parameters
+- Raw trace output for job logs (not JSON)
+- Write operations use HandleCreateUpdateAPIError for proper error handling
+- Schema snapshot tests for all 7 tools
+- 40 test cases covering success paths, error cases, validation, and edge cases
 
-**GitLab API Endpoints:**
-- `GET /projects/:id/pipelines/:pipeline_id/jobs`
-- `GET /projects/:id/jobs/:job_id`
-- `GET /projects/:id/jobs/:job_id/trace`
-- `POST /projects/:id/jobs/:job_id/retry`
-- `POST /projects/:id/jobs/:job_id/play`
-- `POST /projects/:id/pipelines/:pipeline_id/cancel`
-- `POST /projects/:id/pipelines/:pipeline_id/retry`
+#### Pipeline Variables
 
-#### Pipeline Variables 🔐
-**Priority: Medium**
-**Estimated Effort: 1-2 days**
+**Priority:** Medium  
+**Status:** Planned
 
 Tools needed:
 - `listPipelineVariables` - List CI/CD variables for a project
@@ -94,13 +95,12 @@ Tools needed:
 - Secure credential rotation
 - Environment-specific configuration
 
----
-
 ### Phase 4: Project Labels & Milestones Management
 
-#### Labels Management 🏷️
-**Priority: Medium**
-**Estimated Effort: 1-2 days**
+#### Labels Management
+
+**Priority:** Medium  
+**Status:** Planned
 
 Tools needed:
 - `listProjectLabels` - List all labels in a project
@@ -122,108 +122,25 @@ Tools needed:
 - `PUT /projects/:id/labels/:label_id_or_title`
 - `DELETE /projects/:id/labels/:label_id_or_title`
 
----
+## Infrastructure & Quality Improvements
 
-### Phase 5: Search & Discovery
+### Testing & Test Coverage
 
-#### Scoped Search 🔍
-**Priority: High**
-**Estimated Effort: 2-3 days**
+**Priority:** High
+**Status:** Active (86.9% coverage achieved)
 
-Tools needed:
-- `searchProjects` - Search for projects across GitLab
-- `searchIssues` - Search issues globally or within a project
-- `searchMergeRequests` - Search merge requests globally or within a project
-- `searchCode` - Search code across repositories (blobs)
-- `searchCommits` - Search commits in a project
-- `searchWiki` - Search wiki content
-
-**Use Cases:**
-- Find relevant projects/issues quickly
-- Code search across multiple repositories
-- Research and analysis workflows
-
-**GitLab API Endpoints:**
-- `GET /search?scope=projects`
-- `GET /search?scope=issues`
-- `GET /search?scope=merge_requests`
-- `GET /search?scope=blobs`
-- `GET /projects/:id/search?scope=commits`
-
----
-
-### Phase 6: Users & Teams
-
-#### User Management 👥
-**Priority: Medium**
-**Estimated Effort: 1-2 days**
-
-Tools needed:
-- `getCurrentUser` - Get current authenticated user details
-- `getUser` - Get details of a specific user
-- `listProjectUsers` - List users with access to a project
-- `listGroupMembers` - List members of a group
-- `listProjectMembers` - List members of a project
-
-**Use Cases:**
-- Identify team members for assignments
-- Check user permissions
-- Team audit and reporting
-
-**GitLab API Endpoints:**
-- `GET /user`
-- `GET /users/:id`
-- `GET /projects/:id/users`
-- `GET /groups/:id/members`
-- `GET /projects/:id/members/all`
-
----
-
-### Phase 7: Security & Compliance
-
-#### Security Scans 🛡️
-**Priority: Low**
-**Estimated Effort: 2-3 days**
-
-Tools needed:
-- `listPipelineArtifacts` - List artifacts from a pipeline
-- `getSecurityReport` - Get security scan results (SAST, DAST, dependency scanning)
-- `listProjectVulnerabilities` - List known vulnerabilities
-- `getVulnerabilityDetails` - Get details of a specific vulnerability
-
-**Use Cases:**
-- Monitor security posture
-- Automated vulnerability reporting
-- Compliance checking
-
-**Note:** Many security features require GitLab Premium/Ultimate.
-
----
-
-## Infrastructure & Quality Improvements 🔧
-
-### Testing & Test Coverage 🧪
-**Priority: High**
-**Estimated Effort: 3-5 days**
-
-Current Status: ❌ No automated tests
+Current Status: Comprehensive test suite with high coverage
 
 Planned Improvements:
-- **Unit Tests**: Test individual tool functions, parameter parsing, API error handling
-- **Integration Tests**: Test against GitLab API mock server or test instance
-- **End-to-End Tests**: Test MCP protocol interactions
-- **Test Coverage**: Aim for >80% code coverage
+- Increase coverage to 90%+ across all packages
+- Add integration tests for main.go initialization
+- Expand edge case testing for admin operations
+- Add performance benchmarks for critical paths
 
-**Test Framework:**
-- Use `testing` package + `testify` for assertions
-- Mock GitLab API responses using `httptest`
-- Test table-driven patterns for parameter validation
+### Code Quality & Refactoring
 
----
-
-### Code Quality & Refactoring 🎨
-**Priority: Medium**
-**Estimated Effort: 2-3 days**
+**Priority:** Medium  
+**Status:** Planned
 
 Planned Improvements:
 1. **Error Handling**: Standardize error messages and add more context
@@ -238,11 +155,10 @@ Planned Improvements:
 - Standardize tool parameter validation patterns
 - Add performance benchmarks for critical paths
 
----
+### Performance Optimizations
 
-### Performance Optimizations ⚡
-**Priority: Low**
-**Estimated Effort: 2-3 days**
+**Priority:** Low  
+**Status:** Planned
 
 Planned Improvements:
 1. **Caching**: Cache frequently accessed data (project details, user info)
@@ -256,11 +172,10 @@ Planned Improvements:
 - API call frequency
 - Error rates
 
----
+### Documentation Improvements
 
-### Documentation Improvements 📚
-**Priority: Medium**
-**Estimated Effort: 1-2 days**
+**Priority:** Medium  
+**Status:** Planned
 
 Planned Improvements:
 1. **Examples**: Add real-world usage examples for each tool
@@ -269,34 +184,33 @@ Planned Improvements:
 4. **Migration Guides**: Document version changes and breaking changes
 5. **Troubleshooting**: Add common issues and solutions
 
----
+## Implementation Priorities
 
-## Implementation Priorities 📋
+### High Priority
 
-### Immediate (Next 1-2 weeks)
-1. ✅ Phase 1: Core Infrastructure - **COMPLETED**
-2. 🔜 **Phase 5: Search & Discovery** - High value for users
-3. 🔜 **Phase 2: Tags Management** - Common workflow need
+- Phase 2: Tags Management - High value for users
+- Phase 3: CI/CD Pipeline Management - Critical for DevOps workflows
+- Testing & Test Coverage - Maintain high coverage
 
-### Short-term (Next 1-2 months)
-4. **Phase 3: CI/CD Pipeline Management** - Critical for DevOps workflows
-5. **Testing & Test Coverage** - Essential for stability
-6. **Phase 4: Labels Management** - Common project management need
+### Medium Priority
 
-### Long-term (3-6 months)
-7. **Phase 6: Users & Teams** - Nice-to-have for collaboration
-8. **Code Quality & Refactoring** - Maintainability
-9. **Performance Optimizations** - Scale for larger deployments
+- Phase 4: Labels Management - Common project management need
+- Code Quality & Refactoring - Maintainability improvements
+- Documentation Improvements - Enhanced user experience
+
+### Low Priority
+
+- Performance Optimizations - Scale for larger deployments
+- Additional toolsets based on user feedback
 
 ### Future Considerations
-- **Phase 7: Security & Compliance** - If there's demand
-- **Webhook Support** - Receive real-time GitLab events
-- **GraphQL API Support** - More efficient queries
-- **Batch Operations** - Reduce API call count
 
----
+- Webhook Support - Receive real-time GitLab events
+- GraphQL API Support - More efficient queries
+- Batch Operations - Reduce API call count
+- Advanced Security Features - Enhanced security scanning tools
 
-## Contributing 🤝
+## Contributing
 
 We welcome contributions! If you'd like to implement any of these features:
 
@@ -306,18 +220,15 @@ We welcome contributions! If you'd like to implement any of these features:
 4. Submit a pull request with tests and documentation
 
 **Priority Labels:**
-- 🚀 High Priority - Core functionality, high demand
-- 🔧 Medium Priority - Important but not urgent
-- 💡 Low Priority - Nice-to-have features
+- High Priority - Core functionality, high demand
+- Medium Priority - Important but not urgent
+- Low Priority - Nice-to-have features
 
----
-
-## Questions & Feedback 💬
+## Questions & Feedback
 
 For questions, suggestions, or feedback:
 - Open an issue on GitHub
 - Check existing documentation in `/docs` folder
 - Review example configurations in installer scripts
 
-**Last Updated:** 2025-12-27
-**Project Status:** Active Development ✨
+**Project Status:** Production-ready, actively maintained

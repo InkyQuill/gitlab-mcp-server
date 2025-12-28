@@ -1,3 +1,5 @@
+version: 2
+
 run:
   timeout: 5m
   tests: true
@@ -8,21 +10,27 @@ linters:
     - govet
     - errcheck
     - staticcheck
-    - gofmt
-    - goimports
     - revive
     - ineffassign
-    - typecheck
     - unused
-    - gosimple
     - misspell
-    - nakedret
     - bodyclose
     - gocritic
     - makezero
     - gosec
+    - nakedret
+    - contextcheck
+    - goconst
+    - godot
+    - goprintffuncname
+    - nilerr
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+    - unconvert
+    - unparam
+    - whitespace
 
 output:
-  formats: colored-line-number
   print-issued-lines: true
   print-linter-name: true

@@ -148,6 +148,45 @@ func setupMockClientForMilestones(t *testing.T) (*gl.Client, *mock_gitlab.MockMi
 	return client, mockMilestones, ctrl
 }
 
+// Helper to create a mock GetClientFn for testing handlers for the Search service
+func setupMockClientForSearch(t *testing.T) (*gl.Client, *mock_gitlab.MockSearchServiceInterface, *gomock.Controller) {
+	ctrl := gomock.NewController(t)
+	mockSearch := mock_gitlab.NewMockSearchServiceInterface(ctrl) // Mock for Search
+
+	// Create a minimal client and attach the mock service
+	client := &gl.Client{
+		Search: mockSearch, // Attach the Search service mock
+	}
+
+	return client, mockSearch, ctrl
+}
+
+// Helper to create a mock GetClientFn for testing handlers for the Users service
+func setupMockClientForUsers(t *testing.T) (*gl.Client, *mock_gitlab.MockUsersServiceInterface, *gomock.Controller) {
+	ctrl := gomock.NewController(t)
+	mockUsers := mock_gitlab.NewMockUsersServiceInterface(ctrl) // Mock for Users
+
+	// Create a minimal client and attach the Users service mock
+	client := &gl.Client{
+		Users: mockUsers, // Attach the Users service mock
+	}
+
+	return client, mockUsers, ctrl
+}
+
+// Helper to create a mock GetClientFn for testing handlers for the GraphQL service
+func setupMockClientForGraphQL(t *testing.T) (*gl.Client, *mock_gitlab.MockGraphQLInterface, *gomock.Controller) {
+	ctrl := gomock.NewController(t)
+	mockGraphQL := mock_gitlab.NewMockGraphQLInterface(ctrl) // Mock for GraphQL
+
+	// Create a minimal client and attach the GraphQL service mock
+	client := &gl.Client{
+		GraphQL: mockGraphQL, // Attach the GraphQL service mock
+	}
+
+	return client, mockGraphQL, ctrl
+}
+
 // Tests for HandleAPIError
 func TestHandleAPIError(t *testing.T) {
 	tests := []struct {
@@ -452,4 +491,52 @@ func TestHandleCreateUpdateAPIError(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Helper to create a mock GetClientFn for testing handlers for the Tags service
+func setupMockClientForTags(t *testing.T) (*gl.Client, *mock_gitlab.MockTagsServiceInterface, *gomock.Controller) {
+	ctrl := gomock.NewController(t)
+	mockTags := mock_gitlab.NewMockTagsServiceInterface(ctrl)
+
+	client := &gl.Client{
+		Tags: mockTags,
+	}
+
+	return client, mockTags, ctrl
+}
+
+// Helper to create a mock GetClientFn for testing handlers for the Releases service
+func setupMockClientForReleases(t *testing.T) (*gl.Client, *mock_gitlab.MockReleasesServiceInterface, *gomock.Controller) {
+	ctrl := gomock.NewController(t)
+	mockReleases := mock_gitlab.NewMockReleasesServiceInterface(ctrl)
+
+	client := &gl.Client{
+		Releases: mockReleases,
+	}
+
+	return client, mockReleases, ctrl
+}
+
+// Helper to create a mock GetClientFn for testing handlers for the Jobs service
+func setupMockClientForJobs(t *testing.T) (*gl.Client, *mock_gitlab.MockJobsServiceInterface, *gomock.Controller) {
+	ctrl := gomock.NewController(t)
+	mockJobs := mock_gitlab.NewMockJobsServiceInterface(ctrl)
+
+	client := &gl.Client{
+		Jobs: mockJobs,
+	}
+
+	return client, mockJobs, ctrl
+}
+
+// Helper to create a mock GetClientFn for testing handlers for the Pipelines service
+func setupMockClientForPipelines(t *testing.T) (*gl.Client, *mock_gitlab.MockPipelinesServiceInterface, *gomock.Controller) {
+	ctrl := gomock.NewController(t)
+	mockPipelines := mock_gitlab.NewMockPipelinesServiceInterface(ctrl)
+
+	client := &gl.Client{
+		Pipelines: mockPipelines,
+	}
+
+	return client, mockPipelines, ctrl
 }

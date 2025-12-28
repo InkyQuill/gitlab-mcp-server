@@ -1,0 +1,19 @@
+{
+  "annotations": {
+    "title": "Ban GitLab User"
+  },
+  "description": "TOOL_BAN_USER_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "description": "The ID of the user to ban",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  },
+  "name": "banUser"
+}

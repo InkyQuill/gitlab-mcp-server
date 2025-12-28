@@ -1,0 +1,19 @@
+{
+  "annotations": {
+    "title": "Block GitLab User"
+  },
+  "description": "TOOL_BLOCK_USER_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "description": "The ID of the user to block",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  },
+  "name": "blockUser"
+}

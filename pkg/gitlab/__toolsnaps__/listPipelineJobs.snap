@@ -1,0 +1,33 @@
+{
+  "annotations": {
+    "title": "List Pipeline Jobs",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_LIST_PIPELINE_JOBS_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "page": {
+        "description": "Page number of the results to retrieve (min 1).",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "Number of results to return per page (default: 20, max: 100).",
+        "type": "number"
+      },
+      "pipelineId": {
+        "description": "The ID of the pipeline.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "pipelineId"
+    ]
+  },
+  "name": "listPipelineJobs"
+}
