@@ -57,3 +57,6 @@ coverage.out
 coverage.html
 *.out
 *.test
+
+# Claude Development Documentation (local rules)
+CLAUDE.md
