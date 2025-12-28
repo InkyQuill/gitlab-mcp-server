@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	gl "gitlab.com/gitlab-org/api/client-go"
@@ -1954,4 +1956,47 @@ func TestSearchNotesByProjectHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+
+// TestSearchTools_SchemaSnapshots verifies that search tool schemas match their snapshots
+func TestSearchTools_SchemaSnapshots(t *testing.T) {
+	tools := []struct {
+		name string
+		tool mcp.Tool
+	}{
+		{"searchProjects", mustMakeSearchTool(SearchProjects)},
+		{"searchIssues", mustMakeSearchTool(SearchIssues)},
+		{"searchMergeRequests", mustMakeSearchTool(SearchMergeRequests)},
+		{"searchBlobs", mustMakeSearchTool(SearchBlobs)},
+		{"searchCommits", mustMakeSearchTool(SearchCommits)},
+		{"searchMilestones", mustMakeSearchTool(SearchMilestones)},
+		{"searchSnippetTitles", mustMakeSearchTool(SearchSnippetTitles)},
+		{"searchSnippetBlobs", mustMakeSearchTool(SearchSnippetBlobs)},
+		{"searchWikiBlobs", mustMakeSearchTool(SearchWikiBlobs)},
+		{"searchProjectsByGroup", mustMakeSearchTool(SearchProjectsByGroup)},
+		{"searchIssuesByGroup", mustMakeSearchTool(SearchIssuesByGroup)},
+		{"searchMergeRequestsByGroup", mustMakeSearchTool(SearchMergeRequestsByGroup)},
+		{"searchMilestonesByGroup", mustMakeSearchTool(SearchMilestonesByGroup)},
+		{"searchBlobsByGroup", mustMakeSearchTool(SearchBlobsByGroup)},
+		{"searchIssuesByProject", mustMakeSearchTool(SearchIssuesByProject)},
+		{"searchMergeRequestsByProject", mustMakeSearchTool(SearchMergeRequestsByProject)},
+		{"searchMilestonesByProject", mustMakeSearchTool(SearchMilestonesByProject)},
+		{"searchBlobsByProject", mustMakeSearchTool(SearchBlobsByProject)},
+		{"searchCommitsByProject", mustMakeSearchTool(SearchCommitsByProject)},
+		{"searchNotesByProject", mustMakeSearchTool(SearchNotesByProject)},
+	}
+
+	for _, tc := range tools {
+		t.Run(tc.name, func(t *testing.T) {
+			err := toolsnaps.Test(tc.name, tc.tool)
+			require.NoError(t, err, "tool schema should match snapshot")
+		})
+	}
+}
+
+// Helper function to create tool from search tool definition function
+func mustMakeSearchTool(fn func(GetClientFn, map[string]string) (mcp.Tool, server.ToolHandlerFunc)) mcp.Tool {
+	tool, _ := fn(nil, nil)
+	return tool
 }

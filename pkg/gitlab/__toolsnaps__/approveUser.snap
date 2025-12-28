@@ -1,0 +1,19 @@
+{
+  "annotations": {
+    "title": "Approve GitLab User"
+  },
+  "description": "TOOL_APPROVE_USER_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "description": "The ID of the user to approve",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  },
+  "name": "approveUser"
+}

@@ -1,0 +1,19 @@
+{
+  "annotations": {
+    "title": "Unblock GitLab User"
+  },
+  "description": "TOOL_UNBLOCK_USER_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "description": "The ID of the user to unblock",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  },
+  "name": "unblockUser"
+}

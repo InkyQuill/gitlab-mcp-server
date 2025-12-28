@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	gl "gitlab.com/gitlab-org/api/client-go"
@@ -362,4 +364,39 @@ func TestListProjectUsersHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+
+// TestUserTools_SchemaSnapshots verifies that user tool schemas match their snapshots
+func TestUserTools_SchemaSnapshots(t *testing.T) {
+	tools := []struct {
+		name string
+		tool mcp.Tool
+	}{
+		{"getCurrentUser", mustMakeUserTool(GetCurrentUser)},
+		{"getUser", mustMakeUserTool(GetUser)},
+		{"getUserStatus", mustMakeUserTool(GetUserStatus)},
+		{"listUsers", mustMakeUserTool(ListUsers)},
+		{"listProjectUsers", mustMakeUserTool(ListProjectUsers)},
+		{"blockUser", mustMakeUserTool(BlockUser)},
+		{"unblockUser", mustMakeUserTool(UnblockUser)},
+		{"banUser", mustMakeUserTool(BanUser)},
+		{"unbanUser", mustMakeUserTool(UnbanUser)},
+		{"activateUser", mustMakeUserTool(ActivateUser)},
+		{"deactivateUser", mustMakeUserTool(DeactivateUser)},
+		{"approveUser", mustMakeUserTool(ApproveUser)},
+	}
+
+	for _, tc := range tools {
+		t.Run(tc.name, func(t *testing.T) {
+			err := toolsnaps.Test(tc.name, tc.tool)
+			require.NoError(t, err, "tool schema should match snapshot")
+		})
+	}
+}
+
+// Helper function to create tool from user tool definition function
+func mustMakeUserTool(fn func(GetClientFn, map[string]string) (mcp.Tool, server.ToolHandlerFunc)) mcp.Tool {
+	tool, _ := fn(nil, nil)
+	return tool
 }

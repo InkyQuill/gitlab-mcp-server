@@ -1,0 +1,19 @@
+{
+  "annotations": {
+    "title": "Activate GitLab User"
+  },
+  "description": "TOOL_ACTIVATE_USER_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "description": "The ID of the user to activate",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  },
+  "name": "activateUser"
+}

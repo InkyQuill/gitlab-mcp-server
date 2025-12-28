@@ -1,0 +1,33 @@
+{
+  "annotations": {
+    "title": "Search GitLab Code in Group",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_SEARCH_BLOBS_BY_GROUP_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "gid": {
+        "description": "The ID or URL-encoded path of the group",
+        "type": "string"
+      },
+      "page": {
+        "description": "The page number to retrieve (default: 1)",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "The number of results per page (default: 20, max: 100)",
+        "type": "number"
+      },
+      "search": {
+        "description": "The search query string for code search",
+        "type": "string"
+      }
+    },
+    "required": [
+      "gid",
+      "search"
+    ]
+  },
+  "name": "searchBlobsByGroup"
+}

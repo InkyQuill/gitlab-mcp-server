@@ -1,0 +1,19 @@
+{
+  "annotations": {
+    "title": "Unban GitLab User"
+  },
+  "description": "TOOL_UNBAN_USER_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "description": "The ID of the user to unban",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  },
+  "name": "unbanUser"
+}

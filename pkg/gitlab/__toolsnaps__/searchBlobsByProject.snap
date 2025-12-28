@@ -1,0 +1,33 @@
+{
+  "annotations": {
+    "title": "Search GitLab Code in Project",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_SEARCH_BLOBS_BY_PROJECT_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "page": {
+        "description": "The page number to retrieve (default: 1)",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "The number of results per page (default: 20, max: 100)",
+        "type": "number"
+      },
+      "pid": {
+        "description": "The ID or URL-encoded path of the project",
+        "type": "string"
+      },
+      "search": {
+        "description": "The search query string for code search",
+        "type": "string"
+      }
+    },
+    "required": [
+      "pid",
+      "search"
+    ]
+  },
+  "name": "searchBlobsByProject"
+}

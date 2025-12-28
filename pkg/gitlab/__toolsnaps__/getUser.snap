@@ -1,0 +1,20 @@
+{
+  "annotations": {
+    "title": "Get GitLab User by ID",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_USER_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "description": "The ID of the user",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId"
+    ]
+  },
+  "name": "getUser"
+}
