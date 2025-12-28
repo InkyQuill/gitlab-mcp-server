@@ -422,6 +422,9 @@ The following toolsets are fully implemented and available:
 | `projects` | ✅ Available | Project details, repository operations (files, branches, commits). | `getProject`, `listProjects`, `getProjectFile`, `listProjectFiles`, `getProjectBranches`, `getProjectCommits` |
 | `issues` | ✅ Available | Issue management (CRUD, comments, labels, milestones). | `getIssue`, `listIssues`, `getIssueComments`, `getIssueLabels`, `createIssue`, `updateIssue`, `createIssueComment`, `updateIssueComment`, `getMilestone`, `listMilestones`, `createMilestone`, `updateMilestone` |
 | `merge_requests` | ✅ Available | Merge request operations (CRUD, comments). | `getMergeRequest`, `listMergeRequests`, `getMergeRequestComments`, `createMergeRequest`, `updateMergeRequest`, `createMergeRequestComment`, `updateMergeRequestComment` |
+| `search` | ✅ Available | Scoped search across projects, issues, MRs, code, commits, milestones, and more. | 14 search tools including `searchProjects`, `searchIssues`, `searchMergeRequests`, `searchBlobs`, `searchCommits`, `searchMilestones` with group/project-scoped variants |
+| `users` | ✅ Available | User information lookup and admin operations. | `getCurrentUser`, `getUser`, `getUserStatus`, `listUsers`, `listProjectUsers`, `blockUser`, `unblockUser`, `banUser`, `unbanUser`, `activateUser`, `deactivateUser`, `approveUser` |
+| `security` | ✅ Available | Security scan results (SAST, DAST, dependency/container scanning, secret detection, license compliance). | `getProjectSAST`, `getProjectDAST`, `getProjectDependencyScanning`, `getProjectContainerScanning`, `getProjectSecretDetection`, `getProjectLicenseCompliance` |
 
 ### Planned Toolsets
 
@@ -429,11 +432,9 @@ The following toolsets are planned but not yet implemented:
 
 | Toolset | Status | Description |
 |---------|--------|-------------|
-| `security` | 🔜 Planned | Tools for accessing GitLab security scan results (SAST, DAST, Secret Detection, etc.). |
-| `users` | 🔜 Planned | Tools for looking up GitLab user information. |
-| `search` | 🔜 Planned | Tools for utilizing GitLab's scoped search capabilities (projects, issues, MRs, code). |
+| _None currently planned_ | - | All major toolsets are implemented! |
 
-**Note:** All available toolsets are enabled by default if `GITLAB_TOOLSETS` is not set or set to `"all"`. Planned toolsets will be ignored if specified until they are implemented.
+**Note:** All available toolsets are enabled by default if `GITLAB_TOOLSETS` is not set or set to `"all"`.
 
 ### Specifying Toolsets
 
