@@ -24,7 +24,7 @@ func mockGetClientFn(_ context.Context) (*gitlab.Client, error) {
 
 func TestInitToolsets(t *testing.T) {
 	// Define the expected toolset names based on the implementation
-	// All 8 toolsets defined in InitToolsets
+	// All 10 toolsets defined in InitToolsets
 	expectedToolsetNames := []string{
 		"token_management",
 		"project_config",
@@ -34,6 +34,8 @@ func TestInitToolsets(t *testing.T) {
 		"security",
 		"users",
 		"search",
+		"tags",
+		"pipeline_jobs",
 	}
 
 	tests := []struct {

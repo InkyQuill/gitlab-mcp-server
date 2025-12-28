@@ -45,6 +45,8 @@ func InitToolsets(
 	securityTS := toolsets.NewToolset("security", "Tools for accessing GitLab security scan results (SAST, DAST, etc.).")
 	usersTS := toolsets.NewToolset("users", "Tools for looking up GitLab user information.")
 	searchTS := toolsets.NewToolset("search", "Tools for utilizing GitLab's scoped search capabilities.")
+	tagsTS := toolsets.NewToolset("tags", "Tools for managing GitLab repository tags and releases.")
+	pipelineJobsTS := toolsets.NewToolset("pipeline_jobs", "Tools for monitoring and controlling GitLab CI/CD pipeline jobs.")
 
 	// 3. Add Tools to Toolsets (Actual tool implementation TBD in separate tasks)
 	//    Tool definition functions will need to accept GetClientFn or call it.
@@ -172,6 +174,30 @@ func InitToolsets(
 		toolsets.NewServerTool(SearchNotesByProject(getClient, translations)),
 	)
 
+	// --- Add tools to tagsTS (Tags Management) ---
+	tagsTS.AddReadTools(
+		toolsets.NewServerTool(ListRepositoryTags(getClient, translations)),
+		toolsets.NewServerTool(GetRepositoryTag(getClient, translations)),
+		toolsets.NewServerTool(GetTagCommit(getClient, translations)),
+	)
+	tagsTS.AddWriteTools(
+		toolsets.NewServerTool(CreateRepositoryTag(getClient, translations)),
+		toolsets.NewServerTool(DeleteRepositoryTag(getClient, translations)),
+	)
+
+	// --- Add tools to pipelineJobsTS (CI/CD Pipeline Jobs) ---
+	pipelineJobsTS.AddReadTools(
+		toolsets.NewServerTool(ListPipelineJobs(getClient, translations)),
+		toolsets.NewServerTool(GetPipelineJob(getClient, translations)),
+		toolsets.NewServerTool(GetPipelineJobTrace(getClient, translations)),
+	)
+	pipelineJobsTS.AddWriteTools(
+		toolsets.NewServerTool(RetryPipelineJob(getClient, translations)),
+		toolsets.NewServerTool(PlayPipelineJob(getClient, translations)),
+		toolsets.NewServerTool(CancelPipeline(getClient, translations)),
+		toolsets.NewServerTool(RetryPipeline(getClient, translations)),
+	)
+
 	// 4. Add defined Toolsets to the Group
 	tg.AddToolset(tokenManagementTS)
 	tg.AddToolset(projectConfigTS)
@@ -181,6 +207,8 @@ func InitToolsets(
 	tg.AddToolset(securityTS)
 	tg.AddToolset(usersTS)
 	tg.AddToolset(searchTS)
+	tg.AddToolset(tagsTS)
+	tg.AddToolset(pipelineJobsTS)
 
 	// 5. Enable Toolsets based on configuration
 	// In dynamic mode, toolsets are enabled on-demand, so we skip this step

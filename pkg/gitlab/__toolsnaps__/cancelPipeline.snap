@@ -1,0 +1,24 @@
+{
+  "annotations": {
+    "title": "Cancel Pipeline"
+  },
+  "description": "TOOL_CANCEL_PIPELINE_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "pipelineId": {
+        "description": "The ID of the pipeline to cancel.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "pipelineId"
+    ]
+  },
+  "name": "cancelPipeline"
+}
