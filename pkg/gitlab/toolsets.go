@@ -121,8 +121,23 @@ func InitToolsets(
 	// --- Add tools to securityTS (Part of future tasks?) ---
 	// securityTS.AddReadTools(...) // Likely read-only
 
-	// --- Add tools to usersTS (Task 10) ---
-	// usersTS.AddReadTools(...) // Likely read-only
+	// --- Add tools to usersTS (User management) ---
+	usersTS.AddReadTools(
+		toolsets.NewServerTool(GetCurrentUser(getClient, translations)),
+		toolsets.NewServerTool(GetUser(getClient, translations)),
+		toolsets.NewServerTool(GetUserStatus(getClient, translations)),
+		toolsets.NewServerTool(ListUsers(getClient, translations)),
+		toolsets.NewServerTool(ListProjectUsers(getClient, translations)),
+	)
+	usersTS.AddWriteTools(
+		toolsets.NewServerTool(BlockUser(getClient, translations)),
+		toolsets.NewServerTool(UnblockUser(getClient, translations)),
+		toolsets.NewServerTool(BanUser(getClient, translations)),
+		toolsets.NewServerTool(UnbanUser(getClient, translations)),
+		toolsets.NewServerTool(ActivateUser(getClient, translations)),
+		toolsets.NewServerTool(DeactivateUser(getClient, translations)),
+		toolsets.NewServerTool(ApproveUser(getClient, translations)),
+	)
 
 	// --- Add tools to searchTS (Search capabilities) ---
 	searchTS.AddReadTools(

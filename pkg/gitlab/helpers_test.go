@@ -161,6 +161,19 @@ func setupMockClientForSearch(t *testing.T) (*gl.Client, *mock_gitlab.MockSearch
 	return client, mockSearch, ctrl
 }
 
+// Helper to create a mock GetClientFn for testing handlers for the Users service
+func setupMockClientForUsers(t *testing.T) (*gl.Client, *mock_gitlab.MockUsersServiceInterface, *gomock.Controller) {
+	ctrl := gomock.NewController(t)
+	mockUsers := mock_gitlab.NewMockUsersServiceInterface(ctrl) // Mock for Users
+
+	// Create a minimal client and attach the Users service mock
+	client := &gl.Client{
+		Users: mockUsers, // Attach the Users service mock
+	}
+
+	return client, mockUsers, ctrl
+}
+
 // Tests for HandleAPIError
 func TestHandleAPIError(t *testing.T) {
 	tests := []struct {
