@@ -1,42 +1,44 @@
-# GitLab MCP Server 🦊
+# GitLab MCP Server
 
 [![Tests](https://github.com/InkyQuill/gitlab-mcp-server/actions/workflows/test.yml/badge.svg)](https://github.com/InkyQuill/gitlab-mcp-server/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/InkyQuill/gitlab-mcp-server/branch/main/graph/badge.svg)](https://codecov.io/gh/InkyQuill/gitlab-mcp-server)
 [![Go Report Card](https://goreportcard.com/badge/github.com/InkyQuill/gitlab-mcp-server)](https://goreportcard.com/report/github.com/InkyQuill/gitlab-mcp-server)
-[![Coverage](https://img.shields.io/badge/coverage-88.9%25-brightgreen)](https://github.com/InkyQuill/gitlab-mcp-server)
+[![Go Version](https://img.shields.io/badge/go-1.24+-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Maintained](https://img.shields.io/badge/maintained-yes-green.svg)](https://github.com/InkyQuill/gitlab-mcp-server/graphs/commit-activity)
 
-The GitLab MCP Server is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction)
-server that provides seamless integration with GitLab APIs, enabling advanced
-automation and interaction capabilities for developers and AI tools within the GitLab ecosystem.
+The GitLab MCP Server is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server that provides seamless integration with GitLab APIs, enabling advanced automation and interaction capabilities for developers and AI tools within the GitLab ecosystem.
 
-> **Note:** This is a fork of the original [gitlab-mcp-server](https://github.com/LuisCusihuaman/gitlab-mcp-server) project, substantially rewritten with improved testing (88.9% coverage), better error handling, and additional features.
+> **Note:** This is a fork of the original [gitlab-mcp-server](https://github.com/LuisCusihuaman/gitlab-mcp-server) project, substantially rewritten with improved testing, better error handling, and additional features.
 
-## Use Cases ✨
+## Overview
 
-- Automating GitLab workflows and processes (e.g., managing issues, merge requests).
-- Extracting and analyzing data from GitLab projects and groups.
-- Building AI-powered tools and applications that interact with GitLab.
+The GitLab MCP Server bridges the gap between AI development tools and GitLab's extensive API, providing a standardized interface for managing projects, issues, merge requests, and other GitLab resources. It supports both GitLab.com and self-managed GitLab instances, with features like multi-server configuration, dynamic tool discovery, and comprehensive token management.
 
-## Prerequisites ⚙️
+## Features
 
-1. **GitLab Access Token:** You need a GitLab Access Token to authenticate with the API. You can create:
-   - A [Personal Access Token (PAT)](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
-   - A [Project Access Token](https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html)
-   - A [Group Access Token](https://docs.gitlab.com/ee/user/group/settings/group_access_tokens.html)
-   
-   The required [scopes](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#available-scopes) depend on the tools you intend to use (e.g., `api` scope grants broad access, or select more granular scopes like `read_repository`, `write_repository`, `read_api`). Grant only the permissions you feel comfortable giving your AI tools.
+- **Comprehensive GitLab API Integration**: Access projects, issues, merge requests, milestones, and more
+- **Multi-Server Support**: Configure multiple GitLab instances (work, personal, etc.) simultaneously
+- **Dynamic Tool Discovery**: Load toolsets on-demand to reduce initial context size
+- **Token Management**: Automatic validation, expiration tracking, and runtime token management
+- **Project Auto-Detection**: Automatically detect GitLab projects from Git remotes
+- **Read-Only Mode**: Restrict operations to read-only for enhanced security
+- **Self-Hosted Support**: Works with GitLab.com and self-managed instances
+- **Internationalization**: Customize tool descriptions and translations
+- **Comprehensive Testing**: 88.9% code coverage with extensive test suite
 
-2. **Docker (optional):** To run the server in a container, you need [Docker](https://www.docker.com/) installed and running. Alternatively, you can build from source (see below).
+## Quick Start
 
-3. **Go (for building from source):** If building from source, you need [Go](https://go.dev/) installed (version 1.23 or later).
+### Prerequisites
 
-## Installation 🚀
+1. **GitLab Access Token**: Create a [Personal Access Token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html), [Project Access Token](https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html), or [Group Access Token](https://docs.gitlab.com/ee/user/group/settings/group_access_tokens.html)
+2. **Docker (optional)**: For containerized deployment
+3. **Go 1.23+ (optional)**: For building from source
 
-### Quick Setup (Recommended)
+### Installation
 
-The easiest way to set up the GitLab MCP Server is using the automated installer:
+The easiest way to get started is using the automated installer:
 
-**Linux:**
 ```bash
 git clone <repository-url>
 cd gitlab-mcp-server
@@ -44,659 +46,232 @@ make setup
 make install-mcp
 ```
 
-**macOS/Linux (using setup script):**
-```bash
-git clone <repository-url>
-cd gitlab-mcp-server
-./setup.sh
-```
-
-**Windows:**
-```cmd
-git clone <repository-url>
-cd gitlab-mcp-server
-setup.bat
-```
-
-The installer will:
-- Check prerequisites (Go version, dependencies)
-- Build the server binary
-- Prompt you for:
-  - Deployment mode: local binary (default) or Docker
-  - GitLab host URL (defaults to `https://gitlab.com`)
-  - GitLab access token (entered securely, not displayed)
-  - Read-only mode preference
-  - Development environments to configure (VS Code, Claude Desktop, Claude Code, Cursor)
-- Automatically configure your selected development environments
-- Create backup copies (`.bak` files) of existing configuration files before modifying them
-
-The server will be registered as `gitlab-go-mcp` in your MCP configurations.
-
-**Note:** The installer intelligently merges with existing configurations, preserving your other MCP server settings.
-
-### Building the Server
-
-#### Using Makefile (Linux)
-
-The project includes a Makefile with the following targets:
-
-- `make setup` - Install prerequisites and dependencies
-- `make build` - Build the binary to `bin/gitlab-mcp-server`
-- `make clean` - Clean build artifacts
-- `make test` - Run tests
-- `make docker-build` - Build Docker image
-- `make install-mcp` - Build installer and run MCP configuration
-- `make help` - Show all available targets
-
-**Example:**
-```bash
-make setup    # Install prerequisites
-make build     # Build the server
-make install-mcp  # Configure MCP servers
-```
-
-#### Docker Build
-
-To build the Docker image:
+Or use the setup script:
 
 ```bash
-docker build -t gitlab-mcp-server:latest .
+./setup.sh  # Linux/macOS
+setup.bat   # Windows
 ```
 
-Or using Makefile:
-```bash
-make docker-build
-```
+The installer will guide you through configuration and automatically set up your development environment.
 
-#### Standalone Build
+For detailed installation instructions, see [Installation Guide](docs/INSTALLATION.md).
 
-To build the binary from source:
+## Documentation
 
-```bash
-git clone <repository-url>
-cd gitlab-mcp-server
-go build -o bin/gitlab-mcp-server ./cmd/gitlab-mcp-server
-```
+### Getting Started
 
-Or using Makefile:
-```bash
-make build
-```
+- [Installation Guide](docs/INSTALLATION.md) - Detailed installation and setup instructions
+- [Editor Setup](docs/EDITOR_SETUP.md) - Configure VS Code, Claude Desktop, Claude Code, and Cursor
+- [Quick Start Guide](docs/QUICK_START.md) - Get up and running in minutes
 
-The binary will be created as `bin/gitlab-mcp-server`.
+### Core Features
 
-### Editor Setup
+- [Tools Reference](docs/TOOLS.md) - Complete reference for all available tools
+- [Token Management](docs/TOKEN_MANAGEMENT.md) - Managing access tokens and authentication
+- [Multi-Server Setup](docs/MULTI_SERVER_SETUP.md) - Configure multiple GitLab instances
+- [Project Configuration](docs/PROJECT_CONFIG.md) - Using `.gmcprc` files for project-specific settings
 
-<details>
-<summary><strong>VS Code / VS Code Agent Mode</strong></summary>
+### Advanced Topics
 
-#### Using Docker
+- [Dynamic Tool Discovery](docs/DYNAMIC_TOOLS.md) - On-demand toolset loading
+- [Internationalization](docs/I18N.md) - Customizing tool descriptions and translations
+- [Self-Hosted GitLab](docs/SELF_HOSTED.md) - Connecting to self-managed instances
+- [GitHub Detection](docs/GITHUB_DETECTION.md) - Why GitHub isn't supported and error handling
 
-Add the following JSON block to your User Settings (JSON) file (`Preferences: Open User Settings (JSON)` or `Ctrl+Shift+P` / `Cmd+Shift+P`):
+### Development
 
-```json
-{
-  "mcp": {
-    "inputs": [
-      {
-        "type": "promptString",
-        "id": "gitlab_token",
-        "description": "GitLab Access Token (PAT, Project, or Group)",
-        "password": true
-      },
-      {
-        "type": "promptString",
-        "id": "gitlab_host",
-        "description": "GitLab Host (e.g., gitlab.com or self-managed URL, leave empty for gitlab.com)",
-        "password": false
-      }
-    ],
-    "servers": {
-      "gitlab-go-mcp": {
-        "command": "docker",
-        "args": [
-          "run",
-          "-i",
-          "--rm",
-          "-e", "GITLAB_TOKEN",
-          "-e", "GITLAB_HOST",
-          "gitlab-mcp-server:latest"
-        ],
-        "env": {
-          "GITLAB_TOKEN": "${input:gitlab_token}",
-          "GITLAB_HOST": "${input:gitlab_host}"
-        }
-      }
-    }
-  }
-}
-```
+- [Contributing Guide](CONTRIBUTING.md) - How to contribute to the project
+- [Testing Guide](TESTING.md) - Testing practices and coverage
+- [Roadmap](ROADMAP.md) - Planned features and improvements
 
-You can also add a similar configuration (without the top-level `mcp` key) to a `.vscode/mcp.json` file in your workspace to share the setup with your team.
+## Available Tools
 
-#### Using Standalone Binary
+The server provides tools organized into logical toolsets:
 
-For the standalone binary, update your VS Code User Settings (JSON):
+### Projects Toolset
+- `getProject` - Get project details
+- `listProjects` - List projects with filtering
+- `getProjectFile` - Retrieve file contents
+- `listProjectFiles` - List repository files
+- `getProjectBranches` - List repository branches
+- `getProjectCommits` - List project commits
 
-```json
-{
-  "mcp": {
-    "servers": {
-      "gitlab-go-mcp": {
-        "command": "/path/to/gitlab-mcp-server",
-        "args": ["stdio"],
-        "env": {
-          "GITLAB_TOKEN": "<YOUR_TOKEN>",
-          "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-        }
-      }
-    }
-  }
-}
-```
+### Issues Toolset
+- `getIssue` - Get issue details
+- `listIssues` - List issues with filters
+- `getIssueComments` - Get issue comments
+- `getIssueLabels` - Get issue labels
+- `createIssue` - Create a new issue
+- `updateIssue` - Update an issue
+- `createIssueComment` - Add a comment to an issue
+- `updateIssueComment` - Update an issue comment
 
-Or use `.vscode/mcp.json` in your workspace:
+### Merge Requests Toolset
+- `getMergeRequest` - Get merge request details
+- `listMergeRequests` - List merge requests
+- `getMergeRequestComments` - Get MR comments
+- `createMergeRequest` - Create a merge request
+- `updateMergeRequest` - Update a merge request
+- `createMergeRequestComment` - Add a comment to an MR
+- `updateMergeRequestComment` - Update an MR comment
 
-```json
-{
-  "servers": {
-    "gitlab-go-mcp": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
-    }
-  }
-}
-```
+### Milestones
+- `getMilestone` - Get milestone details
+- `listMilestones` - List project milestones
+- `createMilestone` - Create a milestone
+- `updateMilestone` - Update a milestone
 
-More about using MCP server tools in VS Code's [agent mode documentation](https://code.visualstudio.com/docs/copilot/chat/mcp-servers).
+### Search
+- `searchProjects` - Search for projects
+- `searchIssues` - Search issues
+- `searchMergeRequests` - Search merge requests
+- `searchBlobs` - Search code
+- `searchCommits` - Search commits
+- `searchMilestones` - Search milestones
+- Plus group/project-scoped variants
 
-</details>
+### Users
+- `getCurrentUser` - Get authenticated user
+- `getUser` - Get user details
+- `getUserStatus` - Get user status
+- `listUsers` - List users
+- `listProjectUsers` - List project members
+- Admin operations: `blockUser`, `unblockUser`, `banUser`, `unbanUser`, `activateUser`, `deactivateUser`, `approveUser`
 
-<details>
-<summary><strong>Claude Desktop</strong></summary>
+### Security
+- `getProjectSAST` - Get SAST scan results
+- `getProjectDAST` - Get DAST scan results
+- `getProjectDependencyScanning` - Get dependency scanning results
+- `getProjectContainerScanning` - Get container scanning results
+- `getProjectSecretDetection` - Get secret detection results
+- `getProjectLicenseCompliance` - Get license compliance data
 
-The configuration file location varies by operating system:
+### Token Management
+- `listTokens` - List configured tokens
+- `validateToken` - Validate a token
+- `addToken` - Add a new token
+- `updateToken` - Update a token
+- `removeToken` - Remove a token
+- `getNotifications` - Get token notifications
+- `clearNotifications` - Clear notifications
 
-- **Linux:** `~/.config/Claude/claude_desktop_config.json`
-- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+### Project Configuration
+- `getCurrentProject` - Get current project config
+- `setCurrentProject` - Set project configuration
+- `detectProject` - Auto-detect from Git remotes
+- `autoDetectAndSetProject` - Detect and set in one step
 
-If the file doesn't exist, create it with the following structure.
+For complete tool documentation, see [Tools Reference](docs/TOOLS.md).
 
-#### Using Docker
+## Configuration
 
-```json
-{
-  "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e", "GITLAB_TOKEN",
-        "-e", "GITLAB_HOST",
-        "gitlab-mcp-server:latest"
-      ],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
-    }
-  }
-}
-```
+### Environment Variables
 
-#### Using Standalone Binary
+- `GITLAB_TOKEN` - GitLab access token (required)
+- `GITLAB_HOST` - GitLab host URL (default: `https://gitlab.com`)
+- `GITLAB_TOOLSETS` - Comma-separated list of toolsets to enable (default: all)
+- `GITLAB_READ_ONLY` - Enable read-only mode (default: false)
+- `GITLAB_DYNAMIC_TOOLSETS` - Enable dynamic tool discovery (default: false)
+- `GITLAB_ENABLE_COMMAND_LOGGING` - Enable JSON-RPC logging (default: false)
 
-```json
-{
-  "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
-    }
-  }
-}
-```
+### Toolsets
 
-**Note:** After editing the configuration file, restart Claude Desktop for the changes to take effect.
-
-</details>
-
-<details>
-<summary><strong>Claude Code</strong></summary>
-
-Claude Code uses a command-line interface to manage MCP servers. The configuration file location varies by operating system:
-
-- **macOS/Linux:** `~/.claude.json`
-- **Windows:** `%USERPROFILE%\.claude.json`
-
-#### Using Command Line (Recommended)
-
-**Using Docker:**
+Control which toolsets are available using the `--toolsets` flag or `GITLAB_TOOLSETS` environment variable:
 
 ```bash
-claude mcp add gitlab-go-mcp -s user -e GITLAB_TOKEN=<YOUR_TOKEN> -e GITLAB_HOST=<YOUR_GITLAB_URL_OR_EMPTY> -- docker run -i --rm -e GITLAB_TOKEN -e GITLAB_HOST gitlab-mcp-server:latest
+./gitlab-mcp-server stdio --toolsets issues,merge_requests,projects
 ```
 
-**Using Standalone Binary:**
+Available toolsets: `projects`, `issues`, `merge_requests`, `search`, `users`, `security`, `token_management`, `project_config`.
 
-```bash
-claude mcp add gitlab-go-mcp -s user -e GITLAB_TOKEN=<YOUR_TOKEN> -e GITLAB_HOST=<YOUR_GITLAB_URL_OR_EMPTY> -- /path/to/gitlab-mcp-server stdio
-```
+### Read-Only Mode
 
-**Verify the installation:**
-
-```bash
-claude mcp list
-```
-
-#### Using Direct Configuration File Editing
-
-Alternatively, you can directly edit the configuration file:
-
-**Using Docker:**
-
-```json
-{
-  "mcpServers": {
-    "gitlab": {
-      "type": "stdio",
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e", "GITLAB_TOKEN",
-        "-e", "GITLAB_HOST",
-        "gitlab-mcp-server:latest"
-      ],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
-    }
-  }
-}
-```
-
-**Using Standalone Binary:**
-
-```json
-{
-  "mcpServers": {
-    "gitlab-go-mcp": {
-      "type": "stdio",
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
-    }
-  }
-}
-```
-
-**Scope Options:**
-
-- `-s user` (or omit for default): User-level scope, available in all projects
-- `-s project`: Project-level scope, creates `.mcp.json` in the project root for team sharing
-- No flag: Local scope, available only in the current directory
-
-**Note:** After editing the configuration file or using the command line, restart Claude Code for the changes to take effect.
-
-</details>
-
-<details>
-<summary><strong>Cursor</strong></summary>
-
-Create or edit the file `~/.cursor/mcp.json` with the following configuration.
-
-#### Using Docker
-
-```json
-{
-  "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e", "GITLAB_TOKEN",
-        "-e", "GITLAB_HOST",
-        "gitlab-mcp-server:latest"
-      ],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
-    }
-  }
-}
-```
-
-#### Using Standalone Binary
-
-```json
-{
-  "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "/home/inky/Development/gitlab-mcp-server/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
-    }
-  }
-}
-```
-
-Replace `/path/to/gitlab-mcp-server` with the actual path to your binary (typically `bin/gitlab-mcp-server` relative to the project root).
-
-**Note:** The automated installer (`make install-mcp` or `./setup.sh`) will automatically configure all supported environments with the correct paths and settings.
-
-</details>
-
-## Available Toolsets 🛠️
-
-The GitLab MCP Server supports enabling or disabling specific groups of functionalities (toolsets) via the `--toolsets` flag or the `GITLAB_TOOLSETS` environment variable. This allows fine-grained control over the GitLab API capabilities exposed to your AI tools. Enabling only necessary toolsets can improve LLM tool selection and reduce context size.
-
-### Implemented Toolsets
-
-The following toolsets are fully implemented and available:
-
-| Toolset | Status | Description | Available Tools |
-|---------|--------|-------------|----------------|
-| `projects` | ✅ Available | Project details, repository operations (files, branches, commits). | `getProject`, `listProjects`, `getProjectFile`, `listProjectFiles`, `getProjectBranches`, `getProjectCommits` |
-| `issues` | ✅ Available | Issue management (CRUD, comments, labels, milestones). | `getIssue`, `listIssues`, `getIssueComments`, `getIssueLabels`, `createIssue`, `updateIssue`, `createIssueComment`, `updateIssueComment`, `getMilestone`, `listMilestones`, `createMilestone`, `updateMilestone` |
-| `merge_requests` | ✅ Available | Merge request operations (CRUD, comments). | `getMergeRequest`, `listMergeRequests`, `getMergeRequestComments`, `createMergeRequest`, `updateMergeRequest`, `createMergeRequestComment`, `updateMergeRequestComment` |
-| `search` | ✅ Available | Scoped search across projects, issues, MRs, code, commits, milestones, and more. | 14 search tools including `searchProjects`, `searchIssues`, `searchMergeRequests`, `searchBlobs`, `searchCommits`, `searchMilestones` with group/project-scoped variants |
-| `users` | ✅ Available | User information lookup and admin operations. | `getCurrentUser`, `getUser`, `getUserStatus`, `listUsers`, `listProjectUsers`, `blockUser`, `unblockUser`, `banUser`, `unbanUser`, `activateUser`, `deactivateUser`, `approveUser` |
-| `security` | ✅ Available | Security scan results (SAST, DAST, dependency/container scanning, secret detection, license compliance). | `getProjectSAST`, `getProjectDAST`, `getProjectDependencyScanning`, `getProjectContainerScanning`, `getProjectSecretDetection`, `getProjectLicenseCompliance` |
-
-### Planned Toolsets
-
-The following toolsets are planned but not yet implemented:
-
-| Toolset | Status | Description |
-|---------|--------|-------------|
-| _None currently planned_ | - | All major toolsets are implemented! |
-
-**Note:** All available toolsets are enabled by default if `GITLAB_TOOLSETS` is not set or set to `"all"`.
-
-### Specifying Toolsets
-
-Pass an allow-list of desired toolsets (comma-separated):
-
-1. **Using Command Line Argument** (when running binary directly):
-   ```bash
-   ./gitlab-mcp-server stdio --toolsets issues,merge_requests,projects
-   ```
-
-2. **Using Environment Variable**:
-   ```bash
-   export GITLAB_TOOLSETS="issues,merge_requests,projects"
-   ./gitlab-mcp-server stdio
-   ```
-   *(The environment variable `GITLAB_TOOLSETS` takes precedence over the flag.)*
-
-3. **Using Docker**:
-   ```bash
-   docker run -i --rm \
-     -e GITLAB_TOKEN=<your-token> \
-     -e GITLAB_HOST=<your-gitlab-url_or_empty> \
-     -e GITLAB_TOOLSETS="issues,merge_requests,projects" \
-     gitlab-mcp-server:latest
-   ```
-
-### The "all" Toolset
-
-Use the special value `all` to explicitly enable all available toolsets:
-
-```bash
-./gitlab-mcp-server stdio --toolsets all
-# or
-export GITLAB_TOOLSETS="all"
-./gitlab-mcp-server stdio
-# or with Docker
-docker run -i --rm \
-  -e GITLAB_TOKEN=<your-token> \
-  -e GITLAB_TOOLSETS="all" \
-  gitlab-mcp-server:latest
-```
-
-## Read-Only Mode 🔒
-
-You can restrict the server to read-only operations using the `--read-only` flag or `GITLAB_READ_ONLY` environment variable. When enabled, only read operations are available, and all write operations (create, update, delete) are disabled.
+Restrict operations to read-only:
 
 ```bash
 ./gitlab-mcp-server stdio --read-only
-# or
-export GITLAB_READ_ONLY=true
-./gitlab-mcp-server stdio
-# or with Docker
-docker run -i --rm \
-  -e GITLAB_TOKEN=<your-token> \
-  -e GITLAB_READ_ONLY=true \
-  gitlab-mcp-server:latest
 ```
 
-## Command Logging 🔍
+### Dynamic Tool Discovery
 
-For debugging purposes, you can enable logging of all MCP JSON-RPC protocol messages (requests and responses) to stderr.
-
-**⚠️ WARNING**: Command logging may expose sensitive data. Only enable in secure environments. Tokens and passwords are redacted, but other sensitive data may leak.
+Enable on-demand toolset loading:
 
 ```bash
-./gitlab-mcp-server stdio --enable-command-logging
-# or
-export GITLAB_ENABLE_COMMAND_LOGGING=true
-./gitlab-mcp-server stdio
-# or with Docker
-docker run -i --rm \
-  -e GITLAB_TOKEN=<your-token> \
-  -e GITLAB_ENABLE_COMMAND_LOGGING=true \
-  gitlab-mcp-server:latest
+./gitlab-mcp-server stdio --dynamic-toolsets
 ```
 
-**Note**: This feature is intended for development and debugging. When enabled, all JSON-RPC messages will be logged at DEBUG level. Ensure your `--log-level` is set to `debug` to see the logs.
+This starts with only discovery tools, allowing you to enable toolsets as needed.
 
-## GitLab Self-Managed Instances 🏢
+## Building from Source
 
-To connect to a self-managed GitLab instance instead of `gitlab.com`, use the `--gitlab-host` flag or the `GITLAB_HOST` environment variable. Provide the base URL of your instance (e.g., `https://gitlab.example.com`).
+### Prerequisites
 
-* **Flag:** `./gitlab-mcp-server stdio --gitlab-host https://gitlab.example.com`
-* **Environment Variable:** `export GITLAB_HOST="https://gitlab.example.com"`
-* **Docker:** `docker run -i --rm -e GITLAB_TOKEN=... -e GITLAB_HOST="https://gitlab.example.com" gitlab-mcp-server:latest`
+- Go 1.23 or later
+- Make (for Makefile targets)
 
-If the variable/flag is empty or omitted, the server defaults to `https://gitlab.com`.
-
-## Dynamic Tool Discovery 💡
-
-Dynamic toolset discovery allows the MCP host (like VS Code or Claude) to list available toolsets and enable them selectively in response to user needs. This prevents overwhelming the language model with too many tools initially and improves performance.
-
-### How It Works
-
-When dynamic tool discovery is enabled:
-- The server starts with **only 2 tools** available: `list_available_toolsets` and `enable_toolset`
-- You can query which toolsets are available and their descriptions
-- Toolsets are loaded on-demand when you enable them
-- Once enabled, all tools from that toolset become available
-
-### Using Dynamic Tool Discovery
-
-Enable it via:
-
-* **Flag:** `./gitlab-mcp-server stdio --dynamic-toolsets`
-* **Environment Variable:** `export GITLAB_DYNAMIC_TOOLSETS=true`
-* **Docker:** `docker run -i --rm -e GITLAB_TOKEN=... -e GITLAB_DYNAMIC_TOOLSETS=true gitlab-mcp-server:latest`
-
-### Available Discovery Tools
-
-#### `list_available_toolsets`
-Lists all available GitLab MCP toolsets that can be enabled.
-
-**Example Output:**
-```
-Available Toolsets (8):
-- token_management: Tools for managing GitLab tokens and authentication. [6 tools] (enabled)
-- project_config: Tools for managing GitLab project configuration and auto-detection. [4 tools] (disabled)
-- projects: Tools for interacting with GitLab projects, repositories, branches, commits, tags. [6 tools] (disabled)
-- issues: Tools for CRUD operations on GitLab issues, comments, labels. [10 tools] (disabled)
-- merge_requests: Tools for CRUD operations on GitLab merge requests, comments, approvals, diffs. [7 tools] (disabled)
-- security: Tools for accessing GitLab security scan results (SAST, DAST, etc.). [0 tools] (disabled)
-- users: Tools for looking up GitLab user information. [0 tools] (disabled)
-- search: Tools for utilizing GitLab's scoped search capabilities. [0 tools] (disabled)
-```
-
-#### `enable_toolset`
-Enables a specific GitLab MCP toolset, making its tools available.
-
-**Parameters:**
-- `toolset` (required, string): Name of the toolset to enable (e.g., 'projects', 'issues', 'merge_requests')
-
-**Example Workflow:**
-1. Start server with `--dynamic-toolsets`
-2. Call `list_available_toolsets` to see available toolsets
-3. Call `enable_toolset` with toolset name (e.g., "projects") to load it
-4. Use the newly available tools from that toolset
-5. Repeat step 3 for additional toolsets as needed
-
-**Note:** Token management and project configuration toolsets are enabled by default even in dynamic mode, as they're essential for server operation.
-
-## i18n / Overriding Descriptions 🌍
-
-Tool names and descriptions can be customized or translated to better suit your workflow or language preferences.
-
-### How It Works
-
-1. **Generate Translation Template**: Run the server with `--export-translations` flag
-2. **Customize Descriptions**: Edit the generated `gitlab-mcp-server-config.json` file
-3. **Restart Server**: The server automatically loads translations on startup
-
-### Generating Translation Template
-
-Create a configuration file with all available translation keys:
+### Build Commands
 
 ```bash
-./gitlab-mcp-server stdio --export-translations
+# Install dependencies
+make setup
+
+# Build binary
+make build
+
+# Run tests
+make test
+
+# Build Docker image
+make docker-build
+
+# Clean build artifacts
+make clean
 ```
 
-This creates `gitlab-mcp-server-config.json` in the same directory as the binary with all 29+ translation keys.
+The binary will be created at `bin/gitlab-mcp-server`.
 
-### Example: Russian Translation
+## Testing
 
-Create a `gitlab-mcp-server-config.json` file:
-
-```json
-{
-  "TOOL_GET_PROJECT_DESCRIPTION": "Получает детали конкретного проекта GitLab.",
-  "TOOL_LIST_PROJECTS_DESCRIPTION": "Возвращает список проектов GitLab с возможностью фильтрации.",
-  "TOOL_GET_ISSUE_DESCRIPTION": "Получает информацию о конкретной задаче GitLab.",
-  "TOOL_CREATE_ISSUE_DESCRIPTION": "Создает новую задачу в проекте GitLab."
-}
-```
-
-### Example: Custom English Descriptions
-
-Make tool descriptions more specific for your team:
-
-```json
-{
-  "TOOL_GET_ISSUE_DESCRIPTION": "Fetch issue details including assignees, labels, and milestone status",
-  "TOOL_CREATE_ISSUE_DESCRIPTION": "Create a new issue. Required: title. Optional: description, assignee, labels, milestone",
-  "TOOL_LIST_ISSUES_DESCRIPTION": "List issues with filters. Supports: scope (assigned_to_me, created_by_me, all), labels, milestone, state, search"
-}
-```
-
-### Translation Keys Reference
-
-The server supports 29+ translation keys covering:
-- **Projects** (6 keys): `getProject`, `listProjects`, `getProjectFile`, `listProjectFiles`, `getProjectBranches`, `getProjectCommits`
-- **Issues** (8 keys): `getIssue`, `listIssues`, `getIssueComments`, `getIssueLabels`, `createIssue`, `updateIssue`, `createIssueComment`, `updateIssueComment`
-- **Merge Requests** (7 keys): `getMergeRequest`, `listMergeRequests`, `getMergeRequestComments`, `createMergeRequest`, `updateMergeRequest`, `createMergeRequestComment`, `updateMergeRequestComment`
-- **Milestones** (4 keys): `getMilestone`, `listMilestones`, `createMilestone`, `updateMilestone`
-- **Token Management** (4+ keys): `listTokens`, `validateToken`, `addToken`, `updateToken`, `removeToken`
-
-### Configuration File Location
-
-The server looks for `gitlab-mcp-server-config.json` in:
-1. **Standalone binary**: Same directory as the binary
-2. **Docker**: Mount the config file to `/app/gitlab-mcp-server-config.json`
-
-**Docker Example:**
-```bash
-docker run -i --rm \
-  -v $(pwd)/gitlab-mcp-server-config.json:/app/gitlab-mcp-server-config.json \
-  -e GITLAB_TOKEN=<your-token> \
-  gitlab-mcp-server:latest
-```
-
-## Documentation 📚
-
-For detailed information on specific features, see:
-
-- **[Token Management](docs/TOKEN_MANAGEMENT.md)** - How tokens are validated, tracked, and managed
-- **[Multi-Server Setup](docs/MULTI_SERVER_SETUP.md)** - Configure multiple GitLab instances
-- **[GitHub Detection](docs/GITHUB_DETECTION.md)** - Why GitHub isn't supported and error handling
-- **[Project Configuration](docs/PROJECT_CONFIG.md)** - Using `.gmcprc` files for project-specific settings
-
-### Quick Links
-
-| Topic | Description |
-|-------|-------------|
-| **Token Validation** | Automatic token validation on startup, expiration tracking, and 401 error handling |
-| **Multiple GitLab Servers** | Configure work, personal, and other GitLab instances simultaneously |
-| **Project Auto-Detection** | Automatically detect GitLab project from Git remotes |
-| **GitHub Detection** | Clear error messages when GitHub repositories are detected |
-| **Runtime Token Management** | Add, update, remove tokens using MCP tools (`addToken`, `updateToken`, etc.) |
-
-## Contributing & License 🤝
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
-
-This project is released under the [MIT License](LICENSE).
-
-### Testing 🧪
-
-This project maintains a comprehensive test suite with **88.9% code coverage**:
+This project maintains comprehensive test coverage. See the [codecov badge](https://codecov.io/gh/InkyQuill/gitlab-mcp-server) above for current coverage metrics.
 
 ```bash
 # Run all tests
 make test
 
-# Run tests with coverage
+# Run with coverage
 go test -coverprofile=coverage.out ./pkg/...
 go tool cover -html=coverage.out -o coverage.html
 
-# Run tests with race detection
+# Run with race detection
 go test -race ./pkg/... ./internal/...
 ```
 
-#### Test Coverage Highlights
+See [Testing Guide](TESTING.md) for detailed testing practices.
 
-- **pkg/gitlab**: 88.7% coverage
-- **pkg/toolsets**: 98.6% coverage
-- **pkg/log**: 100.0% coverage
+## Contributing
 
-All tool handlers are tested with unit tests using GitLab's official mock framework. See [TESTING.md](TESTING.md) for testing practices and guidelines.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-#### CI/CD
+### Development Setup
 
-GitHub Actions automatically runs tests on all pull requests and pushes to main/develop branches. The CI pipeline:
-- Runs the full test suite with race detection
-- Enforces a minimum coverage threshold of 85%
-- Uploads coverage reports to Codecov
-- Fails if coverage drops below the threshold
+1. Fork and clone the repository
+2. Install prerequisites: Go 1.23+, golangci-lint
+3. Run tests: `go test -v ./...`
+4. Run linter: `golangci-lint run`
+5. Create a branch and make your changes
+6. Submit a pull request
+
+## License
+
+This project is released under the [MIT License](LICENSE).
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/InkyQuill/gitlab-mcp-server/issues)
+- **Documentation**: See the [docs](docs/) directory
+- **Model Context Protocol**: [Official MCP Documentation](https://modelcontextprotocol.io/)
+
+## Acknowledgments
+
+This project is a fork of [LuisCusihuaman/gitlab-mcp-server](https://github.com/LuisCusihuaman/gitlab-mcp-server), substantially rewritten with improved testing, error handling, and additional features.

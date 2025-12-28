@@ -3,7 +3,7 @@
 # Variables
 BINARY_NAME=gitlab-mcp-server
 BINARY_PATH=bin/$(BINARY_NAME)
-INSTALLER_SCRIPT=scripts/install.py
+INSTALLER_SCRIPT=scripts/install.js
 GO_VERSION_MIN=1.23
 
 help: ## Show this help message
@@ -50,8 +50,8 @@ docker-build: ## Build Docker image
 	@docker build -t gitlab-mcp-server:latest .
 	@echo "Docker image built: gitlab-mcp-server:latest"
 
-install-mcp: build ## Run MCP configuration (Python installer)
+install-mcp: build ## Run MCP configuration (Node.js installer)
 	@echo "Running MCP installer..."
 	@chmod +x $(INSTALLER_SCRIPT)
-	@python3 $(INSTALLER_SCRIPT)
+	@node $(INSTALLER_SCRIPT)
 

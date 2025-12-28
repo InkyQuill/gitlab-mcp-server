@@ -17,7 +17,7 @@ The GitLab MCP Server supports connecting to multiple GitLab instances simultane
 For a single GitLab server, run the installer:
 
 ```bash
-python scripts/install.py
+node scripts/install.js
 ```
 
 When prompted:
@@ -32,7 +32,7 @@ This creates a single MCP server named `gitlab`.
 For multiple GitLab servers:
 
 ```bash
-python scripts/install.py
+node scripts/install.js
 ```
 
 When prompted:
@@ -295,7 +295,7 @@ If you're currently using a single-server setup and want to add more servers:
 
 2. **Re-run the installer:**
    ```bash
-   python scripts/install.py
+   node scripts/install.js
    ```
 
 3. **Select multi-server mode:**
@@ -403,7 +403,7 @@ When read-only mode is enabled, write operations (createIssue, updateMergeReques
 ### Setup
 ```bash
 # Install with multiple servers
-python scripts/install.py
+node scripts/install.js
 # Configure: work, personal, client1
 
 # Configure project for work server

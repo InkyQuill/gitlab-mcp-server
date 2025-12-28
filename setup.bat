@@ -6,7 +6,7 @@ setlocal enabledelayedexpansion
 
 set GO_VERSION_MIN=1.23
 set BINARY_NAME=gitlab-mcp-server
-set INSTALLER_SCRIPT=scripts\install.py
+set INSTALLER_SCRIPT=scripts\install.js
 
 echo === GitLab MCP Server Setup ===
 echo.
@@ -40,16 +40,16 @@ echo.
 REM Ask if user wants to run installer
 set /p RUN_INSTALLER="Do you want to configure MCP servers now? (y/n) "
 if /i "%RUN_INSTALLER%"=="y" (
-    REM Check for Python 3
-    echo Checking for Python 3...
-    where python >nul 2>&1
+    REM Check for Node.js
+    echo Checking for Node.js...
+    where node >nul 2>&1
     if %ERRORLEVEL% NEQ 0 (
-        echo Error: Python is not installed.
-        echo Please install Python 3 to run the MCP installer.
+        echo Error: Node.js is not installed.
+        echo Please install Node.js to run the MCP installer.
         exit /b 1
     )
-    echo Python found:
-    python --version
+    echo Node.js found:
+    node --version
 
     REM Build the main binary first
     echo.
@@ -61,7 +61,7 @@ if /i "%RUN_INSTALLER%"=="y" (
         echo Binary built successfully!
         echo.
         echo Running MCP installer...
-        python "%INSTALLER_SCRIPT%"
+        node "%INSTALLER_SCRIPT%"
     ) else (
         echo Error: Failed to build binary
         exit /b 1

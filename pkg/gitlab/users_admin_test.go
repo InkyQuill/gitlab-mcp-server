@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 
@@ -10,6 +11,17 @@ import (
 	"github.com/stretchr/testify/require"
 	gl "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/mock/gomock"
+)
+
+// Common error variables for testing
+var (
+	errUnauthorized      = errors.New("401 Unauthorized")
+	errForbidden         = errors.New("403 Forbidden")
+	errNotFound          = errors.New("404 Not Found")
+	errInternalServer    = errors.New("500 Internal Server Error")
+	errBadGateway        = errors.New("502 Bad Gateway")
+	errServiceUnavailable = errors.New("503 Service Unavailable")
+	errNetwork           = errors.New("network error")
 )
 
 // Admin tools tests with permission checking

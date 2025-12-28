@@ -128,20 +128,22 @@ GitHub repository detected: git@github.com:user/repo.git.
 This MCP server only supports GitLab repositories. Please use github-mcp-server instead.
 ```
 
-## Migration from GitHub to GitLab
+## Using Both GitLab and GitHub
 
-If you have both GitHub and GitLab repositories:
+If you have both GitHub and GitLab repositories, you can use both MCP servers simultaneously:
 
-1. **Install both MCP servers:**
+1. **Install GitLab MCP Server:**
    ```bash
-   # GitLab MCP Server
-   python /path/to/gitlab-mcp-server/scripts/install.py
-
-   # GitHub MCP Server
-   python /path/to/github-mcp-server/scripts/install.py
+   # Follow installation instructions for this project
+   node scripts/install.js
    ```
 
-2. **Configure each project appropriately:**
+2. **Install GitHub MCP Server:**
+   - GitHub MCP Server is a separate project maintained by GitHub
+   - Follow the [official installation instructions](https://github.com/github/github-mcp-server)
+   - Installation methods may differ from this project
+
+3. **Configure each project appropriately:**
    ```bash
    # GitLab project
    cd ~/projects/gitlab-project
@@ -149,12 +151,12 @@ If you have both GitHub and GitLab repositories:
 
    # GitHub project
    cd ~/projects/github-project
-   # GitHub tools will auto-detect
+   # GitHub MCP Server will handle GitHub repositories
    ```
 
-3. **Use the right tools for each project**
-   - GitLab tools for GitLab repositories
-   - GitHub tools for GitHub repositories
+4. **Use the right tools for each project**
+   - GitLab MCP Server tools for GitLab repositories
+   - GitHub MCP Server tools for GitHub repositories
 
 ## Troubleshooting
 

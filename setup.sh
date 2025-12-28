@@ -7,7 +7,7 @@ set -e
 
 GO_VERSION_MIN="1.23"
 BINARY_NAME="gitlab-mcp-server"
-INSTALLER_SCRIPT="scripts/install.py"
+INSTALLER_SCRIPT="scripts/install.js"
 
 echo "=== GitLab MCP Server Setup ==="
 echo ""
@@ -45,14 +45,14 @@ echo ""
 read -p "Do you want to configure MCP servers now? (y/n) " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    # Check for Python 3
-    echo "Checking for Python 3..."
-    if ! command -v python3 &> /dev/null; then
-        echo "Error: Python 3 is not installed."
-        echo "Please install Python 3 to run the MCP installer."
+    # Check for Node.js
+    echo "Checking for Node.js..."
+    if ! command -v node &> /dev/null; then
+        echo "Error: Node.js is not installed."
+        echo "Please install Node.js to run the MCP installer."
         exit 1
     fi
-    echo "Python 3 found: $(python3 --version)"
+    echo "Node.js found: $(node --version)"
 
     # Build the main binary first
     echo ""
@@ -65,7 +65,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo ""
         echo "Running MCP installer..."
         chmod +x "$INSTALLER_SCRIPT"
-        python3 "$INSTALLER_SCRIPT"
+        node "$INSTALLER_SCRIPT"
     else
         echo "Error: Failed to build binary"
         exit 1
