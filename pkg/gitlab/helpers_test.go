@@ -174,6 +174,19 @@ func setupMockClientForUsers(t *testing.T) (*gl.Client, *mock_gitlab.MockUsersSe
 	return client, mockUsers, ctrl
 }
 
+// Helper to create a mock GetClientFn for testing handlers for the GraphQL service
+func setupMockClientForGraphQL(t *testing.T) (*gl.Client, *mock_gitlab.MockGraphQLInterface, *gomock.Controller) {
+	ctrl := gomock.NewController(t)
+	mockGraphQL := mock_gitlab.NewMockGraphQLInterface(ctrl) // Mock for GraphQL
+
+	// Create a minimal client and attach the GraphQL service mock
+	client := &gl.Client{
+		GraphQL: mockGraphQL, // Attach the GraphQL service mock
+	}
+
+	return client, mockGraphQL, ctrl
+}
+
 // Tests for HandleAPIError
 func TestHandleAPIError(t *testing.T) {
 	tests := []struct {

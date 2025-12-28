@@ -118,8 +118,15 @@ func InitToolsets(
 		toolsets.NewServerTool(UpdateMergeRequestComment(getClient, translations)),
 	)
 
-	// --- Add tools to securityTS (Part of future tasks?) ---
-	// securityTS.AddReadTools(...) // Likely read-only
+	// --- Add tools to securityTS (Security scanning reports) ---
+	securityTS.AddReadTools(
+		toolsets.NewServerTool(GetProjectSAST(getClient, translations)),
+		toolsets.NewServerTool(GetProjectDAST(getClient, translations)),
+		toolsets.NewServerTool(GetProjectDependencyScanning(getClient, translations)),
+		toolsets.NewServerTool(GetProjectContainerScanning(getClient, translations)),
+		toolsets.NewServerTool(GetProjectSecretDetection(getClient, translations)),
+		toolsets.NewServerTool(GetProjectLicenseCompliance(getClient, translations)),
+	)
 
 	// --- Add tools to usersTS (User management) ---
 	usersTS.AddReadTools(
