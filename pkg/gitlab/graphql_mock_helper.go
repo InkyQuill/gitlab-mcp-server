@@ -49,7 +49,7 @@ func NewMockGraphQLHTTPClient(matchers ...GraphQLMockMatcher) *http.Client {
 			http.Error(w, "failed to read request body", http.StatusBadRequest)
 			return
 		}
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		// Extract query from request
 		var gqlReq struct {
@@ -81,7 +81,7 @@ func NewMockGraphQLHTTPClient(matchers ...GraphQLMockMatcher) *http.Client {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		jsonBytes, _ := json.Marshal(matchedMatcher.Response)
-		w.Write(jsonBytes)
+		_, _ = w.Write(jsonBytes)
 	})
 
 	// Create HTTP client with mock transport
