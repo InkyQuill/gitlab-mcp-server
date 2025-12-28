@@ -1,0 +1,20 @@
+{
+  "annotations": {
+    "title": "Get GitLab Project License Compliance",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_PROJECT_LICENSE_COMPLIANCE_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "pid": {
+        "description": "The ID or URL-encoded path of the project",
+        "type": "string"
+      }
+    },
+    "required": [
+      "pid"
+    ]
+  },
+  "name": "getProjectLicenseCompliance"
+}

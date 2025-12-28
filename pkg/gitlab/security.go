@@ -200,7 +200,9 @@ type SecurityReportFindings struct {
 
 // ProjectSecurityResponse represents the top-level GraphQL response for security queries
 type ProjectSecurityResponse struct {
-	Project Project `json:"project"`
+	Data struct {
+		Project Project `json:"project"`
+	} `json:"data"`
 }
 
 // Project represents a GitLab project in GraphQL responses
@@ -215,7 +217,9 @@ type Pipelines struct {
 
 // LicenseComplianceResponse represents the GraphQL response for license compliance
 type LicenseComplianceResponse struct {
-	Project ProjectLicenses `json:"project"`
+	Data struct {
+		Project ProjectLicenses `json:"project"`
+	} `json:"data"`
 }
 
 // ProjectLicenses contains license nodes
@@ -375,8 +379,8 @@ func getSecurityFindings(ctx context.Context, req mcp.CallToolRequest, getClient
 
 	// Extract findings from response
 	var findings []SecurityFinding
-	if len(responseData.Project.Pipelines.Nodes) > 0 {
-		findings = responseData.Project.Pipelines.Nodes[0].SecurityReportFindings.Nodes
+	if len(responseData.Data.Project.Pipelines.Nodes) > 0 {
+		findings = responseData.Data.Project.Pipelines.Nodes[0].SecurityReportFindings.Nodes
 	}
 
 	if len(findings) == 0 {
@@ -420,7 +424,7 @@ func getLicenseCompliance(ctx context.Context, req mcp.CallToolRequest, getClien
 		return nil, apiErr
 	}
 
-	licenses := responseData.Project.Licenses.Nodes
+	licenses := responseData.Data.Project.Licenses.Nodes
 
 	if len(licenses) == 0 {
 		return mcp.NewToolResultText("[]"), nil
