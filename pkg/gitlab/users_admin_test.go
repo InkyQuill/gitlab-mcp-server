@@ -32,7 +32,7 @@ func TestBlockUserHandler_AdminCheck(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := BlockUser(mockGetClient, nil)
+	tool, handler := ManageUserState(mockGetClient, nil)
 
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
@@ -43,7 +43,7 @@ func TestBlockUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "block"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully blocked")
@@ -57,7 +57,7 @@ func TestBlockUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "block"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -70,7 +70,7 @@ func TestUnblockUserHandler_AdminCheck(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := UnblockUser(mockGetClient, nil)
+	tool, handler := ManageUserState(mockGetClient, nil)
 
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
@@ -81,7 +81,7 @@ func TestUnblockUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unblock"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully unblocked")
@@ -95,7 +95,7 @@ func TestUnblockUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unblock"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -108,7 +108,7 @@ func TestBanUserHandler_AdminCheck(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := BanUser(mockGetClient, nil)
+	tool, handler := ManageUserState(mockGetClient, nil)
 
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
@@ -119,7 +119,7 @@ func TestBanUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "ban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully banned")
@@ -133,7 +133,7 @@ func TestBanUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "ban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -146,7 +146,7 @@ func TestUnbanUserHandler_AdminCheck(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := UnbanUser(mockGetClient, nil)
+	tool, handler := ManageUserState(mockGetClient, nil)
 
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
@@ -157,7 +157,7 @@ func TestUnbanUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully unbanned")
@@ -171,7 +171,7 @@ func TestUnbanUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -184,7 +184,7 @@ func TestActivateUserHandler_AdminCheck(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := ActivateUser(mockGetClient, nil)
+	tool, handler := ManageUserState(mockGetClient, nil)
 
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
@@ -195,7 +195,7 @@ func TestActivateUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "activate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully activated")
@@ -209,7 +209,7 @@ func TestActivateUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "activate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -222,7 +222,7 @@ func TestDeactivateUserHandler_AdminCheck(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := DeactivateUser(mockGetClient, nil)
+	tool, handler := ManageUserState(mockGetClient, nil)
 
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
@@ -233,7 +233,7 @@ func TestDeactivateUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "deactivate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully deactivated")
@@ -247,7 +247,7 @@ func TestDeactivateUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "deactivate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -260,7 +260,7 @@ func TestApproveUserHandler_AdminCheck(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := ApproveUser(mockGetClient, nil)
+	tool, handler := ManageUserState(mockGetClient, nil)
 
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
@@ -271,7 +271,7 @@ func TestApproveUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "approve"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully approved")
@@ -285,7 +285,7 @@ func TestApproveUserHandler_AdminCheck(t *testing.T) {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
 			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1)}}}
+		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "approve"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")

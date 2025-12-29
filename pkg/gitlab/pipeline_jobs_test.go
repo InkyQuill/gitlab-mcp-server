@@ -19,9 +19,9 @@ import (
 )
 
 // TestListPipelineJobsHandler tests the listPipelineJobs tool
-func TestListPipelineJobsHandler(t *testing.T) {
+func TestPipelineJobHandler_List(t *testing.T) {
 	// Tool schema snapshot test
-	listPipelineJobsTool, _ := ListPipelineJobs(nil, nil)
+	listPipelineJobsTool, _ := PipelineJob(nil, nil)
 	require.NoError(t, toolsnaps.Test(listPipelineJobsTool.Name, listPipelineJobsTool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -32,7 +32,7 @@ func TestListPipelineJobsHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	listPipelineJobsTool, listPipelineJobsHandler := ListPipelineJobs(mockGetClient, nil)
+	listPipelineJobsTool, listPipelineJobsHandler := PipelineJob(mockGetClient, nil)
 
 	projectID := "group/project"
 	pipelineID := 12345
@@ -57,13 +57,14 @@ func TestListPipelineJobsHandler(t *testing.T) {
 		{
 			name: "Success - List Jobs - No Filters",
 			inputArgs: map[string]any{
+				"action":     "list",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 			},
 			mockSetup: func() {
 				mockJobs.EXPECT().
 					ListPipelineJobs(projectID, pipelineID, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ interface{}, pipelineID int, opts *gl.ListJobsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Job, *gl.Response, error) {
+					DoAndReturn(func(_ interface{}, pipelineID int, opts *gl.ListJobsOptions, reqOpts ...gl.RequestOptionFunc) ([]*gl.Job, *gl.Response, error) {
 						assert.Equal(t, 1, opts.Page)
 						return []*gl.Job{
 							createJob(1, "build", "success"),
@@ -79,6 +80,7 @@ func TestListPipelineJobsHandler(t *testing.T) {
 		{
 			name: "Success - List Jobs - With Pagination",
 			inputArgs: map[string]any{
+				"action":     "list",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 				"page":       2,
@@ -87,7 +89,7 @@ func TestListPipelineJobsHandler(t *testing.T) {
 			mockSetup: func() {
 				mockJobs.EXPECT().
 					ListPipelineJobs(projectID, pipelineID, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ interface{}, pipelineID int, opts *gl.ListJobsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Job, *gl.Response, error) {
+					DoAndReturn(func(_ interface{}, pipelineID int, opts *gl.ListJobsOptions, reqOpts ...gl.RequestOptionFunc) ([]*gl.Job, *gl.Response, error) {
 						assert.Equal(t, 2, opts.Page)
 						assert.Equal(t, 1, opts.PerPage)
 						return []*gl.Job{createJob(2, "test", "running")}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
@@ -98,6 +100,7 @@ func TestListPipelineJobsHandler(t *testing.T) {
 		{
 			name: "Success - Empty List",
 			inputArgs: map[string]any{
+				"action":     "list",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 			},
@@ -111,6 +114,7 @@ func TestListPipelineJobsHandler(t *testing.T) {
 		{
 			name: "Error - Pipeline Not Found (404)",
 			inputArgs: map[string]any{
+				"action":     "list",
 				"projectId":  "nonexistent/project",
 				"pipelineId": float64(99999),
 			},
@@ -125,6 +129,7 @@ func TestListPipelineJobsHandler(t *testing.T) {
 		{
 			name: "Error - GitLab API Error (500)",
 			inputArgs: map[string]any{
+				"action":     "list",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 			},
@@ -138,14 +143,14 @@ func TestListPipelineJobsHandler(t *testing.T) {
 		},
 		{
 			name:               "Error - Missing projectId",
-			inputArgs:          map[string]any{"pipelineId": float64(pipelineID)},
+			inputArgs:          map[string]any{"action": "list", "pipelineId": float64(pipelineID)},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: projectId",
 		},
 		{
 			name:               "Error - Missing pipelineId",
-			inputArgs:          map[string]any{"projectId": projectID},
+			inputArgs:          map[string]any{"action": "list", "projectId": projectID},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: pipelineId",
@@ -153,6 +158,7 @@ func TestListPipelineJobsHandler(t *testing.T) {
 		{
 			name: "Error - Unauthorized (401)",
 			inputArgs: map[string]any{
+				"action":     "list",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 			},
@@ -167,6 +173,7 @@ func TestListPipelineJobsHandler(t *testing.T) {
 		{
 			name: "Error - Network Error",
 			inputArgs: map[string]any{
+				"action":     "list",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 			},
@@ -229,8 +236,8 @@ func TestListPipelineJobsHandler(t *testing.T) {
 }
 
 // TestGetPipelineJobHandler tests the getPipelineJob tool
-func TestGetPipelineJobHandler(t *testing.T) {
-	getPipelineJobTool, _ := GetPipelineJob(nil, nil)
+func TestPipelineJobHandler_Get(t *testing.T) {
+	getPipelineJobTool, _ := PipelineJob(nil, nil)
 	require.NoError(t, toolsnaps.Test(getPipelineJobTool.Name, getPipelineJobTool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -241,7 +248,7 @@ func TestGetPipelineJobHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	getPipelineJobTool, getPipelineJobHandler := GetPipelineJob(mockGetClient, nil)
+	getPipelineJobTool, getPipelineJobHandler := PipelineJob(mockGetClient, nil)
 
 	projectID := "group/project"
 	jobID := 123
@@ -257,6 +264,7 @@ func TestGetPipelineJobHandler(t *testing.T) {
 		{
 			name: "Success - Get Job",
 			inputArgs: map[string]any{
+				"action":    "get",
 				"projectId": projectID,
 				"jobId":     float64(jobID),
 			},
@@ -273,6 +281,7 @@ func TestGetPipelineJobHandler(t *testing.T) {
 		{
 			name: "Error - Job Not Found (404)",
 			inputArgs: map[string]any{
+				"action":    "get",
 				"projectId": projectID,
 				"jobId":     float64(99999),
 			},
@@ -286,14 +295,14 @@ func TestGetPipelineJobHandler(t *testing.T) {
 		},
 		{
 			name:               "Error - Missing jobId",
-			inputArgs:          map[string]any{"projectId": projectID},
+			inputArgs:          map[string]any{"action": "get", "projectId": projectID},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: jobId",
 		},
 		{
 			name:               "Error - Missing projectId",
-			inputArgs:          map[string]any{"jobId": float64(jobID)},
+			inputArgs:          map[string]any{"action": "get", "jobId": float64(jobID)},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: projectId",
@@ -301,6 +310,7 @@ func TestGetPipelineJobHandler(t *testing.T) {
 		{
 			name: "Error - Unauthorized (401)",
 			inputArgs: map[string]any{
+				"action":    "get",
 				"projectId": projectID,
 				"jobId":     float64(jobID),
 			},
@@ -356,8 +366,8 @@ func TestGetPipelineJobHandler(t *testing.T) {
 }
 
 // TestGetPipelineJobTraceHandler tests the getPipelineJobTrace tool
-func TestGetPipelineJobTraceHandler(t *testing.T) {
-	getPipelineJobTraceTool, _ := GetPipelineJobTrace(nil, nil)
+func TestPipelineJobHandler_Trace(t *testing.T) {
+	getPipelineJobTraceTool, _ := PipelineJob(nil, nil)
 	require.NoError(t, toolsnaps.Test(getPipelineJobTraceTool.Name, getPipelineJobTraceTool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -368,7 +378,7 @@ func TestGetPipelineJobTraceHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	getPipelineJobTraceTool, getPipelineJobTraceHandler := GetPipelineJobTrace(mockGetClient, nil)
+	getPipelineJobTraceTool, getPipelineJobTraceHandler := PipelineJob(mockGetClient, nil)
 
 	projectID := "group/project"
 	jobID := 123
@@ -386,6 +396,7 @@ func TestGetPipelineJobTraceHandler(t *testing.T) {
 		{
 			name: "Success - Get Job Trace",
 			inputArgs: map[string]any{
+				"action":    "trace",
 				"projectId": projectID,
 				"jobId":     float64(jobID),
 			},
@@ -399,6 +410,7 @@ func TestGetPipelineJobTraceHandler(t *testing.T) {
 		{
 			name: "Error - Job Not Found (404)",
 			inputArgs: map[string]any{
+				"action":    "trace",
 				"projectId": projectID,
 				"jobId":     float64(99999),
 			},
@@ -412,14 +424,14 @@ func TestGetPipelineJobTraceHandler(t *testing.T) {
 		},
 		{
 			name:               "Error - Missing jobId",
-			inputArgs:          map[string]any{"projectId": projectID},
+			inputArgs:          map[string]any{"action": "trace", "projectId": projectID},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: jobId",
 		},
 		{
 			name:               "Error - Missing projectId",
-			inputArgs:          map[string]any{"jobId": float64(jobID)},
+			inputArgs:          map[string]any{"action": "trace", "jobId": float64(jobID)},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: projectId",
@@ -427,6 +439,7 @@ func TestGetPipelineJobTraceHandler(t *testing.T) {
 		{
 			name: "Error - Unauthorized (401)",
 			inputArgs: map[string]any{
+				"action":    "trace",
 				"projectId": projectID,
 				"jobId":     float64(jobID),
 			},
@@ -441,6 +454,7 @@ func TestGetPipelineJobTraceHandler(t *testing.T) {
 		{
 			name: "Error - Server Error (500)",
 			inputArgs: map[string]any{
+				"action":    "trace",
 				"projectId": projectID,
 				"jobId":     float64(jobID),
 			},
@@ -768,8 +782,8 @@ func TestPlayPipelineJobHandler(t *testing.T) {
 }
 
 // TestCancelPipelineHandler tests the cancelPipeline tool
-func TestCancelPipelineHandler(t *testing.T) {
-	cancelPipelineTool, _ := CancelPipeline(nil, nil)
+func TestPipelineHandler_Cancel(t *testing.T) {
+	cancelPipelineTool, _ := Pipeline(nil, nil)
 	require.NoError(t, toolsnaps.Test(cancelPipelineTool.Name, cancelPipelineTool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -780,7 +794,7 @@ func TestCancelPipelineHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	cancelPipelineTool, cancelPipelineHandler := CancelPipeline(mockGetClient, nil)
+	cancelPipelineTool, cancelPipelineHandler := Pipeline(mockGetClient, nil)
 
 	projectID := "group/project"
 	pipelineID := 12345
@@ -796,6 +810,7 @@ func TestCancelPipelineHandler(t *testing.T) {
 		{
 			name: "Success - Cancel Pipeline",
 			inputArgs: map[string]any{
+				"action":     "cancel",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 			},
@@ -811,6 +826,7 @@ func TestCancelPipelineHandler(t *testing.T) {
 		{
 			name: "Error - Pipeline Not Found (404)",
 			inputArgs: map[string]any{
+				"action":     "cancel",
 				"projectId":  projectID,
 				"pipelineId": float64(99999),
 			},
@@ -824,14 +840,14 @@ func TestCancelPipelineHandler(t *testing.T) {
 		},
 		{
 			name:               "Error - Missing pipelineId",
-			inputArgs:          map[string]any{"projectId": projectID},
+			inputArgs:          map[string]any{"action": "cancel", "projectId": projectID},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: pipelineId",
 		},
 		{
 			name:               "Error - Missing projectId",
-			inputArgs:          map[string]any{"pipelineId": float64(pipelineID)},
+			inputArgs:          map[string]any{"action": "cancel", "pipelineId": float64(pipelineID)},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: projectId",
@@ -839,6 +855,7 @@ func TestCancelPipelineHandler(t *testing.T) {
 		{
 			name: "Error - Unauthorized (401)",
 			inputArgs: map[string]any{
+				"action":     "cancel",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 			},
@@ -853,6 +870,7 @@ func TestCancelPipelineHandler(t *testing.T) {
 		{
 			name: "Error - Cannot Cancel (400)",
 			inputArgs: map[string]any{
+				"action":     "cancel",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 			},
@@ -908,8 +926,8 @@ func TestCancelPipelineHandler(t *testing.T) {
 }
 
 // TestRetryPipelineHandler tests the retryPipeline tool
-func TestRetryPipelineHandler(t *testing.T) {
-	retryPipelineTool, _ := RetryPipeline(nil, nil)
+func TestPipelineHandler_Retry(t *testing.T) {
+	retryPipelineTool, _ := Pipeline(nil, nil)
 	require.NoError(t, toolsnaps.Test(retryPipelineTool.Name, retryPipelineTool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -920,7 +938,7 @@ func TestRetryPipelineHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	retryPipelineTool, retryPipelineHandler := RetryPipeline(mockGetClient, nil)
+	retryPipelineTool, retryPipelineHandler := Pipeline(mockGetClient, nil)
 
 	projectID := "group/project"
 	pipelineID := 12345
@@ -936,6 +954,7 @@ func TestRetryPipelineHandler(t *testing.T) {
 		{
 			name: "Success - Retry Pipeline",
 			inputArgs: map[string]any{
+				"action":     "retry",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 			},
@@ -951,6 +970,7 @@ func TestRetryPipelineHandler(t *testing.T) {
 		{
 			name: "Error - Pipeline Not Found (404)",
 			inputArgs: map[string]any{
+				"action":     "retry",
 				"projectId":  projectID,
 				"pipelineId": float64(99999),
 			},
@@ -964,14 +984,14 @@ func TestRetryPipelineHandler(t *testing.T) {
 		},
 		{
 			name:               "Error - Missing pipelineId",
-			inputArgs:          map[string]any{"projectId": projectID},
+			inputArgs:          map[string]any{"action": "retry", "projectId": projectID},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: pipelineId",
 		},
 		{
 			name:               "Error - Missing projectId",
-			inputArgs:          map[string]any{"pipelineId": float64(pipelineID)},
+			inputArgs:          map[string]any{"action": "retry", "pipelineId": float64(pipelineID)},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: projectId",
@@ -979,6 +999,7 @@ func TestRetryPipelineHandler(t *testing.T) {
 		{
 			name: "Error - Unauthorized (401)",
 			inputArgs: map[string]any{
+				"action":     "retry",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 			},
@@ -993,6 +1014,7 @@ func TestRetryPipelineHandler(t *testing.T) {
 		{
 			name: "Error - Cannot Retry (400)",
 			inputArgs: map[string]any{
+				"action":     "retry",
 				"projectId":  projectID,
 				"pipelineId": float64(pipelineID),
 			},

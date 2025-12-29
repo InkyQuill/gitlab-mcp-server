@@ -1,0 +1,62 @@
+{
+  "annotations": {
+    "title": "Search GitLab Resources",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_SEARCH_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "gid": {
+        "description": "The ID or URL-encoded path of the group (required when scope='group')",
+        "type": "string"
+      },
+      "page": {
+        "description": "The page number to retrieve (default: 1)",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "The number of results per page (default: 20, max: 100)",
+        "type": "number"
+      },
+      "pid": {
+        "description": "The ID or URL-encoded path of the project (required when scope='project')",
+        "type": "string"
+      },
+      "resourceType": {
+        "description": "The type of resource to search for",
+        "enum": [
+          "projects",
+          "issues",
+          "merge_requests",
+          "blobs",
+          "commits",
+          "milestones",
+          "snippet_titles",
+          "snippet_blobs",
+          "wiki_blobs",
+          "notes"
+        ],
+        "type": "string"
+      },
+      "scope": {
+        "description": "The scope of the search (global, group, or project)",
+        "enum": [
+          "global",
+          "group",
+          "project"
+        ],
+        "type": "string"
+      },
+      "search": {
+        "description": "The search query string",
+        "type": "string"
+      }
+    },
+    "required": [
+      "resourceType",
+      "search"
+    ]
+  },
+  "name": "search"
+}

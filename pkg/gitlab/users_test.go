@@ -378,13 +378,7 @@ func TestUserTools_SchemaSnapshots(t *testing.T) {
 		{"getUserStatus", mustMakeUserTool(GetUserStatus)},
 		{"listUsers", mustMakeUserTool(ListUsers)},
 		{"listProjectUsers", mustMakeUserTool(ListProjectUsers)},
-		{"blockUser", mustMakeUserTool(BlockUser)},
-		{"unblockUser", mustMakeUserTool(UnblockUser)},
-		{"banUser", mustMakeUserTool(BanUser)},
-		{"unbanUser", mustMakeUserTool(UnbanUser)},
-		{"activateUser", mustMakeUserTool(ActivateUser)},
-		{"deactivateUser", mustMakeUserTool(DeactivateUser)},
-		{"approveUser", mustMakeUserTool(ApproveUser)},
+		{"manageUserState", mustMakeUserTool(ManageUserState)},
 	}
 
 	for _, tc := range tools {

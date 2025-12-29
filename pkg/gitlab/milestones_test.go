@@ -18,10 +18,10 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// TestCreateMilestoneHandler tests the CreateMilestone tool handler
-func TestCreateMilestoneHandler(t *testing.T) {
+// TestMilestoneHandler_Create tests the Create action of the Milestone tool handler
+func TestMilestoneHandler_Create(t *testing.T) {
 	// Tool schema snapshot test
-	tool, _ := CreateMilestone(nil, nil)
+	tool, _ := Milestone(nil, nil)
 	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -32,7 +32,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	createMilestoneTool, handler := CreateMilestone(mockGetClient, nil)
+	milestoneTool, handler := Milestone(mockGetClient, nil)
 
 	projectID := "group/project"
 	timeNow := time.Now()
@@ -49,6 +49,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 		{
 			name: "Success - Create Milestone with minimal fields",
 			args: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"title":     "Sprint 1",
 			},
@@ -84,6 +85,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 		{
 			name: "Success - Create Milestone with all fields",
 			args: map[string]any{
+				"action":      "create",
 				"projectId":   projectID,
 				"title":       "Sprint 2",
 				"description": "Second sprint milestone",
@@ -125,7 +127,8 @@ func TestCreateMilestoneHandler(t *testing.T) {
 		{
 			name: "Error - Missing projectId",
 			args: map[string]any{
-				"title": "Sprint 1",
+				"action": "create",
+				"title":  "Sprint 1",
 			},
 			mockSetup:           func() {},
 			expectedResult:      "Validation Error: missing required parameter: projectId",
@@ -135,6 +138,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 		{
 			name: "Error - Missing title",
 			args: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 			},
 			mockSetup:           func() {},
@@ -145,6 +149,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 		{
 			name: "Error - Invalid dueDate format",
 			args: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"title":     "Sprint 1",
 				"dueDate":   "invalid-date",
@@ -157,6 +162,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 		{
 			name: "Error - Project Not Found (404)",
 			args: map[string]any{
+				"action":    "create",
 				"projectId": "nonexistent",
 				"title":     "Sprint 1",
 			},
@@ -172,6 +178,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 		{
 			name: "Error - GitLab API Error (500)",
 			args: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"title":     "Sprint 1",
 			},
@@ -199,7 +206,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
 					} `json:"_meta,omitempty"`
 				}{
-					Name:      createMilestoneTool.Name,
+					Name:      milestoneTool.Name,
 					Arguments: tc.args,
 				},
 			}
@@ -236,7 +243,7 @@ func TestCreateMilestoneHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := CreateMilestone(errorGetClientFn, nil)
+		_, handler := Milestone(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -246,8 +253,12 @@ func TestCreateMilestoneHandler(t *testing.T) {
 					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
 				} `json:"_meta,omitempty"`
 			}{
-				Name:      createMilestoneTool.Name,
-				Arguments: map[string]any{"projectId": projectID, "title": "Test"},
+				Name: milestoneTool.Name,
+				Arguments: map[string]any{
+					"action":    "create",
+					"projectId": projectID,
+					"title":     "Test",
+				},
 			},
 		}
 
@@ -258,10 +269,10 @@ func TestCreateMilestoneHandler(t *testing.T) {
 	})
 }
 
-// TestUpdateMilestoneHandler tests the UpdateMilestone tool handler
-func TestUpdateMilestoneHandler(t *testing.T) {
+// TestMilestoneHandler_Update tests the Update action of the Milestone tool handler
+func TestMilestoneHandler_Update(t *testing.T) {
 	// Tool schema snapshot test
-	tool, _ := UpdateMilestone(nil, nil)
+	tool, _ := Milestone(nil, nil)
 	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -272,7 +283,7 @@ func TestUpdateMilestoneHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	updateMilestoneTool, handler := UpdateMilestone(mockGetClient, nil)
+	milestoneTool, handler := Milestone(mockGetClient, nil)
 
 	projectID := "group/project"
 	milestoneID := 1.0
@@ -290,6 +301,7 @@ func TestUpdateMilestoneHandler(t *testing.T) {
 		{
 			name: "Success - Update Milestone title",
 			args: map[string]any{
+				"action":      "update",
 				"projectId":   projectID,
 				"milestoneId": milestoneID,
 				"title":       "Updated Sprint 1",
@@ -324,6 +336,7 @@ func TestUpdateMilestoneHandler(t *testing.T) {
 		{
 			name: "Success - Update Milestone with stateEvent",
 			args: map[string]any{
+				"action":      "update",
 				"projectId":   projectID,
 				"milestoneId": milestoneID,
 				"stateEvent":  "close",
@@ -356,18 +369,9 @@ func TestUpdateMilestoneHandler(t *testing.T) {
 			expectInternalError: false,
 		},
 		{
-			name: "Error - Missing projectId",
-			args: map[string]any{
-				"milestoneId": milestoneID,
-			},
-			mockSetup:           func() {},
-			expectedResult:      "Validation Error: missing required parameter: projectId",
-			expectResultError:   true,
-			expectInternalError: false,
-		},
-		{
 			name: "Error - Missing milestoneId",
 			args: map[string]any{
+				"action":    "update",
 				"projectId": projectID,
 			},
 			mockSetup:           func() {},
@@ -376,8 +380,20 @@ func TestUpdateMilestoneHandler(t *testing.T) {
 			expectInternalError: false,
 		},
 		{
+			name: "Error - Missing projectId",
+			args: map[string]any{
+				"action":      "update",
+				"milestoneId": milestoneID,
+			},
+			mockSetup:           func() {},
+			expectedResult:      "Validation Error: missing required parameter: projectId",
+			expectResultError:   true,
+			expectInternalError: false,
+		},
+		{
 			name: "Error - Milestone Not Found (404)",
 			args: map[string]any{
+				"action":      "update",
 				"projectId":   projectID,
 				"milestoneId": 999.0,
 			},
@@ -393,6 +409,7 @@ func TestUpdateMilestoneHandler(t *testing.T) {
 		{
 			name: "Error - GitLab API Error (500)",
 			args: map[string]any{
+				"action":      "update",
 				"projectId":   projectID,
 				"milestoneId": milestoneID,
 			},
@@ -420,7 +437,7 @@ func TestUpdateMilestoneHandler(t *testing.T) {
 						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
 					} `json:"_meta,omitempty"`
 				}{
-					Name:      updateMilestoneTool.Name,
+					Name:      milestoneTool.Name,
 					Arguments: tc.args,
 				},
 			}
@@ -454,10 +471,10 @@ func TestUpdateMilestoneHandler(t *testing.T) {
 	}
 }
 
-// TestGetMilestoneHandler tests the GetMilestone tool handler
-func TestGetMilestoneHandler(t *testing.T) {
+// TestMilestoneHandler_Get tests the Get action of the Milestone tool handler
+func TestMilestoneHandler_Get(t *testing.T) {
 	// Tool schema snapshot test
-	tool, _ := GetMilestone(nil, nil)
+	tool, _ := Milestone(nil, nil)
 	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -468,7 +485,7 @@ func TestGetMilestoneHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	getMilestoneTool, handler := GetMilestone(mockGetClient, nil)
+	milestoneTool, handler := Milestone(mockGetClient, nil)
 
 	projectID := "group/project"
 	milestoneID := 1.0
@@ -486,6 +503,7 @@ func TestGetMilestoneHandler(t *testing.T) {
 		{
 			name: "Success - Get Milestone",
 			args: map[string]any{
+				"action":      "get",
 				"projectId":   projectID,
 				"milestoneId": milestoneID,
 			},
@@ -518,6 +536,7 @@ func TestGetMilestoneHandler(t *testing.T) {
 		{
 			name: "Error - Missing projectId",
 			args: map[string]any{
+				"action":      "get",
 				"milestoneId": milestoneID,
 			},
 			mockSetup:           func() {},
@@ -528,6 +547,7 @@ func TestGetMilestoneHandler(t *testing.T) {
 		{
 			name: "Error - Milestone Not Found (404)",
 			args: map[string]any{
+				"action":      "get",
 				"projectId":   projectID,
 				"milestoneId": 999.0,
 			},
@@ -543,6 +563,7 @@ func TestGetMilestoneHandler(t *testing.T) {
 		{
 			name: "Error - GitLab API Error (500)",
 			args: map[string]any{
+				"action":      "get",
 				"projectId":   projectID,
 				"milestoneId": milestoneID,
 			},
@@ -570,7 +591,7 @@ func TestGetMilestoneHandler(t *testing.T) {
 						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
 					} `json:"_meta,omitempty"`
 				}{
-					Name:      getMilestoneTool.Name,
+					Name:      milestoneTool.Name,
 					Arguments: tc.args,
 				},
 			}

@@ -1,0 +1,45 @@
+{
+  "annotations": {
+    "title": "Manage Pipeline Job"
+  },
+  "description": "TOOL_PIPELINE_JOB_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "description": "The action to perform on the pipeline job.",
+        "enum": [
+          "list",
+          "get",
+          "trace"
+        ],
+        "type": "string"
+      },
+      "jobId": {
+        "description": "The ID of the job (required for get/trace actions).",
+        "type": "number"
+      },
+      "page": {
+        "description": "Page number of the results to retrieve (min 1).",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "Number of results to return per page (default: 20, max: 100).",
+        "type": "number"
+      },
+      "pipelineId": {
+        "description": "The ID of the pipeline (required for list action).",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "action",
+      "projectId"
+    ]
+  },
+  "name": "pipelineJob"
+}

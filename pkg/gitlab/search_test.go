@@ -27,7 +27,7 @@ func TestSearchProjectsHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	searchProjectsTool, handler := SearchProjects(mockGetClient, nil)
+	searchProjectsTool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -41,7 +41,8 @@ func TestSearchProjectsHandler(t *testing.T) {
 		{
 			name: "Success - Search Projects",
 			args: map[string]any{
-				"search": "test",
+				"resourceType": "projects",
+				"search":       "test",
 			},
 			mockSetup: func() {
 				expectedProjects := []*gl.Project{
@@ -62,7 +63,8 @@ func TestSearchProjectsHandler(t *testing.T) {
 		{
 			name: "Success - Search Projects - Empty Results",
 			args: map[string]any{
-				"search": "nonexistent",
+				"resourceType": "projects",
+				"search":       "nonexistent",
 			},
 			mockSetup: func() {
 				mockSearch.EXPECT().
@@ -75,7 +77,7 @@ func TestSearchProjectsHandler(t *testing.T) {
 		},
 		{
 			name:                "Error - Missing search parameter",
-			args:                map[string]any{},
+			args:                map[string]any{"resourceType": "projects"},
 			mockSetup:           func() {},
 			expectedResult:      "Validation Error: missing required parameter: search",
 			expectResultError:   true,
@@ -84,7 +86,8 @@ func TestSearchProjectsHandler(t *testing.T) {
 		{
 			name: "Error - API Error (500)",
 			args: map[string]any{
-				"search": "test",
+				"resourceType": "projects",
+				"search":       "test",
 			},
 			mockSetup: func() {
 				mockSearch.EXPECT().
@@ -158,7 +161,7 @@ func TestSearchIssuesHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	searchIssuesTool, handler := SearchIssues(mockGetClient, nil)
+	searchIssuesTool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -172,7 +175,8 @@ func TestSearchIssuesHandler(t *testing.T) {
 		{
 			name: "Success - Search Issues",
 			args: map[string]any{
-				"search": "bug",
+				"resourceType": "issues",
+				"search":       "bug",
 			},
 			mockSetup: func() {
 				expectedIssues := []*gl.Issue{
@@ -193,7 +197,8 @@ func TestSearchIssuesHandler(t *testing.T) {
 		{
 			name: "Success - Search Issues - Empty Results",
 			args: map[string]any{
-				"search": "nonexistent",
+				"resourceType": "issues",
+				"search":       "nonexistent",
 			},
 			mockSetup: func() {
 				mockSearch.EXPECT().
@@ -206,7 +211,7 @@ func TestSearchIssuesHandler(t *testing.T) {
 		},
 		{
 			name:                "Error - Missing search parameter",
-			args:                map[string]any{},
+			args:                map[string]any{"resourceType": "issues"},
 			mockSetup:           func() {},
 			expectedResult:      "Validation Error: missing required parameter: search",
 			expectResultError:   true,
@@ -215,7 +220,8 @@ func TestSearchIssuesHandler(t *testing.T) {
 		{
 			name: "Error - API Error (500)",
 			args: map[string]any{
-				"search": "bug",
+				"resourceType": "issues",
+				"search":       "bug",
 			},
 			mockSetup: func() {
 				mockSearch.EXPECT().
@@ -289,7 +295,7 @@ func TestSearchMergeRequestsHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	searchMRsTool, handler := SearchMergeRequests(mockGetClient, nil)
+	searchMRsTool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -303,7 +309,8 @@ func TestSearchMergeRequestsHandler(t *testing.T) {
 		{
 			name: "Success - Search Merge Requests",
 			args: map[string]any{
-				"search": "feature",
+				"resourceType": "merge_requests",
+				"search":       "feature",
 			},
 			mockSetup: func() {
 				expectedMRs := []*gl.MergeRequest{
@@ -323,7 +330,7 @@ func TestSearchMergeRequestsHandler(t *testing.T) {
 		},
 		{
 			name:                "Error - Missing search parameter",
-			args:                map[string]any{},
+			args:                map[string]any{"resourceType": "merge_requests"},
 			mockSetup:           func() {},
 			expectedResult:      "Validation Error: missing required parameter: search",
 			expectResultError:   true,
@@ -332,7 +339,8 @@ func TestSearchMergeRequestsHandler(t *testing.T) {
 		{
 			name: "Error - API Error (500)",
 			args: map[string]any{
-				"search": "feature",
+				"resourceType": "merge_requests",
+				"search":       "feature",
 			},
 			mockSetup: func() {
 				mockSearch.EXPECT().
@@ -342,7 +350,7 @@ func TestSearchMergeRequestsHandler(t *testing.T) {
 			expectedResult:      nil,
 			expectResultError:   true,
 			expectInternalError: true,
-			errorContains:       "failed to list merge requests",
+			errorContains:       "failed to list merge_requests (scope=global)",
 		},
 	}
 
@@ -402,7 +410,7 @@ func TestSearchBlobsHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	searchBlobsTool, handler := SearchBlobs(mockGetClient, nil)
+	searchBlobsTool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -416,7 +424,8 @@ func TestSearchBlobsHandler(t *testing.T) {
 		{
 			name: "Success - Search Code Blobs",
 			args: map[string]any{
-				"search": "function",
+				"resourceType": "blobs",
+				"search":       "function",
 			},
 			mockSetup: func() {
 				expectedBlobs := []*gl.Blob{
@@ -436,7 +445,7 @@ func TestSearchBlobsHandler(t *testing.T) {
 		},
 		{
 			name:                "Error - Missing search parameter",
-			args:                map[string]any{},
+			args:                map[string]any{"resourceType": "blobs"},
 			mockSetup:           func() {},
 			expectedResult:      "Validation Error: missing required parameter: search",
 			expectResultError:   true,
@@ -445,7 +454,8 @@ func TestSearchBlobsHandler(t *testing.T) {
 		{
 			name: "Error - API Error (500)",
 			args: map[string]any{
-				"search": "function",
+				"resourceType": "blobs",
+				"search":       "function",
 			},
 			mockSetup: func() {
 				mockSearch.EXPECT().
@@ -455,7 +465,7 @@ func TestSearchBlobsHandler(t *testing.T) {
 			expectedResult:      nil,
 			expectResultError:   true,
 			expectInternalError: true,
-			errorContains:       "failed to list code blobs",
+			errorContains:       "failed to list blobs (scope=global)",
 		},
 	}
 
@@ -515,7 +525,7 @@ func TestSearchCommitsHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	searchCommitsTool, handler := SearchCommits(mockGetClient, nil)
+	searchCommitsTool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -529,7 +539,8 @@ func TestSearchCommitsHandler(t *testing.T) {
 		{
 			name: "Success - Search Commits",
 			args: map[string]any{
-				"search": "fix",
+				"resourceType": "commits",
+				"search":       "fix",
 			},
 			mockSetup: func() {
 				expectedCommits := []*gl.Commit{
@@ -549,7 +560,7 @@ func TestSearchCommitsHandler(t *testing.T) {
 		},
 		{
 			name:                "Error - Missing search parameter",
-			args:                map[string]any{},
+			args:                map[string]any{"resourceType": "commits"},
 			mockSetup:           func() {},
 			expectedResult:      "Validation Error: missing required parameter: search",
 			expectResultError:   true,
@@ -558,7 +569,8 @@ func TestSearchCommitsHandler(t *testing.T) {
 		{
 			name: "Error - API Error (500)",
 			args: map[string]any{
-				"search": "fix",
+				"resourceType": "commits",
+				"search":       "fix",
 			},
 			mockSetup: func() {
 				mockSearch.EXPECT().
@@ -627,8 +639,8 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 	}
 
 	t.Run("searchProjects", func(t *testing.T) {
-		_, handler := SearchProjects(errorGetClientFn, nil)
-		tool, _ := SearchProjects(nil, nil)
+		_, handler := Search(errorGetClientFn, nil)
+		tool, _ := Search(nil, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -639,7 +651,7 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 				} `json:"_meta,omitempty"`
 			}{
 				Name:      tool.Name,
-				Arguments: map[string]any{"search": "test"},
+				Arguments: map[string]any{"resourceType": "projects", "search": "test"},
 			},
 		}
 
@@ -650,8 +662,8 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 	})
 
 	t.Run("searchIssues", func(t *testing.T) {
-		_, handler := SearchIssues(errorGetClientFn, nil)
-		tool, _ := SearchIssues(nil, nil)
+		_, handler := Search(errorGetClientFn, nil)
+		tool, _ := Search(nil, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -662,7 +674,7 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 				} `json:"_meta,omitempty"`
 			}{
 				Name:      tool.Name,
-				Arguments: map[string]any{"search": "test"},
+				Arguments: map[string]any{"resourceType": "issues", "search": "test"},
 			},
 		}
 
@@ -673,8 +685,8 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 	})
 
 	t.Run("searchMergeRequests", func(t *testing.T) {
-		_, handler := SearchMergeRequests(errorGetClientFn, nil)
-		tool, _ := SearchMergeRequests(nil, nil)
+		_, handler := Search(errorGetClientFn, nil)
+		tool, _ := Search(nil, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -685,7 +697,7 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 				} `json:"_meta,omitempty"`
 			}{
 				Name:      tool.Name,
-				Arguments: map[string]any{"search": "test"},
+				Arguments: map[string]any{"resourceType": "merge_requests", "search": "test"},
 			},
 		}
 
@@ -696,8 +708,8 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 	})
 
 	t.Run("searchBlobs", func(t *testing.T) {
-		_, handler := SearchBlobs(errorGetClientFn, nil)
-		tool, _ := SearchBlobs(nil, nil)
+		_, handler := Search(errorGetClientFn, nil)
+		tool, _ := Search(nil, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -708,7 +720,7 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 				} `json:"_meta,omitempty"`
 			}{
 				Name:      tool.Name,
-				Arguments: map[string]any{"search": "test"},
+				Arguments: map[string]any{"resourceType": "blobs", "search": "test"},
 			},
 		}
 
@@ -719,8 +731,8 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 	})
 
 	t.Run("searchCommits", func(t *testing.T) {
-		_, handler := SearchCommits(errorGetClientFn, nil)
-		tool, _ := SearchCommits(nil, nil)
+		_, handler := Search(errorGetClientFn, nil)
+		tool, _ := Search(nil, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -731,7 +743,7 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 				} `json:"_meta,omitempty"`
 			}{
 				Name:      tool.Name,
-				Arguments: map[string]any{"search": "test"},
+				Arguments: map[string]any{"resourceType": "commits", "search": "test"},
 			},
 		}
 
@@ -753,7 +765,7 @@ func TestSearchProjectsByGroupHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	tool, handler := SearchProjectsByGroup(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -767,8 +779,10 @@ func TestSearchProjectsByGroupHandler(t *testing.T) {
 		{
 			name: "Success - Search Projects by Group",
 			args: map[string]any{
-				"gid":    "mygroup",
-				"search": "test",
+				"resourceType": "projects",
+				"scope":        "group",
+				"gid":          "mygroup",
+				"search":       "test",
 			},
 			mockSetup: func() {
 				mockSearch.EXPECT().
@@ -781,15 +795,15 @@ func TestSearchProjectsByGroupHandler(t *testing.T) {
 		},
 		{
 			name:                "Error - Missing gid parameter",
-			args:                map[string]any{"search": "test"},
+			args:                map[string]any{"resourceType": "projects", "scope": "group", "search": "test"},
 			mockSetup:           func() {},
-			expectedResult:      "Validation Error: missing required parameter: gid",
+			expectedResult:      "Validation Error: gid is required when scope='group'",
 			expectResultError:   true,
 			expectInternalError: false,
 		},
 		{
 			name:                "Error - Missing search parameter",
-			args:                map[string]any{"gid": "mygroup"},
+			args:                map[string]any{"resourceType": "projects", "scope": "group", "gid": "mygroup"},
 			mockSetup:           func() {},
 			expectedResult:      "Validation Error: missing required parameter: search",
 			expectResultError:   true,
@@ -798,8 +812,10 @@ func TestSearchProjectsByGroupHandler(t *testing.T) {
 		{
 			name: "Error - 401 Unauthorized",
 			args: map[string]any{
-				"gid":    "mygroup",
-				"search": "test",
+				"resourceType": "projects",
+				"scope":        "group",
+				"gid":          "mygroup",
+				"search":       "test",
 			},
 			mockSetup: func() {
 				mockSearch.EXPECT().
@@ -813,8 +829,10 @@ func TestSearchProjectsByGroupHandler(t *testing.T) {
 		{
 			name: "Error - 500 Server Error",
 			args: map[string]any{
-				"gid":    "mygroup",
-				"search": "test",
+				"resourceType": "projects",
+				"scope":        "group",
+				"gid":          "mygroup",
+				"search":       "test",
 			},
 			mockSetup: func() {
 				mockSearch.EXPECT().
@@ -883,7 +901,7 @@ func TestSearchIssuesByGroupHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	tool, handler := SearchIssuesByGroup(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -896,7 +914,7 @@ func TestSearchIssuesByGroupHandler(t *testing.T) {
 	}{
 		{
 			name: "Success - Search Issues by Group",
-			args: map[string]any{"gid": "mygroup", "search": "bug"},
+			args: map[string]any{"resourceType": "issues", "scope": "group", "gid": "mygroup", "search": "bug"},
 			mockSetup: func() {
 				mockSearch.EXPECT().
 					IssuesByGroup("mygroup", "bug", gomock.Any(), gomock.Any()).
@@ -908,15 +926,15 @@ func TestSearchIssuesByGroupHandler(t *testing.T) {
 		},
 		{
 			name:                "Error - Missing gid",
-			args:                map[string]any{"search": "bug"},
+			args:                map[string]any{"resourceType": "issues", "scope": "group", "search": "bug"},
 			mockSetup:           func() {},
-			expectedResult:      "Validation Error: missing required parameter: gid",
+			expectedResult:      "Validation Error: gid is required when scope='group'",
 			expectResultError:   true,
 			expectInternalError: false,
 		},
 		{
 			name:                "Error - Missing search",
-			args:                map[string]any{"gid": "mygroup"},
+			args:                map[string]any{"resourceType": "issues", "scope": "group", "gid": "mygroup"},
 			mockSetup:           func() {},
 			expectedResult:      "Validation Error: missing required parameter: search",
 			expectResultError:   true,
@@ -924,7 +942,7 @@ func TestSearchIssuesByGroupHandler(t *testing.T) {
 		},
 		{
 			name: "Error - 401",
-			args: map[string]any{"gid": "mygroup", "search": "bug"},
+			args: map[string]any{"resourceType": "issues", "scope": "group", "gid": "mygroup", "search": "bug"},
 			mockSetup: func() {
 				mockSearch.EXPECT().
 					IssuesByGroup("mygroup", "bug", gomock.Any(), gomock.Any()).
@@ -936,7 +954,7 @@ func TestSearchIssuesByGroupHandler(t *testing.T) {
 		},
 		{
 			name: "Error - 500",
-			args: map[string]any{"gid": "mygroup", "search": "bug"},
+			args: map[string]any{"resourceType": "issues", "scope": "group", "gid": "mygroup", "search": "bug"},
 			mockSetup: func() {
 				mockSearch.EXPECT().
 					IssuesByGroup("mygroup", "bug", gomock.Any(), gomock.Any()).
@@ -988,7 +1006,7 @@ func TestSearchMergeRequestsByGroupHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchMergeRequestsByGroup(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1000,7 +1018,7 @@ func TestSearchMergeRequestsByGroupHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"gid": "mygroup", "search": "feature"},
+			args: map[string]any{"resourceType": "merge_requests", "scope": "group", "gid": "mygroup", "search": "feature"},
 			mockSetup: func() {
 				mockSearch.EXPECT().MergeRequestsByGroup("mygroup", "feature", gomock.Any(), gomock.Any()).
 					Return([]*gl.MergeRequest{{BasicMergeRequest: gl.BasicMergeRequest{ID: 1, IID: 1, Title: "Feature"}}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1008,31 +1026,31 @@ func TestSearchMergeRequestsByGroupHandler(t *testing.T) {
 		},
 		{
 			name:                "Error - Missing gid",
-			args:                map[string]any{"search": "feature"},
+			args:                map[string]any{"resourceType": "merge_requests", "scope": "group", "search": "feature"},
 			mockSetup:           func() {},
 			expectResultError:   true,
-			errorContains:       "missing required parameter: gid",
+			errorContains:       "gid is required when scope='group'",
 		},
 		{
 			name:                "Error - Missing search",
-			args:                map[string]any{"gid": "mygroup"},
+			args:                map[string]any{"resourceType": "merge_requests", "scope": "group", "gid": "mygroup"},
 			mockSetup:           func() {},
 			expectResultError:   true,
 			errorContains:       "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"gid": "mygroup", "search": "feature"},
+			args:              map[string]any{"resourceType": "merge_requests", "scope": "group", "gid": "mygroup", "search": "feature"},
 			mockSetup:         func() { mockSearch.EXPECT().MergeRequestsByGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"gid": "mygroup", "search": "feature"},
+			args:                map[string]any{"resourceType": "merge_requests", "scope": "group", "gid": "mygroup", "search": "feature"},
 			mockSetup:           func() { mockSearch.EXPECT().MergeRequestsByGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
-			errorContains:       "failed to list merge requests",
+			errorContains:       "failed to list merge_requests (scope=group)",
 		},
 	}
 	for _, tc := range tests {
@@ -1065,7 +1083,7 @@ func TestSearchMilestonesByGroupHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchMilestonesByGroup(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1077,7 +1095,7 @@ func TestSearchMilestonesByGroupHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"gid": "mygroup", "search": "v1.0"},
+			args: map[string]any{"resourceType": "milestones", "scope": "group", "gid": "mygroup", "search": "v1.0"},
 			mockSetup: func() {
 				mockSearch.EXPECT().MilestonesByGroup("mygroup", "v1.0", gomock.Any(), gomock.Any()).
 					Return([]*gl.Milestone{{ID: 1, Title: "v1.0"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1085,28 +1103,28 @@ func TestSearchMilestonesByGroupHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing gid",
-			args:              map[string]any{"search": "v1.0"},
+			args:              map[string]any{"resourceType": "milestones", "scope": "group", "search": "v1.0"},
 			mockSetup:         func() {},
 			expectResultError: true,
-			errorContains:     "missing required parameter: gid",
+			errorContains:     "gid is required when scope='group'",
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{"gid": "mygroup"},
+			args:              map[string]any{"resourceType": "milestones", "scope": "group", "gid": "mygroup"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"gid": "mygroup", "search": "v1.0"},
+			args:              map[string]any{"resourceType": "milestones", "scope": "group", "gid": "mygroup", "search": "v1.0"},
 			mockSetup:         func() { mockSearch.EXPECT().MilestonesByGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"gid": "mygroup", "search": "v1.0"},
+			args:                map[string]any{"resourceType": "milestones", "scope": "group", "gid": "mygroup", "search": "v1.0"},
 			mockSetup:           func() { mockSearch.EXPECT().MilestonesByGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
 			errorContains:       "failed to list milestones",
@@ -1142,7 +1160,7 @@ func TestSearchBlobsByGroupHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchBlobsByGroup(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1154,7 +1172,7 @@ func TestSearchBlobsByGroupHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"gid": "mygroup", "search": "function"},
+			args: map[string]any{"resourceType": "blobs", "scope": "group", "gid": "mygroup", "search": "function"},
 			mockSetup: func() {
 				mockSearch.EXPECT().BlobsByGroup("mygroup", "function", gomock.Any(), gomock.Any()).
 					Return([]*gl.Blob{{Filename: "test.go"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1162,31 +1180,31 @@ func TestSearchBlobsByGroupHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing gid",
-			args:              map[string]any{"search": "function"},
+			args:              map[string]any{"resourceType": "blobs", "scope": "group", "search": "function"},
 			mockSetup:         func() {},
 			expectResultError: true,
-			errorContains:     "missing required parameter: gid",
+			errorContains:     "gid is required when scope='group'",
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{"gid": "mygroup"},
+			args:              map[string]any{"resourceType": "blobs", "scope": "group", "gid": "mygroup"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"gid": "mygroup", "search": "function"},
+			args:              map[string]any{"resourceType": "blobs", "scope": "group", "gid": "mygroup", "search": "function"},
 			mockSetup:         func() { mockSearch.EXPECT().BlobsByGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"gid": "mygroup", "search": "function"},
+			args:                map[string]any{"resourceType": "blobs", "scope": "group", "gid": "mygroup", "search": "function"},
 			mockSetup:           func() { mockSearch.EXPECT().BlobsByGroup(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
-			errorContains:       "failed to list code blobs",
+			errorContains:       "failed to list blobs (scope=group)",
 		},
 	}
 	for _, tc := range tests {
@@ -1219,7 +1237,7 @@ func TestSearchIssuesByProjectHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchIssuesByProject(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1231,7 +1249,7 @@ func TestSearchIssuesByProjectHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"pid": "myproject", "search": "bug"},
+			args: map[string]any{"resourceType": "issues", "scope": "project", "pid": "myproject", "search": "bug"},
 			mockSetup: func() {
 				mockSearch.EXPECT().IssuesByProject("myproject", "bug", gomock.Any(), gomock.Any()).
 					Return([]*gl.Issue{{ID: 1, IID: 1, Title: "Bug"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1239,28 +1257,28 @@ func TestSearchIssuesByProjectHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing pid",
-			args:              map[string]any{"search": "bug"},
+			args:              map[string]any{"resourceType": "issues", "scope": "project", "search": "bug"},
 			mockSetup:         func() {},
 			expectResultError: true,
-			errorContains:     "missing required parameter: pid",
+			errorContains:     "pid is required when scope='project'",
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{"pid": "myproject"},
+			args:              map[string]any{"resourceType": "issues", "scope": "project", "pid": "myproject"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"pid": "myproject", "search": "bug"},
+			args:              map[string]any{"resourceType": "issues", "scope": "project", "pid": "myproject", "search": "bug"},
 			mockSetup:         func() { mockSearch.EXPECT().IssuesByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"pid": "myproject", "search": "bug"},
+			args:                map[string]any{"resourceType": "issues", "scope": "project", "pid": "myproject", "search": "bug"},
 			mockSetup:           func() { mockSearch.EXPECT().IssuesByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
 			errorContains:       "failed to list issues",
@@ -1296,7 +1314,7 @@ func TestSearchMergeRequestsByProjectHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchMergeRequestsByProject(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1308,7 +1326,7 @@ func TestSearchMergeRequestsByProjectHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"pid": "myproject", "search": "feature"},
+			args: map[string]any{"resourceType": "merge_requests", "scope": "project", "pid": "myproject", "search": "feature"},
 			mockSetup: func() {
 				mockSearch.EXPECT().MergeRequestsByProject("myproject", "feature", gomock.Any(), gomock.Any()).
 					Return([]*gl.MergeRequest{{BasicMergeRequest: gl.BasicMergeRequest{ID: 1, IID: 1, Title: "Feature"}}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1316,31 +1334,31 @@ func TestSearchMergeRequestsByProjectHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing pid",
-			args:              map[string]any{"search": "feature"},
+			args:              map[string]any{"resourceType": "merge_requests", "scope": "project", "search": "feature"},
 			mockSetup:         func() {},
 			expectResultError: true,
-			errorContains:     "missing required parameter: pid",
+			errorContains:     "pid is required when scope='project'",
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{"pid": "myproject"},
+			args:              map[string]any{"resourceType": "merge_requests", "scope": "project", "pid": "myproject"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"pid": "myproject", "search": "feature"},
+			args:              map[string]any{"resourceType": "merge_requests", "scope": "project", "pid": "myproject", "search": "feature"},
 			mockSetup:         func() { mockSearch.EXPECT().MergeRequestsByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"pid": "myproject", "search": "feature"},
+			args:                map[string]any{"resourceType": "merge_requests", "scope": "project", "pid": "myproject", "search": "feature"},
 			mockSetup:           func() { mockSearch.EXPECT().MergeRequestsByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
-			errorContains:       "failed to list merge requests",
+			errorContains:       "failed to list merge_requests (scope=project)",
 		},
 	}
 	for _, tc := range tests {
@@ -1373,7 +1391,7 @@ func TestSearchMilestonesByProjectHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchMilestonesByProject(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1385,7 +1403,7 @@ func TestSearchMilestonesByProjectHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"pid": "myproject", "search": "v1.0"},
+			args: map[string]any{"resourceType": "milestones", "scope": "project", "pid": "myproject", "search": "v1.0"},
 			mockSetup: func() {
 				mockSearch.EXPECT().MilestonesByProject("myproject", "v1.0", gomock.Any(), gomock.Any()).
 					Return([]*gl.Milestone{{ID: 1, Title: "v1.0"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1393,28 +1411,28 @@ func TestSearchMilestonesByProjectHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing pid",
-			args:              map[string]any{"search": "v1.0"},
+			args:              map[string]any{"resourceType": "milestones", "scope": "project", "search": "v1.0"},
 			mockSetup:         func() {},
 			expectResultError: true,
-			errorContains:     "missing required parameter: pid",
+			errorContains:     "pid is required when scope='project'",
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{"pid": "myproject"},
+			args:              map[string]any{"resourceType": "milestones", "scope": "project", "pid": "myproject"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"pid": "myproject", "search": "v1.0"},
+			args:              map[string]any{"resourceType": "milestones", "scope": "project", "pid": "myproject", "search": "v1.0"},
 			mockSetup:         func() { mockSearch.EXPECT().MilestonesByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"pid": "myproject", "search": "v1.0"},
+			args:                map[string]any{"resourceType": "milestones", "scope": "project", "pid": "myproject", "search": "v1.0"},
 			mockSetup:           func() { mockSearch.EXPECT().MilestonesByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
 			errorContains:       "failed to list milestones",
@@ -1450,7 +1468,7 @@ func TestSearchBlobsByProjectHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchBlobsByProject(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1462,7 +1480,7 @@ func TestSearchBlobsByProjectHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"pid": "myproject", "search": "function"},
+			args: map[string]any{"resourceType": "blobs", "scope": "project", "pid": "myproject", "search": "function"},
 			mockSetup: func() {
 				mockSearch.EXPECT().BlobsByProject("myproject", "function", gomock.Any(), gomock.Any()).
 					Return([]*gl.Blob{{Filename: "test.go"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1470,31 +1488,31 @@ func TestSearchBlobsByProjectHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing pid",
-			args:              map[string]any{"search": "function"},
+			args:              map[string]any{"resourceType": "blobs", "scope": "project", "search": "function"},
 			mockSetup:         func() {},
 			expectResultError: true,
-			errorContains:     "missing required parameter: pid",
+			errorContains:     "pid is required when scope='project'",
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{"pid": "myproject"},
+			args:              map[string]any{"resourceType": "blobs", "scope": "project", "pid": "myproject"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"pid": "myproject", "search": "function"},
+			args:              map[string]any{"resourceType": "blobs", "scope": "project", "pid": "myproject", "search": "function"},
 			mockSetup:         func() { mockSearch.EXPECT().BlobsByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"pid": "myproject", "search": "function"},
+			args:                map[string]any{"resourceType": "blobs", "scope": "project", "pid": "myproject", "search": "function"},
 			mockSetup:           func() { mockSearch.EXPECT().BlobsByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
-			errorContains:       "failed to list code blobs",
+			errorContains:       "failed to list blobs (scope=project)",
 		},
 	}
 	for _, tc := range tests {
@@ -1527,7 +1545,7 @@ func TestSearchCommitsByProjectHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchCommitsByProject(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1539,7 +1557,7 @@ func TestSearchCommitsByProjectHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"pid": "myproject", "search": "fix"},
+			args: map[string]any{"resourceType": "commits", "scope": "project", "pid": "myproject", "search": "fix"},
 			mockSetup: func() {
 				mockSearch.EXPECT().CommitsByProject("myproject", "fix", gomock.Any(), gomock.Any()).
 					Return([]*gl.Commit{{ID: "abc123", Message: "Fix bug"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1547,28 +1565,28 @@ func TestSearchCommitsByProjectHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing pid",
-			args:              map[string]any{"search": "fix"},
+			args:              map[string]any{"resourceType": "commits", "scope": "project", "search": "fix"},
 			mockSetup:         func() {},
 			expectResultError: true,
-			errorContains:     "missing required parameter: pid",
+			errorContains:     "pid is required when scope='project'",
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{"pid": "myproject"},
+			args:              map[string]any{"resourceType": "commits", "scope": "project", "pid": "myproject"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"pid": "myproject", "search": "fix"},
+			args:              map[string]any{"resourceType": "commits", "scope": "project", "pid": "myproject", "search": "fix"},
 			mockSetup:         func() { mockSearch.EXPECT().CommitsByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"pid": "myproject", "search": "fix"},
+			args:                map[string]any{"resourceType": "commits", "scope": "project", "pid": "myproject", "search": "fix"},
 			mockSetup:           func() { mockSearch.EXPECT().CommitsByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
 			errorContains:       "failed to list commits",
@@ -1606,7 +1624,7 @@ func TestSearchMilestonesHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchMilestones(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1618,7 +1636,7 @@ func TestSearchMilestonesHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"search": "v1.0"},
+			args: map[string]any{"resourceType": "milestones", "search": "v1.0"},
 			mockSetup: func() {
 				mockSearch.EXPECT().Milestones("v1.0", gomock.Any(), gomock.Any()).
 					Return([]*gl.Milestone{{ID: 1, Title: "v1.0"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1626,21 +1644,21 @@ func TestSearchMilestonesHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{},
+			args:              map[string]any{"resourceType": "milestones"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"search": "v1.0"},
+			args:              map[string]any{"resourceType": "milestones", "search": "v1.0"},
 			mockSetup:         func() { mockSearch.EXPECT().Milestones(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"search": "v1.0"},
+			args:                map[string]any{"resourceType": "milestones", "search": "v1.0"},
 			mockSetup:           func() { mockSearch.EXPECT().Milestones(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
 			errorContains:       "failed to list milestones",
@@ -1676,7 +1694,7 @@ func TestSearchSnippetTitlesHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchSnippetTitles(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1688,7 +1706,7 @@ func TestSearchSnippetTitlesHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"search": "example"},
+			args: map[string]any{"resourceType": "snippet_titles", "search": "example"},
 			mockSetup: func() {
 				mockSearch.EXPECT().SnippetTitles("example", gomock.Any(), gomock.Any()).
 					Return([]*gl.Snippet{{ID: 1, Title: "Example"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1696,24 +1714,24 @@ func TestSearchSnippetTitlesHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{},
+			args:              map[string]any{"resourceType": "snippet_titles"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"search": "example"},
+			args:              map[string]any{"resourceType": "snippet_titles", "search": "example"},
 			mockSetup:         func() { mockSearch.EXPECT().SnippetTitles(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"search": "example"},
+			args:                map[string]any{"resourceType": "snippet_titles", "search": "example"},
 			mockSetup:           func() { mockSearch.EXPECT().SnippetTitles(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
-			errorContains:       "failed to list snippet titles",
+			errorContains:       "failed to list snippet_titles (scope=global)",
 		},
 	}
 	for _, tc := range tests {
@@ -1746,7 +1764,7 @@ func TestSearchSnippetBlobsHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchSnippetBlobs(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1758,7 +1776,7 @@ func TestSearchSnippetBlobsHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"search": "function"},
+			args: map[string]any{"resourceType": "snippet_blobs", "search": "function"},
 			mockSetup: func() {
 				mockSearch.EXPECT().SnippetBlobs("function", gomock.Any(), gomock.Any()).
 					Return([]*gl.Snippet{{ID: 1, Title: "Code"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1766,24 +1784,24 @@ func TestSearchSnippetBlobsHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{},
+			args:              map[string]any{"resourceType": "snippet_blobs"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"search": "function"},
+			args:              map[string]any{"resourceType": "snippet_blobs", "search": "function"},
 			mockSetup:         func() { mockSearch.EXPECT().SnippetBlobs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"search": "function"},
+			args:                map[string]any{"resourceType": "snippet_blobs", "search": "function"},
 			mockSetup:           func() { mockSearch.EXPECT().SnippetBlobs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
-			errorContains:       "failed to list snippet blobs",
+			errorContains:       "failed to list snippet_blobs (scope=global)",
 		},
 	}
 	for _, tc := range tests {
@@ -1816,7 +1834,7 @@ func TestSearchWikiBlobsHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchWikiBlobs(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1828,7 +1846,7 @@ func TestSearchWikiBlobsHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"search": "documentation"},
+			args: map[string]any{"resourceType": "wiki_blobs", "search": "documentation"},
 			mockSetup: func() {
 				mockSearch.EXPECT().WikiBlobs("documentation", gomock.Any(), gomock.Any()).
 					Return([]*gl.Wiki{{Title: "Documentation", Slug: "docs"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1836,24 +1854,24 @@ func TestSearchWikiBlobsHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{},
+			args:              map[string]any{"resourceType": "wiki_blobs"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"search": "documentation"},
+			args:              map[string]any{"resourceType": "wiki_blobs", "search": "documentation"},
 			mockSetup:         func() { mockSearch.EXPECT().WikiBlobs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"search": "documentation"},
+			args:                map[string]any{"resourceType": "wiki_blobs", "search": "documentation"},
 			mockSetup:           func() { mockSearch.EXPECT().WikiBlobs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
-			errorContains:       "failed to list wiki blobs",
+			errorContains:       "failed to list wiki_blobs (scope=global)",
 		},
 	}
 	for _, tc := range tests {
@@ -1886,7 +1904,7 @@ func TestSearchNotesByProjectHandler(t *testing.T) {
 	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
-	tool, handler := SearchNotesByProject(mockGetClient, nil)
+	tool, handler := Search(mockGetClient, nil)
 
 	tests := []struct {
 		name                string
@@ -1898,7 +1916,7 @@ func TestSearchNotesByProjectHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			args: map[string]any{"pid": "myproject", "search": "comment"},
+			args: map[string]any{"resourceType": "notes", "scope": "project", "pid": "myproject", "search": "comment"},
 			mockSetup: func() {
 				mockSearch.EXPECT().NotesByProject("myproject", "comment", gomock.Any(), gomock.Any()).
 					Return([]*gl.Note{{ID: 1, Body: "Great comment"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -1906,28 +1924,28 @@ func TestSearchNotesByProjectHandler(t *testing.T) {
 		},
 		{
 			name:              "Error - Missing pid",
-			args:              map[string]any{"search": "comment"},
+			args:              map[string]any{"resourceType": "notes", "scope": "project", "search": "comment"},
 			mockSetup:         func() {},
 			expectResultError: true,
-			errorContains:     "missing required parameter: pid",
+			errorContains:     "pid is required when scope='project'",
 		},
 		{
 			name:              "Error - Missing search",
-			args:              map[string]any{"pid": "myproject"},
+			args:              map[string]any{"resourceType": "notes", "scope": "project", "pid": "myproject"},
 			mockSetup:         func() {},
 			expectResultError: true,
 			errorContains:     "missing required parameter: search",
 		},
 		{
 			name:              "Error - 401",
-			args:              map[string]any{"pid": "myproject", "search": "comment"},
+			args:              map[string]any{"resourceType": "notes", "scope": "project", "pid": "myproject", "search": "comment"},
 			mockSetup:         func() { mockSearch.EXPECT().NotesByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name:                "Error - 500",
-			args:                map[string]any{"pid": "myproject", "search": "comment"},
+			args:                map[string]any{"resourceType": "notes", "scope": "project", "pid": "myproject", "search": "comment"},
 			mockSetup:           func() { mockSearch.EXPECT().NotesByProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
 			errorContains:       "failed to list notes",
@@ -1965,26 +1983,7 @@ func TestSearchTools_SchemaSnapshots(t *testing.T) {
 		name string
 		tool mcp.Tool
 	}{
-		{"searchProjects", mustMakeSearchTool(SearchProjects)},
-		{"searchIssues", mustMakeSearchTool(SearchIssues)},
-		{"searchMergeRequests", mustMakeSearchTool(SearchMergeRequests)},
-		{"searchBlobs", mustMakeSearchTool(SearchBlobs)},
-		{"searchCommits", mustMakeSearchTool(SearchCommits)},
-		{"searchMilestones", mustMakeSearchTool(SearchMilestones)},
-		{"searchSnippetTitles", mustMakeSearchTool(SearchSnippetTitles)},
-		{"searchSnippetBlobs", mustMakeSearchTool(SearchSnippetBlobs)},
-		{"searchWikiBlobs", mustMakeSearchTool(SearchWikiBlobs)},
-		{"searchProjectsByGroup", mustMakeSearchTool(SearchProjectsByGroup)},
-		{"searchIssuesByGroup", mustMakeSearchTool(SearchIssuesByGroup)},
-		{"searchMergeRequestsByGroup", mustMakeSearchTool(SearchMergeRequestsByGroup)},
-		{"searchMilestonesByGroup", mustMakeSearchTool(SearchMilestonesByGroup)},
-		{"searchBlobsByGroup", mustMakeSearchTool(SearchBlobsByGroup)},
-		{"searchIssuesByProject", mustMakeSearchTool(SearchIssuesByProject)},
-		{"searchMergeRequestsByProject", mustMakeSearchTool(SearchMergeRequestsByProject)},
-		{"searchMilestonesByProject", mustMakeSearchTool(SearchMilestonesByProject)},
-		{"searchBlobsByProject", mustMakeSearchTool(SearchBlobsByProject)},
-		{"searchCommitsByProject", mustMakeSearchTool(SearchCommitsByProject)},
-		{"searchNotesByProject", mustMakeSearchTool(SearchNotesByProject)},
+		{"search", mustMakeSearchTool(Search)},
 	}
 
 	for _, tc := range tools {

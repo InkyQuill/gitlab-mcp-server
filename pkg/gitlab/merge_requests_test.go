@@ -221,7 +221,7 @@ func TestGetMergeRequestHandler(t *testing.T) {
 // TestGetMergeRequestCommentsHandler tests the GetMergeRequestComments tool
 func TestGetMergeRequestCommentsHandler(t *testing.T) {
 	// Tool schema snapshot test
-	tool, _ := GetMergeRequestComments(nil, nil)
+	tool, _ := MergeRequestComment(nil, nil)
 	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -236,7 +236,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler once ---
-	getMRCommentsTool, handler := GetMergeRequestComments(mockGetClient, nil)
+	getMRCommentsTool, handler := MergeRequestComment(mockGetClient, nil)
 
 	// Define common test data
 	projectID := "group/project"
@@ -262,6 +262,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 		{
 			name: "Success - Get Merge Request Comments",
 			inputArgs: map[string]any{
+				"action":          "list",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 			},
@@ -318,6 +319,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 		{
 			name: "Success - Merge Request Comments With Pagination",
 			inputArgs: map[string]any{
+				"action":          "list",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"page":            2,
@@ -360,6 +362,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 		{
 			name: "Success - Empty Comments",
 			inputArgs: map[string]any{
+				"action":          "list",
 				"projectId":       projectID,
 				"mergeRequestIid": 2.0, // Different MR with no comments
 			},
@@ -374,6 +377,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 		{
 			name: "Error - Merge Request Not Found (404)",
 			inputArgs: map[string]any{
+				"action":          "list",
 				"projectId":       projectID,
 				"mergeRequestIid": 999.0,
 			},
@@ -388,6 +392,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 		{
 			name: "Error - GitLab API Error (500)",
 			inputArgs: map[string]any{
+				"action":          "list",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 			},
@@ -494,7 +499,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := GetMergeRequestComments(errorGetClientFn, nil)
+		_, handler := MergeRequestComment(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -506,6 +511,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 			}{
 				Name: getMRCommentsTool.Name,
 				Arguments: map[string]any{
+					"action":          "list",
 					"projectId":       projectID,
 					"mergeRequestIid": mrIid,
 				},
@@ -1514,7 +1520,7 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 // TestCreateMergeRequestCommentHandler tests the CreateMergeRequestComment tool handler
 func TestCreateMergeRequestCommentHandler(t *testing.T) {
 	// Tool schema snapshot test
-	tool, _ := CreateMergeRequestComment(nil, nil)
+	tool, _ := MergeRequestComment(nil, nil)
 	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -1525,7 +1531,7 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	createCommentTool, handler := CreateMergeRequestComment(mockGetClient, nil)
+	createCommentTool, handler := MergeRequestComment(mockGetClient, nil)
 
 	projectID := "group/project"
 	mrIid := 1.0
@@ -1543,6 +1549,7 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Success - Create Merge Request Comment",
 			args: map[string]any{
+				"action":          "create",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"body":            "This is a comment on MR",
@@ -1588,6 +1595,7 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Error - MR Not Found (404)",
 			args: map[string]any{
+				"action":          "create",
 				"projectId":       projectID,
 				"mergeRequestIid": 999.0,
 				"body":            "Comment",
@@ -1604,6 +1612,7 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Error - GitLab API Error (500)",
 			args: map[string]any{
+				"action":          "create",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"body":            "Comment",
@@ -1669,7 +1678,7 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 // TestUpdateMergeRequestCommentHandler tests the UpdateMergeRequestComment tool handler
 func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 	// Tool schema snapshot test
-	tool, _ := UpdateMergeRequestComment(nil, nil)
+	tool, _ := MergeRequestComment(nil, nil)
 	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -1680,7 +1689,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	updateCommentTool, handler := UpdateMergeRequestComment(mockGetClient, nil)
+	updateCommentTool, handler := MergeRequestComment(mockGetClient, nil)
 
 	projectID := "group/project"
 	mrIid := 1.0
@@ -1699,6 +1708,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Success - Update Merge Request Comment",
 			args: map[string]any{
+				"action":          "update",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"noteId":          noteID,
@@ -1734,6 +1744,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Error - Missing noteId",
 			args: map[string]any{
+				"action":          "update",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"body":            "Comment",
@@ -1746,6 +1757,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Error - MR or Note Not Found (404)",
 			args: map[string]any{
+				"action":          "update",
 				"projectId":       projectID,
 				"mergeRequestIid": 999.0,
 				"noteId":          999.0,
@@ -1763,6 +1775,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Error - GitLab API Error (500)",
 			args: map[string]any{
+				"action":          "update",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"noteId":          noteID,
@@ -1781,6 +1794,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Error - Missing body",
 			args: map[string]any{
+				"action":          "update",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"noteId":          noteID,
@@ -1793,6 +1807,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Error - Invalid mergeRequestIid (not integer)",
 			args: map[string]any{
+				"action":          "update",
 				"projectId":       projectID,
 				"mergeRequestIid": 1.5,
 				"noteId":          noteID,
@@ -1806,6 +1821,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Error - Invalid noteId (not integer)",
 			args: map[string]any{
+				"action":          "update",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"noteId":          123.5,
@@ -1819,6 +1835,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Success - Update with special characters",
 			args: map[string]any{
+				"action":          "update",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"noteId":          noteID,
@@ -1854,6 +1871,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Success - Update with markdown",
 			args: map[string]any{
+				"action":          "update",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"noteId":          noteID,
@@ -1886,6 +1904,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Error - Permission Denied (403)",
 			args: map[string]any{
+				"action":          "update",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"noteId":          noteID,
@@ -1904,6 +1923,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 		{
 			name: "Error - Empty Body",
 			args: map[string]any{
+				"action":          "update",
 				"projectId":       projectID,
 				"mergeRequestIid": mrIid,
 				"noteId":          noteID,

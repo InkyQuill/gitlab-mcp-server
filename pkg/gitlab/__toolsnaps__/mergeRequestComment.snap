@@ -1,0 +1,51 @@
+{
+  "annotations": {
+    "title": "Manage Merge Request Comments",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_MERGE_REQUEST_COMMENT_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "description": "The action to perform on the merge request comment",
+        "enum": [
+          "list",
+          "create",
+          "update"
+        ],
+        "type": "string"
+      },
+      "body": {
+        "description": "The content of the comment (required for create/update actions).",
+        "type": "string"
+      },
+      "mergeRequestIid": {
+        "description": "The IID (internal ID, integer) of the merge request within the project.",
+        "type": "number"
+      },
+      "noteId": {
+        "description": "The ID of the note (comment) to update (required for update action).",
+        "type": "number"
+      },
+      "page": {
+        "description": "Page number of the results to retrieve (min 1).",
+        "type": "number"
+      },
+      "per_page": {
+        "description": "Number of results to return per page (default: 20, max: 100).",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "action",
+      "projectId",
+      "mergeRequestIid"
+    ]
+  },
+  "name": "mergeRequestComment"
+}

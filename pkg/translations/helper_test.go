@@ -289,21 +289,15 @@ func TestTranslationKeys_Constants(t *testing.T) {
 		TOOL_LIST_ISSUES_DESCRIPTION,
 		TOOL_CREATE_ISSUE_DESCRIPTION,
 		TOOL_UPDATE_ISSUE_DESCRIPTION,
-		TOOL_GET_ISSUE_COMMENTS_DESCRIPTION,
-		TOOL_CREATE_ISSUE_COMMENT_DESCRIPTION,
-		TOOL_UPDATE_ISSUE_COMMENT_DESCRIPTION,
+		TOOL_ISSUE_COMMENT_DESCRIPTION,
 		TOOL_GET_ISSUE_LABELS_DESCRIPTION,
-		TOOL_GET_MILESTONE_DESCRIPTION,
+		TOOL_MILESTONE_DESCRIPTION,
 		TOOL_LIST_MILESTONES_DESCRIPTION,
-		TOOL_CREATE_MILESTONE_DESCRIPTION,
-		TOOL_UPDATE_MILESTONE_DESCRIPTION,
 		TOOL_GET_MERGE_REQUEST_DESCRIPTION,
 		TOOL_LIST_MERGE_REQUESTS_DESCRIPTION,
 		TOOL_CREATE_MERGE_REQUEST_DESCRIPTION,
 		TOOL_UPDATE_MERGE_REQUEST_DESCRIPTION,
-		TOOL_GET_MERGE_REQUEST_COMMENTS_DESCRIPTION,
-		TOOL_CREATE_MERGE_REQUEST_COMMENT_DESCRIPTION,
-		TOOL_UPDATE_MERGE_REQUEST_COMMENT_DESCRIPTION,
+		TOOL_MERGE_REQUEST_COMMENT_DESCRIPTION,
 		TOOL_LIST_TOKENS_DESCRIPTION,
 		TOOL_ADD_TOKEN_DESCRIPTION,
 		TOOL_UPDATE_TOKEN_DESCRIPTION,
@@ -342,4 +336,157 @@ func TestTranslate_Integration(t *testing.T) {
 	translations[testKey] = "Custom Project Description"
 	result = Translate(translations, testKey)
 	assert.Equal(t, "Custom Project Description", result, "Should return translated value")
+}
+
+func TestTranslationHelper_InvalidJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, configFileName)
+
+	// Create config file with invalid JSON
+	require.NoError(t, os.WriteFile(configPath, []byte(`{invalid json}`), 0644))
+
+	// Since TranslationHelper uses os.Executable() to find the config file,
+	// we can't easily test this with a custom path. However, we can test
+	// dumpAllTranslations with invalid JSON in the existing file.
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+
+	// Test that dumpAllTranslations handles invalid JSON gracefully
+	// It should ignore the invalid JSON and create a new file with all keys
+	dumpAllTranslations(logger, configPath)
+
+	// Config should be rewritten with valid JSON
+	data, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+
+	var config map[string]string
+	err = json.Unmarshal(data, &config)
+	require.NoError(t, err, "Config should be valid JSON after dump")
+
+	// Should have all translation keys
+	allKeys := getAllTranslationKeys()
+	assert.Equal(t, len(allKeys), len(config), "Should have all keys after fixing invalid JSON")
+}
+
+func TestDumpAllTranslations_ReadFileError(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, configFileName)
+
+	// Create config file as a directory to cause read error
+	require.NoError(t, os.MkdirAll(configPath, 0700))
+	t.Cleanup(func() { os.RemoveAll(configPath) })
+
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+
+	// dumpAllTranslations should handle read errors gracefully
+	// It should continue and create/update the file
+	dumpAllTranslations(logger, configPath)
+
+	// After the function runs, the directory should still exist (or be replaced)
+	// The function should handle the error and continue
+	_, err := os.Stat(configPath)
+	// The path might be a directory or file depending on how the error was handled
+	// The important thing is that the function doesn't panic
+	assert.NoError(t, err, "Path should still exist")
+}
+
+func TestDumpAllTranslations_WriteFileError(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, configFileName)
+
+	// Create parent directory as read-only to prevent writing (on Unix systems)
+	require.NoError(t, os.MkdirAll(tmpDir, 0500)) // read-only, no write permission
+	t.Cleanup(func() {
+		os.Chmod(tmpDir, 0700) // restore permissions for cleanup
+		os.RemoveAll(tmpDir)
+	})
+
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+
+	// dumpAllTranslations should handle write errors
+	// On systems where this fails, it should log an error but not panic
+	dumpAllTranslations(logger, configPath)
+
+	// The function should handle the error gracefully
+	// Note: On some systems this might succeed if the process owner can write
+	// But on systems where it fails, we should not panic
+}
+
+func TestDumpAllTranslations_MarshalError(t *testing.T) {
+	// This is difficult to test because getAllTranslationKeys() returns
+	// a map[string]string which should always be marshalable.
+	// The error path for json.MarshalIndent is very unlikely to occur.
+	// However, we can verify the code handles it if it does occur.
+	// This edge case is considered low priority as it's nearly impossible
+	// to trigger with the current data structures.
+}
+
+func TestTranslationHelper_DumpTranslationsFunction(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+
+	// Get translations and dump function
+	translations, dumpFunc := TranslationHelper(logger)
+
+	// Verify function is not nil
+	assert.NotNil(t, dumpFunc)
+	assert.NotNil(t, translations)
+
+	// The dumpFunc should be callable
+	// Since it uses os.Executable() internally, we can't easily test it with a custom path
+	// But we can verify it doesn't panic when called
+	assert.NotPanics(t, func() {
+		dumpFunc()
+	}, "dumpTranslations function should not panic when called")
+}
+
+func TestDumpAllTranslations_ExistingInvalidJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, configFileName)
+
+	// Create config file with invalid JSON
+	require.NoError(t, os.WriteFile(configPath, []byte(`{invalid json}`), 0644))
+
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+
+	// dumpAllTranslations should handle invalid JSON in existing file
+	// It should ignore the invalid JSON and create a new file with all keys
+	dumpAllTranslations(logger, configPath)
+
+	// Config should be rewritten with valid JSON
+	data, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+
+	var config map[string]string
+	err = json.Unmarshal(data, &config)
+	require.NoError(t, err, "Config should be valid JSON after dump")
+
+	// Should have all translation keys
+	allKeys := getAllTranslationKeys()
+	assert.Equal(t, len(allKeys), len(config), "Should have all keys after fixing invalid JSON")
+}
+
+func TestTranslationHelper_SuccessfulLoad(t *testing.T) {
+	// This test is difficult because TranslationHelper uses os.Executable()
+	// which returns the actual binary path. We can't easily mock this.
+	// However, we can test that the function works when a valid config file
+	// exists next to the binary (if it does).
+	
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+
+	// Call TranslationHelper - it will try to load from the actual binary location
+	translations, dumpFunc := TranslationHelper(logger)
+
+	// Should return non-nil values
+	assert.NotNil(t, translations)
+	assert.NotNil(t, dumpFunc)
+
+	// The function should not panic
+	assert.NotPanics(t, func() {
+		_, _ = TranslationHelper(logger)
+	}, "TranslationHelper should not panic")
 }

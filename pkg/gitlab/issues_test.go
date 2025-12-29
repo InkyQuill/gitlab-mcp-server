@@ -731,7 +731,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 	}
 
 	// --- Define the Tool and Handler once ---
-	getIssueCommentsTool, handler := GetIssueComments(mockGetClient, nil)
+	getIssueCommentsTool, handler := IssueComment(mockGetClient, nil)
 
 	// Define common test data
 	projectID := "group/project"
@@ -757,6 +757,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 		{
 			name: "Success - Get Issue Comments",
 			args: map[string]any{
+				"action":    "list",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 			},
@@ -815,6 +816,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 		{
 			name: "Success - Issue Comments With Pagination",
 			args: map[string]any{
+				"action":    "list",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 				"page":      2,
@@ -859,6 +861,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 		{
 			name: "Success - Empty Comments",
 			args: map[string]any{
+				"action":    "list",
 				"projectId": projectID,
 				"issueIid":  2.0, // Different issue with no comments
 			},
@@ -875,6 +878,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 		{
 			name: "Error - Issue Not Found (404)",
 			args: map[string]any{
+				"action":    "list",
 				"projectId": projectID,
 				"issueIid":  999.0,
 			},
@@ -890,6 +894,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 		{
 			name: "Error - GitLab API Error (500)",
 			args: map[string]any{
+				"action":    "list",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 			},
@@ -935,7 +940,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 		errorGetClientFn := func(_ context.Context) (*gl.Client, error) {
 			return nil, fmt.Errorf("mock init error")
 		}
-		_, handler := GetIssueComments(errorGetClientFn, nil)
+		_, handler := IssueComment(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
 			Params: struct {
@@ -946,7 +951,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 				} `json:"_meta,omitempty"`
 			}{
 				Name:      getIssueCommentsTool.Name,
-				Arguments: map[string]any{"projectId": "any", "issueIid": 1.0},
+				Arguments: map[string]any{"action": "list", "projectId": "any", "issueIid": 1.0},
 			},
 		}
 
@@ -1922,7 +1927,7 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	createCommentTool, handler := CreateIssueComment(mockGetClient, nil)
+	createCommentTool, handler := IssueComment(mockGetClient, nil)
 
 	projectID := "group/project"
 	issueIid := 1.0
@@ -1940,6 +1945,7 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Success - Create Issue Comment",
 			args: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 				"body":      "This is a comment",
@@ -1985,6 +1991,7 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Error - Missing body",
 			args: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 			},
@@ -1996,6 +2003,7 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Error - Issue Not Found (404)",
 			args: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"issueIid":  999.0,
 				"body":      "Comment",
@@ -2012,6 +2020,7 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Error - GitLab API Error (500)",
 			args: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 				"body":      "Comment",
@@ -2084,7 +2093,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	updateCommentTool, handler := UpdateIssueComment(mockGetClient, nil)
+	updateCommentTool, handler := IssueComment(mockGetClient, nil)
 
 	projectID := "group/project"
 	issueIid := 1.0
@@ -2103,6 +2112,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Success - Update Issue Comment",
 			args: map[string]any{
+				"action":    "update",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 				"noteId":    noteID,
@@ -2138,6 +2148,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Error - Missing noteId",
 			args: map[string]any{
+				"action":    "update",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 				"body":      "Comment",
@@ -2150,6 +2161,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Error - Issue or Note Not Found (404)",
 			args: map[string]any{
+				"action":    "update",
 				"projectId": projectID,
 				"issueIid":  999.0,
 				"noteId":    999.0,
@@ -2167,6 +2179,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Error - GitLab API Error (500)",
 			args: map[string]any{
+				"action":    "update",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 				"noteId":    noteID,
@@ -2185,6 +2198,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Success - Update with special characters",
 			args: map[string]any{
+				"action":    "update",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 				"noteId":    noteID,
@@ -2220,6 +2234,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Error - Empty body validation",
 			args: map[string]any{
+				"action":    "update",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 				"noteId":    noteID,
@@ -2233,6 +2248,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Error - Forbidden (403)",
 			args: map[string]any{
+				"action":    "update",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 				"noteId":    noteID,
@@ -2251,6 +2267,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 		{
 			name: "Error - Unauthorized (401)",
 			args: map[string]any{
+				"action":    "update",
 				"projectId": projectID,
 				"issueIid":  issueIid,
 				"noteId":    noteID,

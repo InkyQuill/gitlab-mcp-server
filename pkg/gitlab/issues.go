@@ -322,58 +322,71 @@ func ListIssues(getClient GetClientFn, t map[string]string) (tool mcp.Tool, hand
 		}
 }
 
-// GetIssueComments defines the MCP tool for retrieving issue comments/notes.
-func GetIssueComments(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+// IssueComment defines the unified MCP tool for managing issue comments/notes.
+// This consolidates getIssueComments, createIssueComment, and updateIssueComment.
+func IssueComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
-			"getIssueComments",
-			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_ISSUE_COMMENTS_DESCRIPTION)),
-			mcp.WithToolAnnotation(mcp.ToolAnnotation{
-				Title:        "Get Issue Comments",
-				ReadOnlyHint: true,
-			}),
-			// Required parameters
-			mcp.WithString("projectId",
-				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
-				mcp.Required(),
-			),
-			mcp.WithNumber("issueIid",
-				mcp.Description("The IID (internal ID, integer) of the issue within the project."),
-				mcp.Required(),
-			),
-			// Add standard MCP pagination parameters
-			WithPagination(),
+		"issueComment",
+		mcp.WithDescription(translations.Translate(t, translations.TOOL_ISSUE_COMMENT_DESCRIPTION)),
+		mcp.WithString("action",
+			mcp.Description("The action to perform on the issue comment"),
+			mcp.Required(),
+			mcp.Enum("list", "create", "update"),
 		),
-		// Handler function implementation
-		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			// --- Parse parameters
-			projectID, err := requiredParam[string](&request, "projectId")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
+		mcp.WithString("projectId",
+			mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
+			mcp.Required(),
+		),
+		mcp.WithNumber("issueIid",
+			mcp.Description("The IID (internal ID, integer) of the issue within the project."),
+			mcp.Required(),
+		),
+		mcp.WithNumber("noteId",
+			mcp.Description("The ID of the note (comment) to update (required for update action)."),
+		),
+		mcp.WithString("body",
+			mcp.Description("The content of the comment (required for create/update actions)."),
+		),
+		WithPagination(),
+		mcp.WithToolAnnotation(mcp.ToolAnnotation{
+			Title:        "Manage Issue Comments",
+			ReadOnlyHint: true, // Will be overridden based on action
+		}),
+	), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		// Parse required parameters
+		projectID, err := requiredParam[string](&request, "projectId")
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
 
-			issueIidFloat, err := requiredParam[float64](&request, "issueIid")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
-			issueIid := int(issueIidFloat) // Convert float64 to int for API call
-			// Check if conversion lost precision
-			if float64(issueIid) != issueIidFloat {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: issueIid %v is not a valid integer", issueIidFloat)), nil
-			}
+		issueIidFloat, err := requiredParam[float64](&request, "issueIid")
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+		issueIid := int(issueIidFloat)
+		if float64(issueIid) != issueIidFloat {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: issueIid %v is not a valid integer", issueIidFloat)), nil
+		}
 
-			// Get pagination parameters
+		action, err := requiredParam[string](&request, "action")
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+		}
+
+		// Obtain GitLab client
+		glClient, err := getClient(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+		}
+
+		// Execute action based on action parameter
+		switch action {
+		case "list":
 			page, perPage, err := OptionalPaginationParams(&request)
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
 
-			// --- Obtain GitLab client
-			glClient, err := getClient(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
-			}
-
-			// --- Construct GitLab API options
 			opts := &gl.ListIssueNotesOptions{
 				ListOptions: gl.ListOptions{
 					Page:    page,
@@ -381,10 +394,7 @@ func GetIssueComments(getClient GetClientFn, t map[string]string) (tool mcp.Tool
 				},
 			}
 
-			// --- Call GitLab API
 			notes, resp, err := glClient.Notes.ListIssueNotes(projectID, issueIid, opts, gl.WithContext(ctx))
-
-			// --- Handle API errors
 			if err != nil {
 				result, apiErr := HandleAPIError(err, resp, fmt.Sprintf("comments for issue %d in project %q", issueIid, projectID))
 				if result != nil {
@@ -393,10 +403,8 @@ func GetIssueComments(getClient GetClientFn, t map[string]string) (tool mcp.Tool
 				return nil, apiErr
 			}
 
-			// --- Marshal and return success
-			// Handle empty list gracefully
 			if len(notes) == 0 {
-				return mcp.NewToolResultText("[]"), nil // Return empty JSON array
+				return mcp.NewToolResultText("[]"), nil
 			}
 
 			data, err := json.Marshal(notes)
@@ -404,8 +412,72 @@ func GetIssueComments(getClient GetClientFn, t map[string]string) (tool mcp.Tool
 				return nil, fmt.Errorf("failed to marshal issue comments data: %w", err)
 			}
 			return mcp.NewToolResultText(string(data)), nil
+
+		case "create":
+			body, err := requiredParam[string](&request, "body")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			opts := &gl.CreateIssueNoteOptions{
+				Body: &body,
+			}
+
+			note, resp, err := glClient.Notes.CreateIssueNote(projectID, issueIid, opts, gl.WithContext(ctx))
+			if err != nil {
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("issue %d in project %q", issueIid, projectID), "create comment")
+				if result != nil {
+					return result, nil
+				}
+				return nil, apiErr
+			}
+
+			data, err := json.Marshal(note)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal comment data: %w", err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
+
+		case "update":
+			noteIDFloat, err := requiredParam[float64](&request, "noteId")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+			noteID := int(noteIDFloat)
+			if float64(noteID) != noteIDFloat {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: noteId %v is not a valid integer", noteIDFloat)), nil
+			}
+
+			body, err := requiredParam[string](&request, "body")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			opts := &gl.UpdateIssueNoteOptions{
+				Body: &body,
+			}
+
+			note, resp, err := glClient.Notes.UpdateIssueNote(projectID, issueIid, noteID, opts, gl.WithContext(ctx))
+			if err != nil {
+				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("issue %d or note %d in project %q", issueIid, noteID, projectID), "update comment")
+				if result != nil {
+					return result, nil
+				}
+				return nil, apiErr
+			}
+
+			data, err := json.Marshal(note)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal comment data: %w", err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
+
+		default:
+			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: unsupported action '%s'", action)), nil
 		}
+	}
 }
+
 
 // GetIssueLabels defines the MCP tool for retrieving the labels associated with an issue.
 func GetIssueLabels(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
@@ -818,167 +890,3 @@ func UpdateIssue(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 		}
 }
 
-// CreateIssueComment defines the MCP tool for creating a comment (note) on a GitLab issue.
-func CreateIssueComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
-	return mcp.NewTool(
-			"createIssueComment",
-			mcp.WithDescription(translations.Translate(t, translations.TOOL_CREATE_ISSUE_COMMENT_DESCRIPTION)),
-			mcp.WithToolAnnotation(mcp.ToolAnnotation{
-				Title: "Create Issue Comment",
-			}),
-			// Required parameters
-			mcp.WithString("projectId",
-				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
-				mcp.Required(),
-			),
-			mcp.WithNumber("issueIid",
-				mcp.Description("The IID (internal ID, integer) of the issue within the project."),
-				mcp.Required(),
-			),
-			mcp.WithString("body",
-				mcp.Description("The content of the comment."),
-				mcp.Required(),
-			),
-		),
-		// Handler function implementation
-		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			// --- Parse required parameters
-			projectID, err := requiredParam[string](&request, "projectId")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
-
-			issueIidFloat, err := requiredParam[float64](&request, "issueIid")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
-			issueIid := int(issueIidFloat)
-			if float64(issueIid) != issueIidFloat {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: issueIid %v is not a valid integer", issueIidFloat)), nil
-			}
-
-			body, err := requiredParam[string](&request, "body")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
-
-			// --- Obtain GitLab client
-			glClient, err := getClient(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
-			}
-
-			// --- Construct GitLab API options
-			opts := &gl.CreateIssueNoteOptions{
-				Body: &body,
-			}
-
-			// --- Call GitLab API
-			note, resp, err := glClient.Notes.CreateIssueNote(projectID, issueIid, opts, gl.WithContext(ctx))
-
-			// --- Handle API errors
-			if err != nil {
-				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("issue %d in project %q", issueIid, projectID), "create comment")
-				if result != nil {
-					return result, nil
-				}
-				return nil, apiErr
-			}
-
-			// --- Marshal and return success
-			data, err := json.Marshal(note)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal comment data: %w", err)
-			}
-			return mcp.NewToolResultText(string(data)), nil
-		}
-}
-
-// UpdateIssueComment defines the MCP tool for updating a comment on a GitLab issue.
-func UpdateIssueComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
-	return mcp.NewTool(
-			"updateIssueComment",
-			mcp.WithDescription(translations.Translate(t, translations.TOOL_UPDATE_ISSUE_COMMENT_DESCRIPTION)),
-			mcp.WithToolAnnotation(mcp.ToolAnnotation{
-				Title: "Update Issue Comment",
-			}),
-			// Required parameters
-			mcp.WithString("projectId",
-				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
-				mcp.Required(),
-			),
-			mcp.WithNumber("issueIid",
-				mcp.Description("The IID (internal ID, integer) of the issue within the project."),
-				mcp.Required(),
-			),
-			mcp.WithNumber("noteId",
-				mcp.Description("The ID of the note (comment) to update."),
-				mcp.Required(),
-			),
-			mcp.WithString("body",
-				mcp.Description("The updated content of the comment."),
-				mcp.Required(),
-			),
-		),
-		// Handler function implementation
-		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			// --- Parse required parameters
-			projectID, err := requiredParam[string](&request, "projectId")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
-
-			issueIidFloat, err := requiredParam[float64](&request, "issueIid")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
-			issueIid := int(issueIidFloat)
-			if float64(issueIid) != issueIidFloat {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: issueIid %v is not a valid integer", issueIidFloat)), nil
-			}
-
-			noteIDFloat, err := requiredParam[float64](&request, "noteId")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
-			noteID := int(noteIDFloat)
-			if float64(noteID) != noteIDFloat {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: noteId %v is not a valid integer", noteIDFloat)), nil
-			}
-
-			body, err := requiredParam[string](&request, "body")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
-
-			// --- Obtain GitLab client
-			glClient, err := getClient(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
-			}
-
-			// --- Construct GitLab API options
-			opts := &gl.UpdateIssueNoteOptions{
-				Body: &body,
-			}
-
-			// --- Call GitLab API
-			note, resp, err := glClient.Notes.UpdateIssueNote(projectID, issueIid, noteID, opts, gl.WithContext(ctx))
-
-			// --- Handle API errors
-			if err != nil {
-				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("issue %d or note %d in project %q", issueIid, noteID, projectID), "update comment")
-				if result != nil {
-					return result, nil
-				}
-				return nil, apiErr
-			}
-
-			// --- Marshal and return success
-			data, err := json.Marshal(note)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal comment data: %w", err)
-			}
-			return mcp.NewToolResultText(string(data)), nil
-		}
-}

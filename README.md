@@ -11,13 +11,43 @@ The GitLab MCP Server is a [Model Context Protocol (MCP)](https://modelcontextpr
 
 > **Note:** This is a fork of the original [gitlab-mcp-server](https://github.com/LuisCusihuaman/gitlab-mcp-server) project, substantially rewritten with improved testing, better error handling, and additional features.
 
+## v2.0.0 Breaking Changes
+
+**Version 2.0.0** introduces a major consolidation of tools, reducing the tool count from ~70 to ~35 by introducing an `action` parameter pattern. This makes the API more intuitive and reduces context window usage for AI models.
+
+### Key Changes
+
+- **Search Consolidation**: 19 search tools → 1 unified `search` tool with `resourceType` and `scope` parameters
+- **User Management**: 7 admin tools → 1 `manageUserState` tool with `action` parameter
+- **Issue Comments**: 3 tools → 1 `issueComment` tool with `action` parameter (list/create/update)
+- **MR Comments**: 3 tools → 1 `mergeRequestComment` tool with `action` parameter (list/create/update)
+- **Milestones**: 3 tools → 1 `milestone` tool with `action` parameter (get/create/update)
+- **Tags**: 4 tools → 1 `tag` tool with `action` parameter (get/create/delete/getCommit)
+- **Pipeline Jobs**: 5 tools → 2 tools (`pipelineJob` with list/get/trace, `pipeline` with cancel/retry)
+
+### Migration Guide
+
+| Old Tool Name | New Tool Name + Action |
+|--------------|------------------------|
+| `searchProjects`, `searchIssues`, `searchMergeRequests`, `searchBlobs`, `searchCommits`, `searchMilestones`, etc. | `search` with `resourceType` parameter |
+| `blockUser`, `unblockUser`, `banUser`, `unbanUser`, `activateUser`, `deactivateUser`, `approveUser` | `manageUserState` with `action` parameter |
+| `getIssueComments`, `createIssueComment`, `updateIssueComment` | `issueComment` with `action` parameter |
+| `getMergeRequestComments`, `createMergeRequestComment`, `updateMergeRequestComment` | `mergeRequestComment` with `action` parameter |
+| `getMilestone`, `createMilestone`, `updateMilestone` | `milestone` with `action` parameter |
+| `getRepositoryTag`, `createRepositoryTag`, `deleteRepositoryTag`, `getTagCommit` | `tag` with `action` parameter |
+| `listPipelineJobs`, `getPipelineJob`, `getPipelineJobTrace` | `pipelineJob` with `action` parameter |
+| `retryPipeline`, `cancelPipeline` | `pipeline` with `action` parameter |
+
+For detailed migration examples, see [Tools Reference](docs/TOOLS.md).
+
 ## Overview
 
 The GitLab MCP Server bridges the gap between AI development tools and GitLab's extensive API, providing a standardized interface for managing projects, issues, merge requests, and other GitLab resources. It supports both GitLab.com and self-managed GitLab instances, with features like multi-server configuration, dynamic tool discovery, and comprehensive token management.
 
 ## Features
 
-- **Comprehensive GitLab API Integration**: Access projects, issues, merge requests, milestones, and more
+- **Comprehensive GitLab API Integration**: Access projects, issues, merge requests, milestones, and more with ~35 streamlined tools
+- **Action-Based Tool Pattern**: Consolidated tools use an `action` parameter for multiple operations, reducing context window usage
 - **Multi-Server Support**: Configure multiple GitLab instances (work, personal, etc.) simultaneously
 - **Dynamic Tool Discovery**: Load toolsets on-demand to reduce initial context size
 - **Token Management**: Automatic validation, expiration tracking, and runtime token management
@@ -87,7 +117,7 @@ For detailed installation instructions, see [Installation Guide](docs/INSTALLATI
 
 ## Available Tools
 
-The server provides tools organized into logical toolsets:
+The server provides ~35 streamlined tools organized into logical toolsets, with many using an `action` parameter for multiple operations:
 
 ### Projects Toolset
 - `getProject` - Get project details
@@ -100,36 +130,24 @@ The server provides tools organized into logical toolsets:
 ### Issues Toolset
 - `getIssue` - Get issue details
 - `listIssues` - List issues with filters
-- `getIssueComments` - Get issue comments
+- `issueComment` - Manage issue comments (action: list/create/update)
 - `getIssueLabels` - Get issue labels
 - `createIssue` - Create a new issue
 - `updateIssue` - Update an issue
-- `createIssueComment` - Add a comment to an issue
-- `updateIssueComment` - Update an issue comment
 
 ### Merge Requests Toolset
 - `getMergeRequest` - Get merge request details
 - `listMergeRequests` - List merge requests
-- `getMergeRequestComments` - Get MR comments
+- `mergeRequestComment` - Manage MR comments (action: list/create/update)
 - `createMergeRequest` - Create a merge request
 - `updateMergeRequest` - Update a merge request
-- `createMergeRequestComment` - Add a comment to an MR
-- `updateMergeRequestComment` - Update an MR comment
 
 ### Milestones
-- `getMilestone` - Get milestone details
+- `milestone` - Manage milestones (action: get/create/update)
 - `listMilestones` - List project milestones
-- `createMilestone` - Create a milestone
-- `updateMilestone` - Update a milestone
 
 ### Search
-- `searchProjects` - Search for projects
-- `searchIssues` - Search issues
-- `searchMergeRequests` - Search merge requests
-- `searchBlobs` - Search code
-- `searchCommits` - Search commits
-- `searchMilestones` - Search milestones
-- Plus group/project-scoped variants
+- `search` - Unified search with `resourceType` parameter (projects, issues, merge_requests, blobs, commits, milestones, snippet_titles, snippet_blobs, wiki_blobs, notes) and optional `scope` (global, group, project)
 
 ### Users
 - `getCurrentUser` - Get authenticated user
@@ -137,7 +155,17 @@ The server provides tools organized into logical toolsets:
 - `getUserStatus` - Get user status
 - `listUsers` - List users
 - `listProjectUsers` - List project members
-- Admin operations: `blockUser`, `unblockUser`, `banUser`, `unbanUser`, `activateUser`, `deactivateUser`, `approveUser`
+- `manageUserState` - Admin operations (action: block/unblock/ban/unban/activate/deactivate/approve)
+
+### Tags
+- `tag` - Manage repository tags (action: get/create/delete/getCommit)
+- `listRepositoryTags` - List all tags in a repository
+
+### Pipeline Jobs
+- `pipelineJob` - Manage pipeline jobs (action: list/get/trace)
+- `pipeline` - Manage pipelines (action: cancel/retry)
+- `retryPipelineJob` - Retry a specific job
+- `playPipelineJob` - Manually play a job
 
 ### Security
 - `getProjectSAST` - Get SAST scan results
