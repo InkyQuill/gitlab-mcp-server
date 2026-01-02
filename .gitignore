@@ -61,3 +61,6 @@ coverage.html
 
 # Claude Development Documentation (local rules)
 CLAUDE.md
+
+# Installer saved configuration
+.gitlab-mcp-installer.json

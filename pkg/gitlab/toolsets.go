@@ -91,33 +91,27 @@ func InitToolsets(
 	issuesTS.AddReadTools(
 		toolsets.NewServerTool(GetIssue(getClient, translations)),
 		toolsets.NewServerTool(ListIssues(getClient, translations)),
-		toolsets.NewServerTool(GetIssueComments(getClient, translations)),
 		toolsets.NewServerTool(GetIssueLabels(getClient, translations)),
-		// Milestones read tools (milestones are related to issues)
-		toolsets.NewServerTool(GetMilestone(getClient, translations)),
+		// Milestones list tool
 		toolsets.NewServerTool(ListMilestones(getClient, translations)),
 	)
 	issuesTS.AddWriteTools(
 		toolsets.NewServerTool(CreateIssue(getClient, translations)),
 		toolsets.NewServerTool(UpdateIssue(getClient, translations)),
-		toolsets.NewServerTool(CreateIssueComment(getClient, translations)),
-		toolsets.NewServerTool(UpdateIssueComment(getClient, translations)),
+		toolsets.NewServerTool(IssueComment(getClient, translations)),
 		// Milestones write tools
-		toolsets.NewServerTool(CreateMilestone(getClient, translations)),
-		toolsets.NewServerTool(UpdateMilestone(getClient, translations)),
+		toolsets.NewServerTool(Milestone(getClient, translations)),
 	)
 
 	// --- Add tools to mergeRequestsTS (Task 9 & 14) ---
 	mergeRequestsTS.AddReadTools(
 		toolsets.NewServerTool(GetMergeRequest(getClient, translations)),
 		toolsets.NewServerTool(ListMergeRequests(getClient, translations)),
-		toolsets.NewServerTool(GetMergeRequestComments(getClient, translations)),
 	)
 	mergeRequestsTS.AddWriteTools(
 		toolsets.NewServerTool(CreateMergeRequest(getClient, translations)),
 		toolsets.NewServerTool(UpdateMergeRequest(getClient, translations)),
-		toolsets.NewServerTool(CreateMergeRequestComment(getClient, translations)),
-		toolsets.NewServerTool(UpdateMergeRequestComment(getClient, translations)),
+		toolsets.NewServerTool(MergeRequestComment(getClient, translations)),
 	)
 
 	// --- Add tools to securityTS (Security scanning reports) ---
@@ -139,63 +133,30 @@ func InitToolsets(
 		toolsets.NewServerTool(ListProjectUsers(getClient, translations)),
 	)
 	usersTS.AddWriteTools(
-		toolsets.NewServerTool(BlockUser(getClient, translations)),
-		toolsets.NewServerTool(UnblockUser(getClient, translations)),
-		toolsets.NewServerTool(BanUser(getClient, translations)),
-		toolsets.NewServerTool(UnbanUser(getClient, translations)),
-		toolsets.NewServerTool(ActivateUser(getClient, translations)),
-		toolsets.NewServerTool(DeactivateUser(getClient, translations)),
-		toolsets.NewServerTool(ApproveUser(getClient, translations)),
+		toolsets.NewServerTool(ManageUserState(getClient, translations)),
 	)
 
 	// --- Add tools to searchTS (Search capabilities) ---
 	searchTS.AddReadTools(
-		toolsets.NewServerTool(SearchProjects(getClient, translations)),
-		toolsets.NewServerTool(SearchIssues(getClient, translations)),
-		toolsets.NewServerTool(SearchMergeRequests(getClient, translations)),
-		toolsets.NewServerTool(SearchBlobs(getClient, translations)),
-		toolsets.NewServerTool(SearchCommits(getClient, translations)),
-		toolsets.NewServerTool(SearchMilestones(getClient, translations)),
-		toolsets.NewServerTool(SearchSnippetTitles(getClient, translations)),
-		toolsets.NewServerTool(SearchSnippetBlobs(getClient, translations)),
-		toolsets.NewServerTool(SearchWikiBlobs(getClient, translations)),
-		// Group-scoped searches
-		toolsets.NewServerTool(SearchProjectsByGroup(getClient, translations)),
-		toolsets.NewServerTool(SearchIssuesByGroup(getClient, translations)),
-		toolsets.NewServerTool(SearchMergeRequestsByGroup(getClient, translations)),
-		toolsets.NewServerTool(SearchMilestonesByGroup(getClient, translations)),
-		toolsets.NewServerTool(SearchBlobsByGroup(getClient, translations)),
-		// Project-scoped searches
-		toolsets.NewServerTool(SearchIssuesByProject(getClient, translations)),
-		toolsets.NewServerTool(SearchMergeRequestsByProject(getClient, translations)),
-		toolsets.NewServerTool(SearchMilestonesByProject(getClient, translations)),
-		toolsets.NewServerTool(SearchBlobsByProject(getClient, translations)),
-		toolsets.NewServerTool(SearchCommitsByProject(getClient, translations)),
-		toolsets.NewServerTool(SearchNotesByProject(getClient, translations)),
+		toolsets.NewServerTool(Search(getClient, translations)),
 	)
 
 	// --- Add tools to tagsTS (Tags Management) ---
 	tagsTS.AddReadTools(
 		toolsets.NewServerTool(ListRepositoryTags(getClient, translations)),
-		toolsets.NewServerTool(GetRepositoryTag(getClient, translations)),
-		toolsets.NewServerTool(GetTagCommit(getClient, translations)),
 	)
 	tagsTS.AddWriteTools(
-		toolsets.NewServerTool(CreateRepositoryTag(getClient, translations)),
-		toolsets.NewServerTool(DeleteRepositoryTag(getClient, translations)),
+		toolsets.NewServerTool(Tag(getClient, translations)),
 	)
 
 	// --- Add tools to pipelineJobsTS (CI/CD Pipeline Jobs) ---
 	pipelineJobsTS.AddReadTools(
-		toolsets.NewServerTool(ListPipelineJobs(getClient, translations)),
-		toolsets.NewServerTool(GetPipelineJob(getClient, translations)),
-		toolsets.NewServerTool(GetPipelineJobTrace(getClient, translations)),
+		toolsets.NewServerTool(PipelineJob(getClient, translations)),
 	)
 	pipelineJobsTS.AddWriteTools(
+		toolsets.NewServerTool(Pipeline(getClient, translations)),
 		toolsets.NewServerTool(RetryPipelineJob(getClient, translations)),
 		toolsets.NewServerTool(PlayPipelineJob(getClient, translations)),
-		toolsets.NewServerTool(CancelPipeline(getClient, translations)),
-		toolsets.NewServerTool(RetryPipeline(getClient, translations)),
 	)
 
 	// 4. Add defined Toolsets to the Group

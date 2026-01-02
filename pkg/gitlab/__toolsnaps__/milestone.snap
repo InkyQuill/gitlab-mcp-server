@@ -1,0 +1,57 @@
+{
+  "annotations": {
+    "title": "Manage GitLab Milestone"
+  },
+  "description": "TOOL_MILESTONE_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "description": "The action to perform on the milestone.",
+        "enum": [
+          "get",
+          "create",
+          "update"
+        ],
+        "type": "string"
+      },
+      "description": {
+        "description": "The description of the milestone.",
+        "type": "string"
+      },
+      "dueDate": {
+        "description": "The due date of the milestone (ISO 8601 format: YYYY-MM-DD).",
+        "type": "string"
+      },
+      "milestoneId": {
+        "description": "The ID of the milestone (required for get/update).",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "startDate": {
+        "description": "The start date of the milestone (ISO 8601 format: YYYY-MM-DD).",
+        "type": "string"
+      },
+      "stateEvent": {
+        "description": "The state event to perform on the milestone (activate, close). Only for update action.",
+        "enum": [
+          "activate",
+          "close"
+        ],
+        "type": "string"
+      },
+      "title": {
+        "description": "The title of the milestone (required for create, optional for update).",
+        "type": "string"
+      }
+    },
+    "required": [
+      "action",
+      "projectId"
+    ]
+  },
+  "name": "milestone"
+}

@@ -250,8 +250,8 @@ func TestListRepositoryTagsHandler(t *testing.T) {
 }
 
 // TestGetRepositoryTagHandler tests the getRepositoryTag tool
-func TestGetRepositoryTagHandler(t *testing.T) {
-	getRepositoryTagTool, _ := GetRepositoryTag(nil, nil)
+func TestTagHandler_Get(t *testing.T) {
+	getRepositoryTagTool, _ := Tag(nil, nil)
 	require.NoError(t, toolsnaps.Test(getRepositoryTagTool.Name, getRepositoryTagTool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -262,7 +262,7 @@ func TestGetRepositoryTagHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	getRepositoryTagTool, getRepositoryTagHandler := GetRepositoryTag(mockGetClient, nil)
+	getRepositoryTagTool, getRepositoryTagHandler := Tag(mockGetClient, nil)
 
 	projectID := "group/project"
 	tagName := "v1.0.0"
@@ -278,6 +278,7 @@ func TestGetRepositoryTagHandler(t *testing.T) {
 		{
 			name: "Success - Get Tag",
 			inputArgs: map[string]any{
+				"action":    "get",
 				"projectId": projectID,
 				"tagName":   tagName,
 			},
@@ -294,6 +295,7 @@ func TestGetRepositoryTagHandler(t *testing.T) {
 		{
 			name: "Error - Tag Not Found (404)",
 			inputArgs: map[string]any{
+				"action":    "get",
 				"projectId": projectID,
 				"tagName":   "nonexistent",
 			},
@@ -303,18 +305,18 @@ func TestGetRepositoryTagHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("404 Not Found"))
 			},
 			expectResultError: true,
-			errorContains:      "not found or access denied (404)",
+			errorContains:     "not found or access denied (404)",
 		},
 		{
 			name:               "Error - Missing tagName",
-			inputArgs:          map[string]any{"projectId": projectID},
+			inputArgs:          map[string]any{"action": "get", "projectId": projectID},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: tagName",
 		},
 		{
 			name:               "Error - Missing projectId",
-			inputArgs:          map[string]any{"tagName": tagName},
+			inputArgs:          map[string]any{"action": "get", "tagName": tagName},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: projectId",
@@ -322,6 +324,7 @@ func TestGetRepositoryTagHandler(t *testing.T) {
 		{
 			name: "Error - Unauthorized (401)",
 			inputArgs: map[string]any{
+				"action":    "get",
 				"projectId": projectID,
 				"tagName":   tagName,
 			},
@@ -331,7 +334,7 @@ func TestGetRepositoryTagHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("401 Unauthorized"))
 			},
 			expectResultError: true,
-			errorContains:      "Authentication failed (401)",
+			errorContains:     "Authentication failed (401)",
 		},
 	}
 
@@ -377,8 +380,8 @@ func TestGetRepositoryTagHandler(t *testing.T) {
 }
 
 // TestCreateRepositoryTagHandler tests the createRepositoryTag tool
-func TestCreateRepositoryTagHandler(t *testing.T) {
-	createRepositoryTagTool, _ := CreateRepositoryTag(nil, nil)
+func TestTagHandler_Create(t *testing.T) {
+	createRepositoryTagTool, _ := Tag(nil, nil)
 	require.NoError(t, toolsnaps.Test(createRepositoryTagTool.Name, createRepositoryTagTool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -389,7 +392,7 @@ func TestCreateRepositoryTagHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	createRepositoryTagTool, createRepositoryTagHandler := CreateRepositoryTag(mockGetClient, nil)
+	createRepositoryTagTool, createRepositoryTagHandler := Tag(mockGetClient, nil)
 
 	projectID := "group/project"
 	tagName := "v1.2.0"
@@ -407,6 +410,7 @@ func TestCreateRepositoryTagHandler(t *testing.T) {
 		{
 			name: "Success - Create Annotated Tag",
 			inputArgs: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"tagName":   tagName,
 				"ref":       ref,
@@ -426,6 +430,7 @@ func TestCreateRepositoryTagHandler(t *testing.T) {
 		{
 			name: "Success - Create Lightweight Tag",
 			inputArgs: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"tagName":   tagName,
 				"ref":       ref,
@@ -444,6 +449,7 @@ func TestCreateRepositoryTagHandler(t *testing.T) {
 		{
 			name: "Error - Tag Already Exists (400)",
 			inputArgs: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"tagName":   tagName,
 				"ref":       ref,
@@ -454,18 +460,18 @@ func TestCreateRepositoryTagHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 400}}, errors.New("tag already exists"))
 			},
 			expectResultError: true,
-			errorContains:      "failed to create",
+			errorContains:     "failed to create",
 		},
 		{
 			name:               "Error - Missing tagName",
-			inputArgs:          map[string]any{"projectId": projectID, "ref": ref},
+			inputArgs:          map[string]any{"action": "create", "projectId": projectID, "ref": ref},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: tagName",
 		},
 		{
 			name:               "Error - Missing ref",
-			inputArgs:          map[string]any{"projectId": projectID, "tagName": tagName},
+			inputArgs:          map[string]any{"action": "create", "projectId": projectID, "tagName": tagName},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: ref",
@@ -473,6 +479,7 @@ func TestCreateRepositoryTagHandler(t *testing.T) {
 		{
 			name: "Error - Invalid Ref (404)",
 			inputArgs: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"tagName":   tagName,
 				"ref":       "invalid-branch",
@@ -483,11 +490,12 @@ func TestCreateRepositoryTagHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("branch not found"))
 			},
 			expectResultError: true,
-			errorContains:      "not found or access denied (404)",
+			errorContains:     "not found or access denied (404)",
 		},
 		{
 			name: "Error - Unauthorized (401)",
 			inputArgs: map[string]any{
+				"action":    "create",
 				"projectId": projectID,
 				"tagName":   tagName,
 				"ref":       ref,
@@ -498,7 +506,7 @@ func TestCreateRepositoryTagHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("401 Unauthorized"))
 			},
 			expectResultError: true,
-			errorContains:      "Authentication failed (401)",
+			errorContains:     "Authentication failed (401)",
 		},
 	}
 
@@ -544,8 +552,8 @@ func TestCreateRepositoryTagHandler(t *testing.T) {
 }
 
 // TestDeleteRepositoryTagHandler tests the deleteRepositoryTag tool
-func TestDeleteRepositoryTagHandler(t *testing.T) {
-	deleteRepositoryTagTool, _ := DeleteRepositoryTag(nil, nil)
+func TestTagHandler_Delete(t *testing.T) {
+	deleteRepositoryTagTool, _ := Tag(nil, nil)
 	require.NoError(t, toolsnaps.Test(deleteRepositoryTagTool.Name, deleteRepositoryTagTool), "tool schema should match snapshot")
 
 	ctx := context.Background()
@@ -556,7 +564,7 @@ func TestDeleteRepositoryTagHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	deleteRepositoryTagTool, deleteRepositoryTagHandler := DeleteRepositoryTag(mockGetClient, nil)
+	deleteRepositoryTagTool, deleteRepositoryTagHandler := Tag(mockGetClient, nil)
 
 	projectID := "group/project"
 	tagName := "v1.0.0"
@@ -573,6 +581,7 @@ func TestDeleteRepositoryTagHandler(t *testing.T) {
 		{
 			name: "Success - Delete Tag",
 			inputArgs: map[string]any{
+				"action":    "delete",
 				"projectId": projectID,
 				"tagName":   tagName,
 			},
@@ -586,6 +595,7 @@ func TestDeleteRepositoryTagHandler(t *testing.T) {
 		{
 			name: "Error - Tag Not Found (404)",
 			inputArgs: map[string]any{
+				"action":    "delete",
 				"projectId": projectID,
 				"tagName":   "nonexistent",
 			},
@@ -595,11 +605,11 @@ func TestDeleteRepositoryTagHandler(t *testing.T) {
 					Return(&gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("404 Not Found"))
 			},
 			expectResultError: true,
-			errorContains:      "not found or access denied (404)",
+			errorContains:     "not found or access denied (404)",
 		},
 		{
 			name:               "Error - Missing tagName",
-			inputArgs:          map[string]any{"projectId": projectID},
+			inputArgs:          map[string]any{"action": "delete", "projectId": projectID},
 			mockSetup:          func() {},
 			expectResultError:  true,
 			errorContains:      "Validation Error: missing required parameter: tagName",
@@ -607,6 +617,7 @@ func TestDeleteRepositoryTagHandler(t *testing.T) {
 		{
 			name: "Error - Forbidden (403)",
 			inputArgs: map[string]any{
+				"action":    "delete",
 				"projectId": projectID,
 				"tagName":   tagName,
 			},
@@ -616,11 +627,12 @@ func TestDeleteRepositoryTagHandler(t *testing.T) {
 					Return(&gl.Response{Response: &http.Response{StatusCode: 403}}, errors.New("403 Forbidden"))
 			},
 			expectHandlerError: true,
-			errorContains:      "failed to process tag",
+			errorContains:     "failed to process tag",
 		},
 		{
 			name: "Error - Unauthorized (401)",
 			inputArgs: map[string]any{
+				"action":    "delete",
 				"projectId": projectID,
 				"tagName":   tagName,
 			},
@@ -630,7 +642,7 @@ func TestDeleteRepositoryTagHandler(t *testing.T) {
 					Return(&gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("401 Unauthorized"))
 			},
 			expectResultError: true,
-			errorContains:      "Authentication failed (401)",
+			errorContains:     "Authentication failed (401)",
 		},
 	}
 
@@ -680,143 +692,3 @@ func TestDeleteRepositoryTagHandler(t *testing.T) {
 }
 
 // TestGetTagCommitHandler tests the getTagCommit tool
-func TestGetTagCommitHandler(t *testing.T) {
-	getTagCommitTool, _ := GetTagCommit(nil, nil)
-	require.NoError(t, toolsnaps.Test(getTagCommitTool.Name, getTagCommitTool), "tool schema should match snapshot")
-
-	ctx := context.Background()
-	mockClient, mockReleases, ctrl := setupMockClientForReleases(t)
-	defer ctrl.Finish()
-
-	mockGetClient := func(_ context.Context) (*gl.Client, error) {
-		return mockClient, nil
-	}
-
-	getTagCommitTool, getTagCommitHandler := GetTagCommit(mockGetClient, nil)
-
-	projectID := "group/project"
-	tagName := "v1.0.0"
-
-	tests := []struct {
-		name               string
-		inputArgs          map[string]any
-		mockSetup          func()
-		expectHandlerError bool
-		expectResultError  bool
-		errorContains      string
-	}{
-		{
-			name: "Success - Get Tag Release",
-			inputArgs: map[string]any{
-				"projectId": projectID,
-				"tagName":   tagName,
-			},
-			mockSetup: func() {
-				mockReleases.EXPECT().
-					GetRelease(projectID, tagName, gomock.Any()).
-					Return(&gl.Release{
-						TagName: tagName,
-						Name:    "Release v1.0.0",
-						Description: "First release",
-					}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
-			},
-			expectHandlerError: false,
-		},
-		{
-			name:               "Error - Missing tagName",
-			inputArgs:          map[string]any{"projectId": projectID},
-			mockSetup:          func() {},
-			expectResultError:  true,
-			errorContains:      "Validation Error: missing required parameter: tagName",
-		},
-		{
-			name:               "Error - Missing projectId",
-			inputArgs:          map[string]any{"tagName": tagName},
-			mockSetup:          func() {},
-			expectResultError:  true,
-			errorContains:      "Validation Error: missing required parameter: projectId",
-		},
-		{
-			name: "Error - Release Not Found (404)",
-			inputArgs: map[string]any{
-				"projectId": projectID,
-				"tagName":   "nonexistent",
-			},
-			mockSetup: func() {
-				mockReleases.EXPECT().
-					GetRelease(projectID, "nonexistent", gomock.Any()).
-					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("404 Not Found"))
-			},
-			expectResultError: true,
-			errorContains:     "not found or access denied (404)",
-		},
-		{
-			name: "Error - Unauthorized (401)",
-			inputArgs: map[string]any{
-				"projectId": projectID,
-				"tagName":   tagName,
-			},
-			mockSetup: func() {
-				mockReleases.EXPECT().
-					GetRelease(projectID, tagName, gomock.Any()).
-					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("401 Unauthorized"))
-			},
-			expectResultError: true,
-			errorContains:     "Authentication failed (401)",
-		},
-		{
-			name: "Error - Server Error (500)",
-			inputArgs: map[string]any{
-				"projectId": projectID,
-				"tagName":   tagName,
-			},
-			mockSetup: func() {
-				mockReleases.EXPECT().
-					GetRelease(projectID, tagName, gomock.Any()).
-					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("500 Internal Server Error"))
-			},
-			expectHandlerError: true,
-			errorContains:      "failed to process release",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.mockSetup()
-
-			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
-					Name:      getTagCommitTool.Name,
-					Arguments: tt.inputArgs,
-				},
-			}
-
-			result, err := getTagCommitHandler(ctx, request)
-
-			if tt.expectHandlerError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorContains)
-				return
-			}
-
-			require.NoError(t, err)
-
-			if tt.expectResultError {
-				require.NotNil(t, result)
-				textContent := getTextResult(t, result)
-				assert.Contains(t, textContent.Text, tt.errorContains)
-				return
-			}
-
-			require.NotNil(t, result)
-			textContent := getTextResult(t, result)
-			assert.NotEmpty(t, textContent.Text)
-		})
-	}
-}

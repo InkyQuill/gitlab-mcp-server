@@ -1,0 +1,43 @@
+{
+  "annotations": {
+    "title": "Manage Repository Tag"
+  },
+  "description": "TOOL_TAG_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "description": "The action to perform on the tag.",
+        "enum": [
+          "get",
+          "create",
+          "delete",
+          "getCommit"
+        ],
+        "type": "string"
+      },
+      "message": {
+        "description": "The message for the tag annotation (optional, for create).",
+        "type": "string"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "ref": {
+        "description": "The branch name or commit SHA to create the tag from (required for create).",
+        "type": "string"
+      },
+      "tagName": {
+        "description": "The name of the tag.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "action",
+      "projectId",
+      "tagName"
+    ]
+  },
+  "name": "tag"
+}

@@ -1,0 +1,33 @@
+{
+  "annotations": {
+    "title": "Manage GitLab User State"
+  },
+  "description": "TOOL_MANAGE_USER_STATE_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "description": "The administrative action to perform on the user",
+        "enum": [
+          "block",
+          "unblock",
+          "ban",
+          "unban",
+          "activate",
+          "deactivate",
+          "approve"
+        ],
+        "type": "string"
+      },
+      "userId": {
+        "description": "The ID of the user",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId",
+      "action"
+    ]
+  },
+  "name": "manageUserState"
+}

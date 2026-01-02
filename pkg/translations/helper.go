@@ -99,27 +99,32 @@ func getAllTranslationKeys() map[string]string {
 		TOOL_GET_PROJECT_COMMITS_DESCRIPTION:  "Lists commits for a specific branch or ref in a GitLab project.",
 
 		// Issues toolset
-		TOOL_GET_ISSUE_DESCRIPTION:            "Retrieves details for a specific GitLab issue.",
-		TOOL_LIST_ISSUES_DESCRIPTION:          "Lists GitLab issues, with optional filtering.",
-		TOOL_CREATE_ISSUE_DESCRIPTION:         "Creates a new issue in a GitLab project.",
-		TOOL_UPDATE_ISSUE_DESCRIPTION:         "Updates an existing GitLab issue.",
-		TOOL_GET_ISSUE_COMMENTS_DESCRIPTION:   "Retrieves comments for a specific GitLab issue.",
-		TOOL_CREATE_ISSUE_COMMENT_DESCRIPTION: "Creates a new comment on a GitLab issue.",
-		TOOL_UPDATE_ISSUE_COMMENT_DESCRIPTION: "Updates an existing comment on a GitLab issue.",
-		TOOL_GET_ISSUE_LABELS_DESCRIPTION:     "Retrieves labels for a specific GitLab project.",
-		TOOL_GET_MILESTONE_DESCRIPTION:        "Retrieves details for a specific milestone.",
-		TOOL_LIST_MILESTONES_DESCRIPTION:      "Lists milestones for a specific GitLab project.",
-		TOOL_CREATE_MILESTONE_DESCRIPTION:     "Creates a new milestone in a GitLab project.",
-		TOOL_UPDATE_MILESTONE_DESCRIPTION:     "Updates an existing milestone.",
+		TOOL_GET_ISSUE_DESCRIPTION:     "Retrieves details for a specific GitLab issue.",
+		TOOL_LIST_ISSUES_DESCRIPTION:   "Lists GitLab issues, with optional filtering.",
+		TOOL_CREATE_ISSUE_DESCRIPTION:  "Creates a new issue in a GitLab project.",
+		TOOL_UPDATE_ISSUE_DESCRIPTION:  "Updates an existing GitLab issue.",
+		TOOL_ISSUE_COMMENT_DESCRIPTION: "Manages comments on GitLab issues (list, create, update).",
+		TOOL_GET_ISSUE_LABELS_DESCRIPTION: "Retrieves labels for a specific GitLab project.",
+		TOOL_MILESTONE_DESCRIPTION:       "Manages GitLab milestones (get, create, update).",
+		TOOL_LIST_MILESTONES_DESCRIPTION: "Lists milestones for a specific GitLab project.",
 
 		// Merge Requests toolset
-		TOOL_GET_MERGE_REQUEST_DESCRIPTION:            "Retrieves details for a specific GitLab merge request.",
-		TOOL_LIST_MERGE_REQUESTS_DESCRIPTION:          "Lists GitLab merge requests, with optional filtering.",
-		TOOL_CREATE_MERGE_REQUEST_DESCRIPTION:         "Creates a new merge request in a GitLab project.",
-		TOOL_UPDATE_MERGE_REQUEST_DESCRIPTION:         "Updates an existing GitLab merge request.",
-		TOOL_GET_MERGE_REQUEST_COMMENTS_DESCRIPTION:   "Retrieves comments for a specific GitLab merge request.",
-		TOOL_CREATE_MERGE_REQUEST_COMMENT_DESCRIPTION: "Creates a new comment on a GitLab merge request.",
-		TOOL_UPDATE_MERGE_REQUEST_COMMENT_DESCRIPTION: "Updates an existing comment on a GitLab merge request.",
+		TOOL_GET_MERGE_REQUEST_DESCRIPTION:      "Retrieves details for a specific GitLab merge request.",
+		TOOL_LIST_MERGE_REQUESTS_DESCRIPTION:    "Lists GitLab merge requests, with optional filtering.",
+		TOOL_CREATE_MERGE_REQUEST_DESCRIPTION:   "Creates a new merge request in a GitLab project.",
+		TOOL_UPDATE_MERGE_REQUEST_DESCRIPTION:   "Updates an existing GitLab merge request.",
+		TOOL_MERGE_REQUEST_COMMENT_DESCRIPTION:  "Manages comments on GitLab merge requests (list, create, update).",
+
+		// Search toolset
+		TOOL_SEARCH_DESCRIPTION: "Searches across GitLab resources (projects, issues, merge requests, code, milestones, etc.) with support for global, group, and project scopes.",
+
+		// Users toolset
+		TOOL_GET_CURRENT_USER_DESCRIPTION:   "Retrieves the currently authenticated user's information.",
+		TOOL_GET_USER_DESCRIPTION:           "Retrieves details for a specific GitLab user.",
+		TOOL_GET_USER_STATUS_DESCRIPTION:    "Retrieves the status message for a specific GitLab user.",
+		TOOL_LIST_USERS_DESCRIPTION:         "Lists GitLab users with optional search and filtering.",
+		TOOL_LIST_PROJECT_USERS_DESCRIPTION: "Lists users who are members of a specific GitLab project.",
+		TOOL_MANAGE_USER_STATE_DESCRIPTION:  "Manages user state (block/unblock, ban/unban, activate/deactivate, approve). Admin only.",
 
 		// Token management toolset
 		TOOL_LIST_TOKENS_DESCRIPTION:       "Lists all configured GitLab tokens with their metadata.",
@@ -128,5 +133,15 @@ func getAllTranslationKeys() map[string]string {
 		TOOL_REMOVE_TOKEN_DESCRIPTION:      "Removes a GitLab token configuration.",
 		TOOL_VALIDATE_TOKEN_DESCRIPTION:    "Validates a GitLab token by checking with the API.",
 		TOOL_GET_NOTIFICATIONS_DESCRIPTION: "Retrieves notifications and warnings.",
+
+		// Tags toolset
+		TOOL_TAG_DESCRIPTION:                 "Manages GitLab repository tags (get, create, delete, getCommit).",
+		TOOL_LIST_REPOSITORY_TAGS_DESCRIPTION: "Lists all tags in a GitLab repository.",
+
+		// Pipeline Jobs toolset
+		TOOL_PIPELINE_JOB_DESCRIPTION:   "Manages CI/CD pipeline jobs (list, get, trace).",
+		TOOL_PIPELINE_DESCRIPTION:        "Controls GitLab CI/CD pipelines (cancel, retry).",
+		TOOL_RETRY_PIPELINE_JOB_DESCRIPTION: "Retries a failed job in a pipeline.",
+		TOOL_PLAY_PIPELINE_JOB_DESCRIPTION:  "Triggers a manual job in a pipeline.",
 	}
 }

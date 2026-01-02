@@ -1,0 +1,33 @@
+{
+  "annotations": {
+    "title": "Control Pipeline"
+  },
+  "description": "TOOL_PIPELINE_DESCRIPTION",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "description": "The action to perform on the pipeline.",
+        "enum": [
+          "cancel",
+          "retry"
+        ],
+        "type": "string"
+      },
+      "pipelineId": {
+        "description": "The ID of the pipeline.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "action",
+      "projectId",
+      "pipelineId"
+    ]
+  },
+  "name": "pipeline"
+}
