@@ -72,15 +72,13 @@ func TestGetProjectFileHandler(t *testing.T) {
 			inputArgs: map[string]any{
 				"projectId": projectID,
 				"filePath":  filePath,
-				// ref is omitted
+				"ref":       "main",
 			},
 			mockSetup: func() {
-				// Expect opts with Ref being nil (or pointer to empty string depending on OptionalParam)
-				// Using AssignableToTypeOf is safer if nil vs empty string pointer matters
-				expectedOptsMatcher := gomock.AssignableToTypeOf(&gl.GetFileOptions{})
+				ref := "main"
+				expectedOpts := &gl.GetFileOptions{Ref: &ref}
 				mockFiles.EXPECT().
-					GetFile(projectID, filePath, expectedOptsMatcher, gomock.Any()).
-					// Check that Ref is nil or points to empty within DoAndReturn if needed
+					GetFile(projectID, filePath, expectedOpts, gomock.Any()).
 					Return(&gl.File{Content: fileContentBase64, FileName: filePath}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 			expectedResult: fileContentDecoded,
@@ -137,6 +135,15 @@ func TestGetProjectFileHandler(t *testing.T) {
 			expectResultError:  true,
 			expectHandlerError: false,
 			errorContains:      "Validation Error: missing required parameter: filePath",
+		},
+		{
+			name:               "Error - Missing ref",
+			inputArgs:          map[string]any{"projectId": projectID, "filePath": filePath},
+			mockSetup:          func() {},
+			expectedResult:     "",
+			expectResultError:  true,
+			expectHandlerError: false,
+			errorContains:      "Validation Error: missing required parameter: ref",
 		},
 	}
 
