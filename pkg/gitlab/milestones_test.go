@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -801,6 +802,38 @@ func TestListMilestonesHandler(t *testing.T) {
 			expectResultError:   false,
 			expectInternalError: true,
 			errorContains:       "failed to list milestones from project",
+		},
+		{
+			name: "Success - Long Description Truncation",
+			args: map[string]any{
+				"projectId": projectID,
+			},
+			mockSetup: func() {
+				longDesc := strings.Repeat("c", 500)
+				milestone := &gl.Milestone{
+					ID:          10,
+					IID:         5,
+					ProjectID:   123,
+					Title:       "Sprint with long description",
+					Description: longDesc,
+					State:       "active",
+				}
+				mockMilestones.EXPECT().
+					ListMilestones(projectID, gomock.Any(), gomock.Any()).
+					Return([]*gl.Milestone{milestone}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+			expectedResult: []*gl.Milestone{
+				{
+					ID:          10,
+					IID:         5,
+					ProjectID:   123,
+					Title:       "Sprint with long description",
+					Description: strings.Repeat("c", 300) + "...",
+					State:       "active",
+				},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
 		},
 	}
 

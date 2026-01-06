@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -897,6 +898,44 @@ func TestListMergeRequestsHandler(t *testing.T) {
 					})
 			},
 			expectedResult: []*gl.MergeRequest{sampleMRs[1]},
+		},
+		{
+			name: "Success - Long Description Truncation",
+			inputArgs: map[string]any{
+				"projectId": projectID,
+			},
+			mockSetup: func() {
+				longDesc := strings.Repeat("b", 500)
+				mrWithLongDesc := &gl.MergeRequest{
+					BasicMergeRequest: gl.BasicMergeRequest{
+						ID:           125,
+						IID:          3,
+						ProjectID:    456,
+						Title:        "MR with long description",
+						Description:  longDesc,
+						State:        "opened",
+						SourceBranch: "feature",
+						TargetBranch: "main",
+					},
+				}
+				mockMRs.EXPECT().
+					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(convertToBasicMRs([]*gl.MergeRequest{mrWithLongDesc}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+			expectedResult: []*gl.MergeRequest{
+				{
+					BasicMergeRequest: gl.BasicMergeRequest{
+						ID:           125,
+						IID:          3,
+						ProjectID:    456,
+						Title:        "MR with long description",
+						Description:  strings.Repeat("b", 300) + "...",
+						State:        "opened",
+						SourceBranch: "feature",
+						TargetBranch: "main",
+					},
+				},
+			},
 		},
 	}
 

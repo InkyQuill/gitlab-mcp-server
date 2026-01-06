@@ -349,3 +349,55 @@ func TestTruncator_TruncateListResponse_MultipleFields(t *testing.T) {
 		assert.True(t, strings.HasSuffix(bodyStr, "..."), "Should end with '...'")
 	}
 }
+
+func TestTruncator_TruncateListResponse_NonStringField(t *testing.T) {
+	truncator := NewTextTruncator(300)
+
+	// Create a slice with a non-string field (using a map directly)
+	items := []map[string]interface{}{
+		{
+			"id":          1,
+			"description": strings.Repeat("a", 400),
+			"score":       100, // Non-string field
+		},
+	}
+
+	result, err := truncator.TruncateListResponse(items, []string{"description", "score"})
+	require.NoError(t, err)
+
+	resultSlice, ok := result.([]map[string]interface{})
+	require.True(t, ok)
+
+	// Description should be truncated
+	desc, exists := resultSlice[0]["description"]
+	require.True(t, exists)
+	descStr, ok := desc.(string)
+	require.True(t, ok)
+	assert.Equal(t, 303, utf8.RuneCountInString(descStr))
+
+	// Score should remain as float64 (not truncated since it's not a string)
+	// Note: JSON unmarshal converts int to float64
+	score, exists := resultSlice[0]["score"]
+	require.True(t, exists)
+	assert.Equal(t, float64(100), score)
+}
+
+func TestTruncator_TruncateString_AllLengths(t *testing.T) {
+	truncator := NewTextTruncator(300)
+
+	// Test exactly at boundary
+	exactlyMax := strings.Repeat("x", 300)
+	result := truncator.truncateString(exactlyMax)
+	assert.Equal(t, exactlyMax, result, "String at exactly max length should not be truncated")
+
+	// Test one over max
+	oneOver := strings.Repeat("y", 301)
+	result = truncator.truncateString(oneOver)
+	assert.Equal(t, 303, utf8.RuneCountInString(result), "String one over max should be truncated with suffix")
+	assert.True(t, strings.HasSuffix(result, "..."))
+
+	// Test well over max
+	wellOver := strings.Repeat("z", 1000)
+	result = truncator.truncateString(wellOver)
+	assert.Equal(t, 303, utf8.RuneCountInString(result), "Long string should be truncated")
+}

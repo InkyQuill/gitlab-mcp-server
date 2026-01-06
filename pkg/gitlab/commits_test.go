@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -226,6 +228,46 @@ func TestGetProjectCommitsHandler(t *testing.T) {
 			expectHandlerError: false,
 			errorContains:      "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.",
 		},
+		{
+			name: "Success - List Commits with Long Message (Truncation)",
+			inputArgs: map[string]any{
+				"projectId": projectID,
+			},
+			mockSetup: func() {
+				expectedOptsMatcher := gomock.AssignableToTypeOf(&gl.ListCommitsOptions{})
+				mockCommits.EXPECT().
+					ListCommits(projectID, expectedOptsMatcher, gomock.Any()).
+					DoAndReturn(func(_ interface{}, _ *gl.ListCommitsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Commit, *gl.Response, error) {
+						// Create a commit with a very long message (500 characters)
+						longMsg := strings.Repeat("a", 500)
+						return []*gl.Commit{
+							{
+								ID:          "sha-long",
+								ShortID:     "long",
+								Title:       "Commit with long message",
+								Message:     longMsg,
+								AuthorName:  "Test User",
+								AuthorEmail: "test@example.com",
+							},
+						}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
+					})
+			},
+		},
+		{
+			name: "Error - Forbidden (403)",
+			inputArgs: map[string]any{
+				"projectId": "forbidden/project",
+			},
+			mockSetup: func() {
+				mockCommits.EXPECT().
+					ListCommits("forbidden/project", gomock.Any(), gomock.Any()).
+					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 403}}, errors.New("gitlab: 403 Forbidden"))
+			},
+			expectedResult:     nil,
+			expectResultError:  false,
+			expectHandlerError: true,
+			errorContains:      "failed to list commits for project \"forbidden/project\"",
+		},
 	}
 
 	// --- Run Tests ---
@@ -262,6 +304,17 @@ func TestGetProjectCommitsHandler(t *testing.T) {
 
 				if tc.expectResultError {
 					assert.Contains(t, textContent.Text, tc.errorContains, "Error message mismatch")
+				} else if tc.name == "Success - List Commits with Long Message (Truncation)" {
+					// Special case for truncation test
+					var actualCommits []*gl.Commit
+					err = json.Unmarshal([]byte(textContent.Text), &actualCommits)
+					require.NoError(t, err, "Failed to unmarshal actual result JSON")
+					require.Len(t, actualCommits, 1, "Should have 1 commit")
+					require.NotNil(t, actualCommits[0].Message, "Message should exist")
+					// Message should be truncated to 303 runes (300 + "...")
+					msgLen := utf8.RuneCountInString(actualCommits[0].Message)
+					assert.Equal(t, 303, msgLen, "Message should be truncated to 303 runes")
+					assert.True(t, strings.HasSuffix(actualCommits[0].Message, "..."), "Message should end with '...'")
 				} else {
 					// Unmarshal expected and actual results
 					var actualCommits []*gl.Commit

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
@@ -264,6 +265,21 @@ func TestListUsersHandler(t *testing.T) {
 			mockSetup:           func() { mockUsers.EXPECT().ListUsers(gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
 			expectInternalError: true,
 			errorContains:       "failed to list users",
+		},
+		{
+			name: "Success - Long Bio Truncation",
+			args: map[string]any{},
+			mockSetup: func() {
+				longBio := strings.Repeat("f", 500)
+				user := &gl.User{
+					ID:       1,
+					Name:     "User with long bio",
+					Username: "longbio",
+					Bio:      longBio,
+				}
+				mockUsers.EXPECT().ListUsers(gomock.Any(), gomock.Any()).
+					Return([]*gl.User{user}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
 		},
 	}
 	for _, tc := range tests {
