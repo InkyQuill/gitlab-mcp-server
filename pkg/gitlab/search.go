@@ -211,8 +211,38 @@ func Search(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler 
 			return mcp.NewToolResultText("[]"), nil
 		}
 
+		// --- Truncate long text fields for list operations
+		// Select appropriate fields based on resourceType
+		truncator := NewTextTruncator(MaxFieldLength)
+		var fieldsToTruncate []string
+
+		switch resourceType {
+		case "projects":
+			fieldsToTruncate = ProjectFields
+		case "issues":
+			fieldsToTruncate = IssueFields
+		case "merge_requests":
+			fieldsToTruncate = MergeRequestFields
+		case "commits":
+			fieldsToTruncate = CommitFields
+		case "milestones":
+			fieldsToTruncate = MilestoneFields
+		case "blobs", "snippet_blobs", "wiki_blobs":
+			fieldsToTruncate = BlobFields
+		case "notes":
+			fieldsToTruncate = NoteFields
+		default:
+			// No truncation for other types
+			fieldsToTruncate = []string{}
+		}
+
+		truncatedResults, err := truncator.TruncateListResponse(results, fieldsToTruncate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to truncate search results: %w", err)
+		}
+
 		// Marshal and return results
-		jsonData, err := json.Marshal(results)
+		jsonData, err := json.Marshal(truncatedResults)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal search results: %w", err)
 		}

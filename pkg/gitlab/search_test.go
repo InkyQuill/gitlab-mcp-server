@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
@@ -466,6 +467,35 @@ func TestSearchBlobsHandler(t *testing.T) {
 			expectResultError:   true,
 			expectInternalError: true,
 			errorContains:       "failed to list blobs (scope=global)",
+		},
+		{
+			name: "Success - Long Data Truncation",
+			args: map[string]any{
+				"resourceType": "blobs",
+				"search":       "long content",
+			},
+			mockSetup: func() {
+				longData := strings.Repeat("e", 500)
+				blob := &gl.Blob{
+					Basename: "large_file.go",
+					Ref:      "main",
+					Path:     "pkg/large_file.go",
+					Data:     longData,
+				}
+				mockSearch.EXPECT().
+					Blobs("long content", gomock.Any(), gomock.Any()).
+					Return([]*gl.Blob{blob}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+			expectedResult: []*gl.Blob{
+				{
+					Basename: "large_file.go",
+					Ref:      "main",
+					Path:     "pkg/large_file.go",
+					Data:     strings.Repeat("e", 300) + "...",
+				},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
 		},
 	}
 

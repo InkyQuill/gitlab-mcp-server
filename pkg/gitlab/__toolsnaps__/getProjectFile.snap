@@ -16,13 +16,14 @@
         "type": "string"
       },
       "ref": {
-        "description": "The name of branch, tag, or commit SHA (defaults to the repository's default branch).",
+        "description": "The name of branch, tag, or commit.",
         "type": "string"
       }
     },
     "required": [
       "projectId",
-      "filePath"
+      "filePath",
+      "ref"
     ]
   },
   "name": "getProjectFile"

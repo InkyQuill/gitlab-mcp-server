@@ -30,7 +30,8 @@ func GetProjectFile(getClient GetClientFn, t map[string]string) (tool mcp.Tool, 
 				mcp.Description("The path to the file within the repository."),
 			),
 			mcp.WithString("ref",
-				mcp.Description("The name of branch, tag, or commit SHA (defaults to the repository's default branch)."),
+				mcp.Required(),
+				mcp.Description("The name of branch, tag, or commit."),
 			),
 		),
 		// Handler function implementation
@@ -44,15 +45,14 @@ func GetProjectFile(getClient GetClientFn, t map[string]string) (tool mcp.Tool, 
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			ref, err := OptionalParam[string](&request, "ref")
+			ref, err := requiredParam[string](&request, "ref")
 			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil // Should not happen with string?
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
 
 			// --- Construct GitLab API options
-			opts := &gl.GetFileOptions{}
-			if ref != "" {
-				opts.Ref = &ref
+			opts := &gl.GetFileOptions{
+				Ref: &ref,
 			}
 
 			// --- Obtain GitLab client

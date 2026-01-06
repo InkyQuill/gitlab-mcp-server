@@ -194,7 +194,14 @@ func ListUsers(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handl
 			return mcp.NewToolResultText("[]"), nil
 		}
 
-		jsonData, err := json.Marshal(users)
+		// --- Truncate long text fields for list operations
+		truncator := NewTextTruncator(MaxFieldLength)
+		truncatedUsers, err := truncator.TruncateListResponse(users, UserFields)
+		if err != nil {
+			return nil, fmt.Errorf("failed to truncate users: %w", err)
+		}
+
+		jsonData, err := json.Marshal(truncatedUsers)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal users data: %w", err)
 		}

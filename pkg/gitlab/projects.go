@@ -184,7 +184,14 @@ func ListProjects(getClient GetClientFn, t map[string]string) (tool mcp.Tool, ha
 				return mcp.NewToolResultText("[]"), nil // Return empty JSON array
 			}
 
-			data, err := json.Marshal(projects)
+			// --- Truncate long text fields for list operations
+			truncator := NewTextTruncator(MaxFieldLength)
+			truncatedProjects, err := truncator.TruncateListResponse(projects, ProjectFields)
+			if err != nil {
+				return nil, fmt.Errorf("failed to truncate projects: %w", err)
+			}
+
+			data, err := json.Marshal(truncatedProjects)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal project list data: %w", err)
 			}

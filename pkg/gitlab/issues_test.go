@@ -6,6 +6,7 @@ import (
 	"errors"        // Added for creating mock errors
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time" // Add time import
 
@@ -626,6 +627,26 @@ func TestListIssuesHandler(t *testing.T) {
 			},
 			expectedResult: []*gl.Issue{
 				{ID: 128, IID: 6, ProjectID: 456, State: "opened", Title: "Critical Bug", Labels: []string{"bug"}},
+			},
+			expectResultError:   false,
+			expectInternalError: false,
+		},
+		{
+			name: "Success - Long Description Truncation",
+			args: map[string]any{
+				"projectId": "group/project",
+			},
+			mockSetup: func() {
+				longDesc := strings.Repeat("a", 500)
+				expectedIssues := []*gl.Issue{
+					{ID: 1, IID: 1, ProjectID: 123, State: "opened", Title: "Issue with long description", Description: longDesc},
+				}
+				mockIssues.EXPECT().
+					ListProjectIssues("group/project", gomock.Any(), gomock.Any()).
+					Return(expectedIssues, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+			expectedResult: []*gl.Issue{
+				{ID: 1, IID: 1, ProjectID: 123, State: "opened", Title: "Issue with long description", Description: strings.Repeat("a", 300) + "..."},
 			},
 			expectResultError:   false,
 			expectInternalError: false,

@@ -421,7 +421,14 @@ func ListMergeRequests(getClient GetClientFn, t map[string]string) (tool mcp.Too
 				return mcp.NewToolResultText("[]"), nil // Return empty JSON array
 			}
 
-			data, err := json.Marshal(mrs)
+			// --- Truncate long text fields for list operations
+			truncator := NewTextTruncator(MaxFieldLength)
+			truncatedMRs, err := truncator.TruncateListResponse(mrs, MergeRequestFields)
+			if err != nil {
+				return nil, fmt.Errorf("failed to truncate merge requests: %w", err)
+			}
+
+			data, err := json.Marshal(truncatedMRs)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal merge requests data: %w", err)
 			}

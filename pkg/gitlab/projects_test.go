@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -433,6 +434,30 @@ func TestListProjectsHandler(t *testing.T) {
 			expectResultError:  true,
 			expectHandlerError: false,
 			errorContains:      "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.",
+		},
+		{
+			name: "Success - Long Description Truncation",
+			inputArgs: map[string]any{},
+			mockSetup: func() {
+				longDesc := strings.Repeat("d", 500)
+				project := &gl.Project{
+					ID:          100,
+					Name:        "long-desc-project",
+					Description: longDesc,
+				}
+				mockProjects.EXPECT().
+					ListProjects(gomock.Any(), gomock.Any()).
+					Return([]*gl.Project{project}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+			},
+			expectedResult: []*gl.Project{
+				{
+					ID:          100,
+					Name:        "long-desc-project",
+					Description: strings.Repeat("d", 300) + "...",
+				},
+			},
+			expectResultError:  false,
+			expectHandlerError: false,
 		},
 	}
 

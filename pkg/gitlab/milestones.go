@@ -371,8 +371,15 @@ func ListMilestones(getClient GetClientFn, t map[string]string) (tool mcp.Tool, 
 				return mcp.NewToolResultText("[]"), nil // Return empty JSON array
 			}
 
+			// --- Truncate long text fields for list operations
+			truncator := NewTextTruncator(MaxFieldLength)
+			truncatedMilestones, err := truncator.TruncateListResponse(milestones, MilestoneFields)
+			if err != nil {
+				return nil, fmt.Errorf("failed to truncate milestones: %w", err)
+			}
+
 			// --- Marshal and return success
-			data, err := json.Marshal(milestones)
+			data, err := json.Marshal(truncatedMilestones)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal milestones list: %w", err)
 			}

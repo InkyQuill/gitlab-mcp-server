@@ -115,7 +115,14 @@ func GetProjectCommits(getClient GetClientFn, t map[string]string) (tool mcp.Too
 				return mcp.NewToolResultText("[]"), nil // Return empty JSON array
 			}
 
-			data, err := json.Marshal(commits)
+			// --- Truncate long text fields for list operations
+			truncator := NewTextTruncator(MaxFieldLength)
+			truncatedCommits, err := truncator.TruncateListResponse(commits, CommitFields)
+			if err != nil {
+				return nil, fmt.Errorf("failed to truncate commits: %w", err)
+			}
+
+			data, err := json.Marshal(truncatedCommits)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal commit list data: %w", err)
 			}
