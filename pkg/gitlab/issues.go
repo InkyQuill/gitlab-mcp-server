@@ -313,8 +313,15 @@ func ListIssues(getClient GetClientFn, t map[string]string) (tool mcp.Tool, hand
 				return mcp.NewToolResultText("[]"), nil // Return empty JSON array
 			}
 
+			// --- Truncate long text fields for list operations
+			truncator := NewTextTruncator(MaxFieldLength)
+			truncatedIssues, err := truncator.TruncateListResponse(issues, IssueFields)
+			if err != nil {
+				return nil, fmt.Errorf("failed to truncate issues: %w", err)
+			}
+
 			// --- Format successful response
-			data, err := json.Marshal(issues)
+			data, err := json.Marshal(truncatedIssues)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal issues list: %w", err)
 			}
