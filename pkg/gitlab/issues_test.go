@@ -6,6 +6,8 @@ import (
 	"errors"        // Added for creating mock errors
 	"fmt"
 	"net/http"
+	"os"      // Added for environment variables in integration tests
+	"strconv" // Added for string conversion in integration tests
 	"strings"
 	"testing"
 	"time" // Add time import
@@ -2349,4 +2351,194 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestUpdateIssueHandler_RealAPI_Integration is an integration test that makes real API calls
+// to verify stateEvent and milestoneId work correctly with the actual GitLab API.
+//
+// This test requires:
+// - GITLAB_TOKEN environment variable to be set
+// - A GitLab instance where test issues can be created and modified
+// - Run with: go test ./pkg/gitlab -run TestUpdateIssueHandler_RealAPI_Integration -v
+//
+// Note: This test is skipped by default. Run it explicitly to verify changes against the real API.
+func TestUpdateIssueHandler_RealAPI_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	token := os.Getenv("GITLAB_TOKEN")
+	if token == "" {
+		t.Skip("GITLAB_TOKEN not set - skipping integration test")
+	}
+
+	// Get test project from environment or use a default
+	testProjectID := os.Getenv("GITLAB_TEST_PROJECT_ID")
+	if testProjectID == "" {
+		t.Skip("GITLAB_TEST_PROJECT_ID not set - skipping integration test (set to a project ID where you can create test issues)")
+	}
+
+	ctx := context.Background()
+
+	// Create a real GitLab client
+	realClient, err := gl.NewClient(token)
+	if err != nil {
+		t.Fatalf("Failed to create GitLab client: %v", err)
+	}
+
+	mockGetClient := func(_ context.Context) (*gl.Client, error) {
+		return realClient, nil
+	}
+
+	// Step 1: Create a test issue
+	createIssueOpts := &gl.CreateIssueOptions{
+		Title:       gl.Ptr("Integration Test Issue - stateEvent and milestoneId"),
+		Description: gl.Ptr("This issue was created by an integration test to verify stateEvent and milestoneId work correctly."),
+	}
+	createdIssue, _, err := realClient.Issues.CreateIssue(testProjectID, createIssueOpts, gl.WithContext(ctx))
+	if err != nil {
+		t.Fatalf("Failed to create test issue: %v", err)
+	}
+	t.Logf("Created test issue IID: %d", createdIssue.IID)
+
+	// Clean up the test issue after the test completes
+	defer func() {
+		_, err := realClient.Issues.DeleteIssue(testProjectID, createdIssue.IID, gl.WithContext(ctx))
+		if err != nil {
+			t.Logf("Warning: Failed to delete test issue: %v", err)
+		}
+	}()
+
+	// Verify initial state is "opened"
+	if createdIssue.State != "opened" {
+		t.Errorf("Expected initial state to be 'opened', got '%s'", createdIssue.State)
+	}
+
+	// Step 2: Test stateEvent="close"
+	updateTool, handler := UpdateIssue(mockGetClient, map[string]string{})
+
+	closeRequest := mcp.CallToolRequest{
+		Params: struct {
+			Name      string                 `json:"name"`
+			Arguments map[string]interface{} `json:"arguments,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
+		}{
+			Name: updateTool.Name,
+			Arguments: map[string]interface{}{
+				"projectId":  testProjectID,
+				"issueIid":   float64(createdIssue.IID),
+				"stateEvent": "close",
+			},
+		},
+	}
+
+	result, err := handler(ctx, closeRequest)
+	if err != nil {
+		t.Fatalf("Handler returned error: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("Handler returned tool result error: %s", result.Content[0])
+	}
+
+	// Verify the issue was actually closed
+	fetchIssue, _, err := realClient.Issues.GetIssue(testProjectID, createdIssue.IID, gl.WithContext(ctx))
+	if err != nil {
+		t.Fatalf("Failed to fetch updated issue: %v", err)
+	}
+
+	if fetchIssue.State != "closed" {
+		t.Errorf("Expected issue state to be 'closed' after stateEvent=close, got '%s'", fetchIssue.State)
+	}
+
+	t.Logf("Successfully closed issue using stateEvent=close")
+
+	// Step 3: Test stateEvent="reopen"
+	reopenRequest := mcp.CallToolRequest{
+		Params: struct {
+			Name      string                 `json:"name"`
+			Arguments map[string]interface{} `json:"arguments,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
+		}{
+			Name: updateTool.Name,
+			Arguments: map[string]interface{}{
+				"projectId":  testProjectID,
+				"issueIid":   float64(createdIssue.IID),
+				"stateEvent": "reopen",
+			},
+		},
+	}
+
+	result, err = handler(ctx, reopenRequest)
+	if err != nil {
+		t.Fatalf("Handler returned error: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("Handler returned tool result error: %s", result.Content[0])
+	}
+
+	// Verify the issue was reopened
+	fetchIssue, _, err = realClient.Issues.GetIssue(testProjectID, createdIssue.IID, gl.WithContext(ctx))
+	if err != nil {
+		t.Fatalf("Failed to fetch updated issue: %v", err)
+	}
+
+	if fetchIssue.State != "opened" {
+		t.Errorf("Expected issue state to be 'opened' after stateEvent=reopen, got '%s'", fetchIssue.State)
+	}
+
+	t.Logf("Successfully reopened issue using stateEvent=reopen")
+
+	// Step 4: Test milestoneId (optional - only if milestones exist in the project)
+	testMilestoneID := os.Getenv("GITLAB_TEST_MILESTONE_ID")
+	if testMilestoneID != "" {
+		milestoneIDInt, err := strconv.Atoi(testMilestoneID)
+		if err != nil {
+			t.Fatalf("GITLAB_TEST_MILESTONE_ID must be a valid integer: %v", err)
+		}
+
+		milestoneRequest := mcp.CallToolRequest{
+			Params: struct {
+				Name      string                 `json:"name"`
+				Arguments map[string]interface{} `json:"arguments,omitempty"`
+				Meta      *struct {
+					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+				} `json:"_meta,omitempty"`
+			}{
+				Name: updateTool.Name,
+				Arguments: map[string]interface{}{
+					"projectId":   testProjectID,
+					"issueIid":    float64(createdIssue.IID),
+					"milestoneId": float64(milestoneIDInt),
+				},
+			},
+		}
+
+		result, err = handler(ctx, milestoneRequest)
+		if err != nil {
+			t.Fatalf("Handler returned error: %v", err)
+		}
+		if result.IsError {
+			t.Fatalf("Handler returned tool result error: %s", result.Content[0])
+		}
+
+		// Verify the milestone was set
+		fetchIssue, _, err = realClient.Issues.GetIssue(testProjectID, createdIssue.IID, gl.WithContext(ctx))
+		if err != nil {
+			t.Fatalf("Failed to fetch updated issue: %v", err)
+		}
+
+		if fetchIssue.Milestone == nil || fetchIssue.Milestone.ID != milestoneIDInt {
+			t.Errorf("Expected milestone ID to be %d, got %v", milestoneIDInt, fetchIssue.Milestone)
+		}
+
+		t.Logf("Successfully set milestone ID to %d", milestoneIDInt)
+	} else {
+		t.Log("GITLAB_TEST_MILESTONE_ID not set - skipping milestone test")
+	}
+
+	t.Log("Integration test passed: stateEvent and milestoneId work correctly with real GitLab API")
 }

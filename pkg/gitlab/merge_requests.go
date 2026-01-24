@@ -543,13 +543,13 @@ func CreateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.To
 
 			// --- Construct GitLab API options
 			opts := &gl.CreateMergeRequestOptions{
-				SourceBranch: &sourceBranch,
-				TargetBranch: &targetBranch,
-				Title:        &title,
+				SourceBranch: gl.Ptr(sourceBranch),
+				TargetBranch: gl.Ptr(targetBranch),
+				Title:        gl.Ptr(title),
 			}
 
 			if description != "" {
-				opts.Description = &description
+				opts.Description = gl.Ptr(description)
 			}
 
 			if labels != "" {
@@ -586,7 +586,7 @@ func CreateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.To
 				if float64(milestoneID) != milestoneIDFloat {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
 				}
-				opts.MilestoneID = &milestoneID
+				opts.MilestoneID = gl.Ptr(milestoneID)
 			}
 
 			if removeSourceBranch != nil {
@@ -738,15 +738,15 @@ func UpdateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.To
 			opts := &gl.UpdateMergeRequestOptions{}
 
 			if title != "" {
-				opts.Title = &title
+				opts.Title = gl.Ptr(title)
 			}
 
 			if description != "" {
-				opts.Description = &description
+				opts.Description = gl.Ptr(description)
 			}
 
 			if targetBranch != "" {
-				opts.TargetBranch = &targetBranch
+				opts.TargetBranch = gl.Ptr(targetBranch)
 			}
 
 			if labels != "" {
@@ -783,11 +783,19 @@ func UpdateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.To
 				if float64(milestoneID) != milestoneIDFloat {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
 				}
-				opts.MilestoneID = &milestoneID
+				opts.MilestoneID = gl.Ptr(milestoneID)
 			}
 
 			if stateEvent != "" {
-				opts.StateEvent = &stateEvent
+				opts.StateEvent = gl.Ptr(stateEvent)
+			}
+
+			// --- Validation: Ensure critical fields are set correctly
+			if stateEvent != "" && opts.StateEvent == nil {
+				return mcp.NewToolResultError("Internal Error: StateEvent was not set in options"), nil
+			}
+			if milestoneIDFloat != 0 && opts.MilestoneID == nil {
+				return mcp.NewToolResultError("Internal Error: MilestoneID was not set in options"), nil
 			}
 
 			if removeSourceBranch != nil {

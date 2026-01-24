@@ -819,11 +819,11 @@ func UpdateIssue(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 			opts := &gl.UpdateIssueOptions{}
 
 			if title != "" {
-				opts.Title = &title
+				opts.Title = gl.Ptr(title)
 			}
 
 			if description != "" {
-				opts.Description = &description
+				opts.Description = gl.Ptr(description)
 			}
 
 			if labels != "" {
@@ -860,7 +860,7 @@ func UpdateIssue(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 				if float64(milestoneID) != milestoneIDFloat {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
 				}
-				opts.MilestoneID = &milestoneID
+				opts.MilestoneID = gl.Ptr(milestoneID)
 			}
 
 			if dueDateStr != "" {
@@ -869,11 +869,19 @@ func UpdateIssue(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: dueDate must be in YYYY-MM-DD format, got %q: %v", dueDateStr, err)), nil
 				}
 				isoTime := gl.ISOTime(dueDate)
-				opts.DueDate = &isoTime
+				opts.DueDate = gl.Ptr(isoTime)
 			}
 
 			if stateEvent != "" {
-				opts.StateEvent = &stateEvent
+				opts.StateEvent = gl.Ptr(stateEvent)
+			}
+
+			// --- Validation: Ensure critical fields are set correctly
+			if stateEvent != "" && opts.StateEvent == nil {
+				return mcp.NewToolResultError("Internal Error: StateEvent was not set in options"), nil
+			}
+			if milestoneIDFloat != 0 && opts.MilestoneID == nil {
+				return mcp.NewToolResultError("Internal Error: MilestoneID was not set in options"), nil
 			}
 
 			// --- Call GitLab API
