@@ -498,18 +498,34 @@ func TestListProjectsHandler(t *testing.T) {
 				if tc.expectResultError {
 					assert.Contains(t, textContent.Text, tc.errorContains, "Error message mismatch")
 				} else {
-					// Unmarshal expected and actual results
-					var actualProjects []*gl.Project
-					err = json.Unmarshal([]byte(textContent.Text), &actualProjects)
-					require.NoError(t, err, "Failed to unmarshal actual result JSON")
+					// Unmarshal actual result as PaginatedResponse
+					var actualResp PaginatedResponse
+					err = json.Unmarshal([]byte(textContent.Text), &actualResp)
+					require.NoError(t, err, "Failed to unmarshal actual result JSON as PaginatedResponse")
+
+					// Convert items to []interface{} first, then to []map for field checking
+					actualItemsSlice, ok := actualResp.Items.([]interface{})
+					require.True(t, ok, "Items should be []interface{}")
 
 					// Compare lengths first
-					require.Equal(t, len(tc.expectedResult), len(actualProjects), "Number of projects mismatch")
+					require.Equal(t, len(tc.expectedResult), len(actualItemsSlice), "Number of projects mismatch")
 
-					// Compare content (simple comparison, might need deep equal for complex structs)
-					expectedJSON, _ := json.Marshal(tc.expectedResult)
-					actualJSON, _ := json.Marshal(actualProjects)
-					assert.JSONEq(t, string(expectedJSON), string(actualJSON), "Project list content mismatch")
+					// Verify key fields are present in each project
+					for i, expectedProject := range tc.expectedResult {
+						if i < len(actualItemsSlice) {
+							actualProject, ok := actualItemsSlice[i].(map[string]interface{})
+							require.True(t, ok, "Item should be map[string]interface{}")
+
+							assert.Equal(t, expectedProject.ID, int(actualProject["id"].(float64)), "ID should match")
+							assert.Equal(t, expectedProject.Name, actualProject["name"], "Name should match")
+
+							// Verify that unwanted fields are removed
+							assert.NotContains(t, actualProject, "web_url", "Should not contain web_url")
+							assert.NotContains(t, actualProject, "avatar_url", "Should not contain avatar_url")
+							assert.NotContains(t, actualProject, "star_count", "Should not contain star_count")
+							assert.NotContains(t, actualProject, "forks_count", "Should not contain forks_count")
+						}
+					}
 				}
 			}
 		})

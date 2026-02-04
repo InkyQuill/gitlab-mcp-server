@@ -178,20 +178,28 @@ func ListProjects(getClient GetClientFn, t map[string]string) (tool mcp.Tool, ha
 				return nil, fmt.Errorf("failed to list projects: %w (status: %d)", err, code)
 			}
 
-			// --- Marshal and return success
-			// Handle empty list gracefully
-			if len(projects) == 0 {
-				return mcp.NewToolResultText("[]"), nil // Return empty JSON array
-			}
-
-			// --- Truncate long text fields for list operations
-			truncator := NewTextTruncator(MaxFieldLength)
-			truncatedProjects, err := truncator.TruncateListResponse(projects, ProjectFields)
+			// --- Optimize response (truncate + filter fields + add pagination)
+			optimizer := NewResponseOptimizer("project")
+			optimized, err := optimizer.OptimizeListResponse(projects, resp)
 			if err != nil {
-				return nil, fmt.Errorf("failed to truncate projects: %w", err)
+				return nil, fmt.Errorf("failed to optimize projects response: %w", err)
 			}
 
-			data, err := json.Marshal(truncatedProjects)
+			// --- Handle empty result gracefully
+			if len(projects) == 0 {
+				emptyResponse := &PaginatedResponse{
+					Items:      []interface{}{},
+					Pagination: ExtractPagination(resp),
+				}
+				data, err := json.Marshal(emptyResponse)
+				if err != nil {
+					return nil, fmt.Errorf("failed to marshal empty projects response: %w", err)
+				}
+				return mcp.NewToolResultText(string(data)), nil
+			}
+
+			// --- Format successful response
+			data, err := json.Marshal(optimized)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal project list data: %w", err)
 			}

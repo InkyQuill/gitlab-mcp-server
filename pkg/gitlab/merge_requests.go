@@ -415,20 +415,28 @@ func ListMergeRequests(getClient GetClientFn, t map[string]string) (tool mcp.Too
 				return nil, apiErr
 			}
 
-			// --- Marshal and return success
-			// Handle empty list gracefully
-			if len(mrs) == 0 {
-				return mcp.NewToolResultText("[]"), nil // Return empty JSON array
-			}
-
-			// --- Truncate long text fields for list operations
-			truncator := NewTextTruncator(MaxFieldLength)
-			truncatedMRs, err := truncator.TruncateListResponse(mrs, MergeRequestFields)
+			// --- Optimize response (truncate + filter fields + add pagination)
+			optimizer := NewResponseOptimizer("merge_request")
+			optimized, err := optimizer.OptimizeListResponse(mrs, resp)
 			if err != nil {
-				return nil, fmt.Errorf("failed to truncate merge requests: %w", err)
+				return nil, fmt.Errorf("failed to optimize merge requests response: %w", err)
 			}
 
-			data, err := json.Marshal(truncatedMRs)
+			// --- Handle empty result gracefully
+			if len(mrs) == 0 {
+				emptyResponse := &PaginatedResponse{
+					Items:      []interface{}{},
+					Pagination: ExtractPagination(resp),
+				}
+				data, err := json.Marshal(emptyResponse)
+				if err != nil {
+					return nil, fmt.Errorf("failed to marshal empty merge requests response: %w", err)
+				}
+				return mcp.NewToolResultText(string(data)), nil
+			}
+
+			// --- Format successful response
+			data, err := json.Marshal(optimized)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal merge requests data: %w", err)
 			}

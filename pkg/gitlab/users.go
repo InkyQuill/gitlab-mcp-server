@@ -191,17 +191,25 @@ func ListUsers(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handl
 		}
 
 		if len(users) == 0 {
-			return mcp.NewToolResultText("[]"), nil
+			emptyResponse := &PaginatedResponse{
+				Items:      []interface{}{},
+				Pagination: ExtractPagination(resp),
+			}
+			jsonData, err := json.Marshal(emptyResponse)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal empty users response: %w", err)
+			}
+			return mcp.NewToolResultText(string(jsonData)), nil
 		}
 
-		// --- Truncate long text fields for list operations
-		truncator := NewTextTruncator(MaxFieldLength)
-		truncatedUsers, err := truncator.TruncateListResponse(users, UserFields)
+		// --- Optimize response (truncate + filter fields + add pagination)
+		optimizer := NewResponseOptimizer("user")
+		optimized, err := optimizer.OptimizeListResponse(users, resp)
 		if err != nil {
-			return nil, fmt.Errorf("failed to truncate users: %w", err)
+			return nil, fmt.Errorf("failed to optimize users response: %w", err)
 		}
 
-		jsonData, err := json.Marshal(truncatedUsers)
+		jsonData, err := json.Marshal(optimized)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal users data: %w", err)
 		}
@@ -261,10 +269,26 @@ func ListProjectUsers(getClient GetClientFn, t map[string]string) (tool mcp.Tool
 		}
 
 		if len(members) == 0 {
-			return mcp.NewToolResultText("[]"), nil
+			emptyResponse := &PaginatedResponse{
+				Items:      []interface{}{},
+				Pagination: ExtractPagination(resp),
+			}
+			jsonData, err := json.Marshal(emptyResponse)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal empty project members response: %w", err)
+			}
+			return mcp.NewToolResultText(string(jsonData)), nil
 		}
 
-		jsonData, err := json.Marshal(members)
+		// --- Optimize response (truncate + filter fields + add pagination)
+		// Note: Using "user" entity type since project members are users
+		optimizer := NewResponseOptimizer("user")
+		optimized, err := optimizer.OptimizeListResponse(members, resp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to optimize project members response: %w", err)
+		}
+
+		jsonData, err := json.Marshal(optimized)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal project members data: %w", err)
 		}
