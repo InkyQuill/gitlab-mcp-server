@@ -975,20 +975,47 @@ func TestListMergeRequestsHandler(t *testing.T) {
 				if tc.expectResultError {
 					assert.Contains(t, textContent.Text, tc.errorContains, "Error message mismatch")
 				} else {
-					// For empty lists, check for empty JSON array
+					// For empty lists, check for empty PaginatedResponse
 					mrList, ok := tc.expectedResult.([]*gl.MergeRequest)
 					if ok && len(mrList) == 0 {
-						assert.Equal(t, "[]", textContent.Text, "Empty array mismatch")
+						var emptyResp PaginatedResponse
+						err = json.Unmarshal([]byte(textContent.Text), &emptyResp)
+						require.NoError(t, err, "Failed to unmarshal empty response")
+						assert.Empty(t, emptyResp.Items, "Empty response should have empty items")
 					} else {
-						// For successful responses with data, verify JSON equality
-						var actualMRs []*gl.MergeRequest
-						err = json.Unmarshal([]byte(textContent.Text), &actualMRs)
-						require.NoError(t, err, "Failed to unmarshal actual result JSON")
+						// For successful responses with data, verify key fields
+						expectedMRs, ok := tc.expectedResult.([]*gl.MergeRequest)
+						require.True(t, ok, "Expected result should be []*gl.MergeRequest")
 
-						// Marshal both expected and actual for JSONEq comparison
-						expectedJSON, _ := json.Marshal(tc.expectedResult)
-						actualJSON, _ := json.Marshal(actualMRs)
-						assert.JSONEq(t, string(expectedJSON), string(actualJSON), "Merge request list content mismatch")
+						// Unmarshal actual response as PaginatedResponse
+						var actualResp PaginatedResponse
+						err = json.Unmarshal([]byte(textContent.Text), &actualResp)
+						require.NoError(t, err, "Failed to unmarshal actual response as PaginatedResponse")
+
+						// Convert items to []interface{} first, then to []map for field checking
+						actualItemsSlice, ok := actualResp.Items.([]interface{})
+						require.True(t, ok, "Items should be []interface{}")
+
+						// Check that we have the expected number of MRs
+						assert.Equal(t, len(expectedMRs), len(actualItemsSlice), "Number of MRs should match")
+
+						// Verify key fields are present in each MR
+						for i, expectedMR := range expectedMRs {
+							if i < len(actualItemsSlice) {
+								actualMR, ok := actualItemsSlice[i].(map[string]interface{})
+								require.True(t, ok, "Item should be map[string]interface{}")
+
+								assert.Equal(t, expectedMR.ID, int(actualMR["id"].(float64)), "ID should match")
+								assert.Equal(t, expectedMR.IID, int(actualMR["iid"].(float64)), "IID should match")
+								assert.Equal(t, expectedMR.Title, actualMR["title"], "Title should match")
+
+								// Verify that unwanted fields are removed
+								assert.NotContains(t, actualMR, "_links", "Should not contain _links")
+								assert.NotContains(t, actualMR, "web_url", "Should not contain web_url")
+								assert.NotContains(t, actualMR, "diff_refs", "Should not contain diff_refs")
+								assert.NotContains(t, actualMR, "label_details", "Should not contain label_details")
+							}
+						}
 					}
 				}
 			}
