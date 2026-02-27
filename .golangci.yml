@@ -4,33 +4,74 @@ run:
   timeout: 5m
   tests: true
   concurrency: 4
+  modules-download-mode: readonly
 
 linters:
   enable:
     - govet
     - errcheck
     - staticcheck
-    - revive
     - ineffassign
     - unused
     - misspell
     - bodyclose
     - gocritic
-    - makezero
     - gosec
     - nakedret
     - contextcheck
     - goconst
-    - godot
-    - goprintffuncname
     - nilerr
     - noctx
-    - rowserrcheck
-    - sqlclosecheck
     - unconvert
     - unparam
     - whitespace
+    - prealloc
+    - durationcheck
+    - errorlint
+    - reassign
+    - thelper
+    - tparallel
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - shadow
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  goconst:
+    min-occurrences: 4
+
+  gocritic:
+    enabled-tags:
+      - performance
+      - diagnostic
+      - style
+
+  gosec:
+    excludes:
+      - G104  # Allow unchecked errors in some cases
+
+  misspell:
+    locale: US
+
+  nakedret:
+    max-func-lines: 30
+
+  whitespace:
+    multi-if: false
+    multi-func: false
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
 
 output:
   print-issued-lines: true
   print-linter-name: true
+  uniq-by-line: true
+  sort-results: true

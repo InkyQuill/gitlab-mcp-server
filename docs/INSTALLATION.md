@@ -20,9 +20,49 @@ Before installing, ensure you have:
 3. **Docker (optional)**: For containerized deployment
 4. **Go 1.23+ (optional)**: For building from source
 
-## Quick Installation
+## Installation Methods
 
-### Automated Installer (Recommended)
+### Method 1: Go Install (Recommended)
+
+The quickest way to install the latest release:
+
+```bash
+go install github.com/InkyQuill/gitlab-mcp-server@latest
+```
+
+This installs the binary to `~/go/bin/gitlab-mcp-server` (or `%USERPROFILE%\go\bin` on Windows).
+
+**After installation:**
+
+```bash
+# Verify installation
+gitlab-mcp-server version
+
+# Configure GitLab servers
+gitlab-mcp-server config init
+
+# Register with your IDE
+gitlab-mcp-server install claude  # For Claude Desktop
+# or
+gitlab-mcp-server install vscode  # For VS Code
+# or
+gitlab-mcp-server install cursor  # For Cursor
+
+# Set up your project
+cd your-project
+gitlab-mcp-server project init
+```
+
+**Ensure `~/go/bin` is in your PATH:**
+
+```bash
+# Add to ~/.bashrc, ~/.zshrc, or equivalent
+export PATH="$HOME/go/bin:$PATH"
+```
+
+### Method 2: Automated Installer
+
+The easiest way to install with automatic IDE configuration:
 
 The easiest way to install is using the automated installer:
 
@@ -64,7 +104,7 @@ The server will be registered as `gitlab-go-mcp` in your MCP configurations.
 
 **Note:** The installer intelligently merges with existing configurations, preserving your other MCP server settings.
 
-## Manual Installation
+### Method 3: Building from Source
 
 ### Building from Source
 
@@ -127,15 +167,24 @@ To verify the installation:
 
 1. Check that the binary exists:
    ```bash
-   ./bin/gitlab-mcp-server --version
+   # If installed via go install
+   gitlab-mcp-server version
+
+   # If built from source
+   ./bin/gitlab-mcp-server version
    ```
 
-2. Test the server (replace `<YOUR_TOKEN>` with your actual token):
+2. Check configured servers:
    ```bash
-   GITLAB_TOKEN=<YOUR_TOKEN> ./bin/gitlab-mcp-server stdio
+   gitlab-mcp-server config list
    ```
 
-3. In your development environment, verify the MCP server is available by checking the MCP server list.
+3. Test the server (replace `<YOUR_TOKEN>` with your actual token):
+   ```bash
+   GITLAB_TOKEN=<YOUR_TOKEN> gitlab-mcp-server stdio
+   ```
+
+4. In your development environment, verify the MCP server is available by checking the MCP server list.
 
 ## Troubleshooting
 
@@ -143,9 +192,15 @@ To verify the installation:
 
 **Problem:** `gitlab-mcp-server: command not found`
 
-**Solution:**
-- Ensure the binary is in your PATH, or
-- Use the full path to the binary in your MCP configuration
+**Solutions:**
+- Ensure `~/go/bin` is in your PATH:
+  ```bash
+  export PATH="$HOME/go/bin:$PATH"
+  ```
+- Use the full path to the binary in your MCP configuration:
+  ```bash
+  /home/user/go/bin/gitlab-mcp-server stdio
+  ```
 
 ### Permission Denied
 
@@ -153,7 +208,11 @@ To verify the installation:
 
 **Solution:**
 ```bash
+# If built from source
 chmod +x bin/gitlab-mcp-server
+
+# If installed via go install
+chmod +x ~/go/bin/gitlab-mcp-server
 ```
 
 ### Token Validation Fails
@@ -179,8 +238,10 @@ chmod +x bin/gitlab-mcp-server
 
 After installation:
 
-1. Configure your editor: See [Editor Setup](EDITOR_SETUP.md)
-2. Set up your first project: See [Project Configuration](PROJECT_CONFIG.md)
-3. Explore available tools: See [Tools Reference](TOOLS.md)
-4. Configure multiple servers: See [Multi-Server Setup](MULTI_SERVER_SETUP.md)
+1. **Configure your editor**: See [Editor Setup](EDITOR_SETUP.md)
+2. **Configure servers**: See [Configuration Guide](CONFIGURATION.md)
+3. **Set up your project**: See [Project Configuration](PROJECT_CONFIG.md)
+4. **Explore CLI commands**: See [CLI Reference](CLI_REFERENCE.md)
+5. **Explore available tools**: See [Tools Reference](TOOLS.md)
+6. **Configure multiple servers**: See [Multi-Server Setup](MULTI_SERVER_SETUP.md)
 

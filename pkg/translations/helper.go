@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -37,7 +38,7 @@ func TranslationHelper(logger *log.Logger) (map[string]string, func()) {
 
 	// Return function to dump translations
 	dumpTranslations = func() {
-		dumpAllTranslations(logger, configPath)
+		dumpAllTranslations(logger, filepath.Dir(execPath))
 	}
 
 	return translations, dumpTranslations
@@ -55,7 +56,15 @@ func Translate(translations map[string]string, key string) string {
 var dumpTranslations func()
 
 // dumpAllTranslations generates template with all translation keys
-func dumpAllTranslations(logger *log.Logger, configPath string) {
+func dumpAllTranslations(logger *log.Logger, baseDir string) {
+	configPath := filepath.Join(baseDir, configFileName)
+
+	// Validate config path to prevent directory traversal
+	if err := config.ValidatePath(configPath); err != nil {
+		logger.Errorf("Invalid config path: %v", err)
+		return
+	}
+
 	// Collect all keys
 	allKeys := getAllTranslationKeys()
 
@@ -79,7 +88,7 @@ func dumpAllTranslations(logger *log.Logger, configPath string) {
 		return
 	}
 
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := config.SafeWriteFile(baseDir, configFileName, data, 0644); err != nil {
 		logger.Errorf("Failed to write translations: %v", err)
 	} else {
 		fmt.Fprintf(os.Stderr, "Exported %d translation keys to %s\n", len(existing), configPath)

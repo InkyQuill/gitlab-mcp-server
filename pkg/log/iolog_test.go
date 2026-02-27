@@ -228,9 +228,10 @@ func TestRedactSensitive(t *testing.T) {
 			expectUnchanged: true,
 		},
 		{
-			name:            "JSON array - not processed (only objects)",
-			input:           `[{"token":"secret"}]`,
-			expectUnchanged: true,
+			name:           "JSON array - now processed recursively",
+			input:          `[{"token":"secret"}]`,
+			expectRedacted: true,
+			redactedFields: []string{"token"},
 		},
 	}
 
@@ -241,23 +242,30 @@ func TestRedactSensitive(t *testing.T) {
 			if tc.expectUnchanged {
 				assert.Equal(t, tc.input, result)
 			} else if tc.expectRedacted {
-				// Parse result as JSON to check redaction
-				var parsed map[string]interface{}
-				err := json.Unmarshal([]byte(result), &parsed)
-				require.NoError(t, err, "Result should be valid JSON")
+				// For arrays, verify the redacted text is present
+				if strings.HasPrefix(strings.TrimSpace(tc.input), "[") {
+					// It's an array - just check that redaction occurred
+					assert.Contains(t, result, "***REDACTED***", "Array should have redacted values")
+					assert.NotContains(t, result, `"token":"secret"`, "Original secret should be redacted")
+				} else {
+					// Parse result as JSON to check redaction
+					var parsed map[string]interface{}
+					err := json.Unmarshal([]byte(result), &parsed)
+					require.NoError(t, err, "Result should be valid JSON")
 
-				// Check redacted fields at root level
-				for _, field := range tc.redactedFields {
-					if val, ok := parsed[field]; ok {
-						assert.Equal(t, "***REDACTED***", val, "Field %s should be redacted", field)
-					}
-				}
-
-				// Check params nested level
-				if params, ok := parsed["params"].(map[string]interface{}); ok {
+					// Check redacted fields at root level
 					for _, field := range tc.redactedFields {
-						if val, ok := params[field]; ok {
-							assert.Equal(t, "***REDACTED***", val, "Field %s in params should be redacted", field)
+						if val, ok := parsed[field]; ok {
+							assert.Equal(t, "***REDACTED***", val, "Field %s should be redacted", field)
+						}
+					}
+
+					// Check params nested level
+					if params, ok := parsed["params"].(map[string]interface{}); ok {
+						for _, field := range tc.redactedFields {
+							if val, ok := params[field]; ok {
+								assert.Equal(t, "***REDACTED***", val, "Field %s in params should be redacted", field)
+							}
 						}
 					}
 				}

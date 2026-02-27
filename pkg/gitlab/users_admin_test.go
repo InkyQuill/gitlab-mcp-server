@@ -2,7 +2,6 @@ package gitlab
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"testing"
 
@@ -11,17 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	gl "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/mock/gomock"
-)
-
-// Common error variables for testing
-var (
-	errUnauthorized      = errors.New("401 Unauthorized")
-	errForbidden         = errors.New("403 Forbidden")
-	errNotFound          = errors.New("404 Not Found")
-	errInternalServer    = errors.New("500 Internal Server Error")
-	errBadGateway        = errors.New("502 Bad Gateway")
-	errServiceUnavailable = errors.New("503 Service Unavailable")
-	errNetwork           = errors.New("network error")
 )
 
 // Admin tools tests with permission checking
@@ -42,7 +30,9 @@ func TestBlockUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "block"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -56,7 +46,9 @@ func TestBlockUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "block"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -80,7 +72,9 @@ func TestUnblockUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unblock"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -94,7 +88,9 @@ func TestUnblockUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unblock"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -118,7 +114,9 @@ func TestBanUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "ban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -132,7 +130,9 @@ func TestBanUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "ban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -156,7 +156,9 @@ func TestUnbanUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -170,7 +172,9 @@ func TestUnbanUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -194,7 +198,9 @@ func TestActivateUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "activate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -208,7 +214,9 @@ func TestActivateUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "activate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -232,7 +240,9 @@ func TestDeactivateUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "deactivate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -246,7 +256,9 @@ func TestDeactivateUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "deactivate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -270,7 +282,9 @@ func TestApproveUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "approve"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
@@ -284,7 +298,9 @@ func TestApproveUserHandler_AdminCheck(t *testing.T) {
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
 			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
 		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "approve"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)

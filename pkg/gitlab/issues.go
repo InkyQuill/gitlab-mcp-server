@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/translations"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -252,11 +249,11 @@ func ListIssues(getClient GetClientFn, t map[string]string) (tool mcp.Tool, hand
 			}
 
 			if labels != "" {
-				// Convert comma-separated string to a slice of strings
-				labelSlice := strings.Split(labels, ",")
-				// Convert to gl.LabelOptions
-				labelOpts := gl.LabelOptions(labelSlice)
-				opts.Labels = &labelOpts
+				labelOpts, err := ParseLabelString(labels)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+				}
+				opts.Labels = labelOpts
 			}
 
 			if milestone != "" {
@@ -656,50 +653,34 @@ func CreateIssue(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 				opts.Description = &description
 			}
 
+			// Apply labels using helper
 			if labels != "" {
-				labelSlice := strings.Split(labels, ",")
-				// Trim whitespace from each label
-				for i, label := range labelSlice {
-					labelSlice[i] = strings.TrimSpace(label)
+				if err := ApplyLabelsWithString(opts, labels); err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				labelOpts := gl.LabelOptions(labelSlice)
-				opts.Labels = &labelOpts
 			}
 
+			// Apply assignee IDs using helper
 			if assigneeIdsStr != "" {
-				assigneeIdsList := strings.Split(assigneeIdsStr, ",")
-				assigneeIds := make([]int, 0, len(assigneeIdsList))
-				for _, idStr := range assigneeIdsList {
-					idStr = strings.TrimSpace(idStr)
-					if idStr == "" {
-						continue
-					}
-					id, err := strconv.Atoi(idStr)
-					if err != nil {
-						return mcp.NewToolResultError(fmt.Sprintf("Validation Error: invalid assignee ID %q: %v", idStr, err)), nil
-					}
-					assigneeIds = append(assigneeIds, id)
-				}
-				if len(assigneeIds) > 0 {
-					opts.AssigneeIDs = &assigneeIds
+				if err := ApplyAssigneeIDsWithString(opts, assigneeIdsStr); err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
 			}
 
 			if milestoneIDFloat != 0 {
-				milestoneID := int(milestoneIDFloat)
-				if float64(milestoneID) != milestoneIDFloat {
-					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
+				milestoneID, err := ValidateAndConvertMilestoneID(milestoneIDFloat)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
 				opts.MilestoneID = &milestoneID
 			}
 
 			if dueDateStr != "" {
-				dueDate, err := time.Parse("2006-01-02", dueDateStr)
+				dueDate, err := ParseDueDate(dueDateStr)
 				if err != nil {
-					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: dueDate must be in YYYY-MM-DD format, got %q: %v", dueDateStr, err)), nil
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				isoTime := gl.ISOTime(dueDate)
-				opts.DueDate = &isoTime
+				opts.DueDate = dueDate
 			}
 
 			// --- Call GitLab API
@@ -834,50 +815,34 @@ func UpdateIssue(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 				opts.Description = gl.Ptr(description)
 			}
 
+			// Apply labels using helper
 			if labels != "" {
-				labelSlice := strings.Split(labels, ",")
-				// Trim whitespace from each label
-				for i, label := range labelSlice {
-					labelSlice[i] = strings.TrimSpace(label)
+				if err := ApplyLabelsWithString(opts, labels); err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				labelOpts := gl.LabelOptions(labelSlice)
-				opts.Labels = &labelOpts
 			}
 
+			// Apply assignee IDs using helper
 			if assigneeIdsStr != "" {
-				assigneeIdsList := strings.Split(assigneeIdsStr, ",")
-				assigneeIds := make([]int, 0, len(assigneeIdsList))
-				for _, idStr := range assigneeIdsList {
-					idStr = strings.TrimSpace(idStr)
-					if idStr == "" {
-						continue
-					}
-					id, err := strconv.Atoi(idStr)
-					if err != nil {
-						return mcp.NewToolResultError(fmt.Sprintf("Validation Error: invalid assignee ID %q: %v", idStr, err)), nil
-					}
-					assigneeIds = append(assigneeIds, id)
-				}
-				if len(assigneeIds) > 0 {
-					opts.AssigneeIDs = &assigneeIds
+				if err := ApplyAssigneeIDsWithString(opts, assigneeIdsStr); err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
 			}
 
 			if milestoneIDFloat != 0 {
-				milestoneID := int(milestoneIDFloat)
-				if float64(milestoneID) != milestoneIDFloat {
-					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
+				milestoneID, err := ValidateAndConvertMilestoneID(milestoneIDFloat)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
 				opts.MilestoneID = gl.Ptr(milestoneID)
 			}
 
 			if dueDateStr != "" {
-				dueDate, err := time.Parse("2006-01-02", dueDateStr)
+				dueDate, err := ParseDueDate(dueDateStr)
 				if err != nil {
-					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: dueDate must be in YYYY-MM-DD format, got %q: %v", dueDateStr, err)), nil
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				isoTime := gl.ISOTime(dueDate)
-				opts.DueDate = gl.Ptr(isoTime)
+				opts.DueDate = dueDate
 			}
 
 			if stateEvent != "" {

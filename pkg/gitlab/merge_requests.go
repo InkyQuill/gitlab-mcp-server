@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/translations"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -348,10 +347,11 @@ func ListMergeRequests(getClient GetClientFn, t map[string]string) (tool mcp.Too
 			}
 
 			if labels, err := OptionalParam[string](&request, "labels"); err == nil && labels != "" {
-				// Convert to LabelOptions ([]string)
-				labelsList := strings.Split(labels, ",")
-				labelOpts := gl.LabelOptions(labelsList)
-				opts.Labels = &labelOpts
+				labelOpts, err := ParseLabelString(labels)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+				}
+				opts.Labels = labelOpts
 			}
 
 			if milestone, err := OptionalParam[string](&request, "milestone"); err == nil && milestone != "" {
@@ -560,39 +560,24 @@ func CreateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.To
 				opts.Description = gl.Ptr(description)
 			}
 
+			// Apply labels using helper
 			if labels != "" {
-				labelSlice := strings.Split(labels, ",")
-				// Trim whitespace from each label
-				for i, label := range labelSlice {
-					labelSlice[i] = strings.TrimSpace(label)
+				if err := ApplyLabelsWithString(opts, labels); err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				labelOpts := gl.LabelOptions(labelSlice)
-				opts.Labels = &labelOpts
 			}
 
+			// Apply assignee IDs using helper
 			if assigneeIdsStr != "" {
-				assigneeIdsList := strings.Split(assigneeIdsStr, ",")
-				assigneeIds := make([]int, 0, len(assigneeIdsList))
-				for _, idStr := range assigneeIdsList {
-					idStr = strings.TrimSpace(idStr)
-					if idStr == "" {
-						continue
-					}
-					id, err := strconv.Atoi(idStr)
-					if err != nil {
-						return mcp.NewToolResultError(fmt.Sprintf("Validation Error: invalid assignee ID %q: %v", idStr, err)), nil
-					}
-					assigneeIds = append(assigneeIds, id)
-				}
-				if len(assigneeIds) > 0 {
-					opts.AssigneeIDs = &assigneeIds
+				if err := ApplyAssigneeIDsWithString(opts, assigneeIdsStr); err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
 			}
 
 			if milestoneIDFloat != 0 {
-				milestoneID := int(milestoneIDFloat)
-				if float64(milestoneID) != milestoneIDFloat {
-					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
+				milestoneID, err := ValidateAndConvertMilestoneID(milestoneIDFloat)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
 				opts.MilestoneID = gl.Ptr(milestoneID)
 			}
@@ -757,39 +742,24 @@ func UpdateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.To
 				opts.TargetBranch = gl.Ptr(targetBranch)
 			}
 
+			// Apply labels using helper
 			if labels != "" {
-				labelSlice := strings.Split(labels, ",")
-				// Trim whitespace from each label
-				for i, label := range labelSlice {
-					labelSlice[i] = strings.TrimSpace(label)
+				if err := ApplyLabelsWithString(opts, labels); err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				labelOpts := gl.LabelOptions(labelSlice)
-				opts.Labels = &labelOpts
 			}
 
+			// Apply assignee IDs using helper
 			if assigneeIdsStr != "" {
-				assigneeIdsList := strings.Split(assigneeIdsStr, ",")
-				assigneeIds := make([]int, 0, len(assigneeIdsList))
-				for _, idStr := range assigneeIdsList {
-					idStr = strings.TrimSpace(idStr)
-					if idStr == "" {
-						continue
-					}
-					id, err := strconv.Atoi(idStr)
-					if err != nil {
-						return mcp.NewToolResultError(fmt.Sprintf("Validation Error: invalid assignee ID %q: %v", idStr, err)), nil
-					}
-					assigneeIds = append(assigneeIds, id)
-				}
-				if len(assigneeIds) > 0 {
-					opts.AssigneeIDs = &assigneeIds
+				if err := ApplyAssigneeIDsWithString(opts, assigneeIdsStr); err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
 			}
 
 			if milestoneIDFloat != 0 {
-				milestoneID := int(milestoneIDFloat)
-				if float64(milestoneID) != milestoneIDFloat {
-					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
+				milestoneID, err := ValidateAndConvertMilestoneID(milestoneIDFloat)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
 				opts.MilestoneID = gl.Ptr(milestoneID)
 			}

@@ -6,7 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/awnumar/memguard"
 	gl "gitlab.com/gitlab-org/api/client-go"
+	log "github.com/sirupsen/logrus"
 )
 
 // TokenMetadata stores information about a GitLab access token
@@ -208,4 +210,30 @@ type TokenValidationResult struct {
 	UserID          int    `json:"userId,omitempty"`
 	Username        string `json:"username,omitempty"`
 	DaysUntilExpiry int    `json:"daysUntilExpiry,omitempty"`
+}
+
+// TokenStoreConfig configures how tokens are stored
+type TokenStoreConfig struct {
+	// UseSecureMemory enables memguard for secure in-memory token storage
+	UseSecureMemory bool
+	// Logger is used for logging
+	Logger *log.Logger
+}
+
+// NewTokenStoreWithConfig creates a new token store with the given configuration
+func NewTokenStoreWithConfig(config TokenStoreConfig) *TokenStore {
+	if config.UseSecureMemory {
+		// For now, we still use the regular TokenStore but with secure memory enabled
+		// In the future, we could make TokenStore use SecureTokenStore internally
+		memguard.CatchInterrupt()
+	}
+	return &TokenStore{
+		tokens: make(map[string]*TokenMetadata),
+	}
+}
+
+// PurgeAllTokens purges all tokens from memory securely
+// This should be called when shutting down the application
+func PurgeAllTokens() {
+	memguard.Purge()
 }

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 )
 
 // ConfigFileName is the name of the local configuration file
@@ -70,17 +72,22 @@ func readProjectConfig(path string) (*ProjectConfig, error) {
 }
 
 // WriteProjectConfig writes a .gmcprc file to the specified directory
-func WriteProjectConfig(dir string, config *ProjectConfig) (string, error) {
-	config.LastUpdated = time.Now()
+func WriteProjectConfig(dir string, cfg *ProjectConfig) (string, error) {
+	// Validate the directory path to prevent directory traversal
+	if err := config.ValidatePath(dir); err != nil {
+		return "", fmt.Errorf("invalid directory path: %w", err)
+	}
 
-	data, err := json.MarshalIndent(config, "", "  ")
+	cfg.LastUpdated = time.Now()
+
+	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
 	configPath := filepath.Join(dir, ConfigFileName)
 
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := os.WriteFile(configPath, data, 0600); err != nil {
 		return "", fmt.Errorf("failed to write file: %w", err)
 	}
 

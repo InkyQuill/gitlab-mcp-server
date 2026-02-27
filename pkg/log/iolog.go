@@ -1,7 +1,6 @@
 package log
 
 import (
-	"encoding/json"
 	"io"
 	"strings"
 
@@ -43,39 +42,8 @@ func (iol *IOLogger) Write(p []byte) (n int, err error) {
 
 // redactSensitive removes sensitive fields from JSON-RPC messages
 func redactSensitive(msg string) string {
-	// Parse as JSON
-	var raw map[string]interface{}
-	if err := json.Unmarshal([]byte(msg), &raw); err != nil {
-		return msg // Not JSON, return as-is
-	}
-
-	// Redact common sensitive fields
-	sensitiveKeys := []string{"token", "password", "secret", "apiKey", "accessToken"}
-	for _, key := range sensitiveKeys {
-		if _, ok := raw[key]; ok {
-			raw[key] = "***REDACTED***"
-		}
-	}
-
-	// Handle nested "params" object
-	if params, ok := raw["params"].(map[string]interface{}); ok {
-		for _, key := range sensitiveKeys {
-			if _, ok := params[key]; ok {
-				params[key] = "***REDACTED***"
-			}
-		}
-	}
-
-	// Marshal back to JSON with compact formatting
-	redacted, _ := json.Marshal(raw)
-	result := string(redacted)
-
-	// Truncate if too long (limit to 2000 chars for readability)
-	if len(result) > 2000 {
-		result = result[:2000] + "... (truncated)"
-	}
-
-	return result
+	r := NewRedactor()
+	return r.RedactJSON(msg)
 }
 
 // isLikelyJSON checks if a string appears to be JSON
