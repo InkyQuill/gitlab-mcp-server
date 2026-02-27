@@ -308,20 +308,28 @@ func ListIssues(getClient GetClientFn, t map[string]string) (tool mcp.Tool, hand
 				return nil, apiErr
 			}
 
-			// --- Handle empty result gracefully
-			if len(issues) == 0 {
-				return mcp.NewToolResultText("[]"), nil // Return empty JSON array
+			// --- Optimize response (truncate + filter fields + add pagination)
+			optimizer := NewResponseOptimizer("issue")
+			optimized, err := optimizer.OptimizeListResponse(issues, resp)
+			if err != nil {
+				return nil, fmt.Errorf("failed to optimize issues response: %w", err)
 			}
 
-			// --- Truncate long text fields for list operations
-			truncator := NewTextTruncator(MaxFieldLength)
-			truncatedIssues, err := truncator.TruncateListResponse(issues, IssueFields)
-			if err != nil {
-				return nil, fmt.Errorf("failed to truncate issues: %w", err)
+			// --- Handle empty result gracefully
+			if len(issues) == 0 {
+				emptyResponse := &PaginatedResponse{
+					Items:      []interface{}{},
+					Pagination: ExtractPagination(resp),
+				}
+				data, err := json.Marshal(emptyResponse)
+				if err != nil {
+					return nil, fmt.Errorf("failed to marshal empty issues response: %w", err)
+				}
+				return mcp.NewToolResultText(string(data)), nil
 			}
 
 			// --- Format successful response
-			data, err := json.Marshal(truncatedIssues)
+			data, err := json.Marshal(optimized)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal issues list: %w", err)
 			}

@@ -299,9 +299,11 @@ func TestListUsersHandler(t *testing.T) {
 				assert.Contains(t, getTextResult(t, result).Text, tc.errorContains)
 			} else {
 				require.NoError(t, err)
-				var users []*gl.User
-				json.Unmarshal([]byte(getTextResult(t, result).Text), &users)
-				assert.NotEmpty(t, users)
+				var resp PaginatedResponse
+				json.Unmarshal([]byte(getTextResult(t, result).Text), &resp)
+				itemsSlice, ok := resp.Items.([]interface{})
+				require.True(t, ok, "Items should be []interface{}")
+				assert.NotEmpty(t, itemsSlice)
 			}
 		})
 	}
@@ -374,9 +376,11 @@ func TestListProjectUsersHandler(t *testing.T) {
 				assert.Contains(t, getTextResult(t, result).Text, tc.errorContains)
 			} else {
 				require.NoError(t, err)
-				var members []*gl.ProjectMember
-				json.Unmarshal([]byte(getTextResult(t, result).Text), &members)
-				assert.NotEmpty(t, members)
+				var resp PaginatedResponse
+				json.Unmarshal([]byte(getTextResult(t, result).Text), &resp)
+				itemsSlice, ok := resp.Items.([]interface{})
+				require.True(t, ok, "Items should be []interface{}")
+				assert.NotEmpty(t, itemsSlice)
 			}
 		})
 	}

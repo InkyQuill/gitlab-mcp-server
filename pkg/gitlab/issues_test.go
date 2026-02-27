@@ -278,7 +278,13 @@ func TestListIssuesHandler(t *testing.T) {
 
 				mockIssues.EXPECT().
 					ListProjectIssues("group/project", listOpts, gomock.Any()).
-					Return(expectedIssues, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+					Return(expectedIssues, &gl.Response{
+						Response:    &http.Response{StatusCode: 200},
+						TotalItems:  2,
+						TotalPages:  1,
+						CurrentPage: 1,
+						ItemsPerPage: 20,
+					}, nil)
 			},
 			expectedResult: []*gl.Issue{
 				{
@@ -723,16 +729,52 @@ func TestListIssuesHandler(t *testing.T) {
 					require.True(t, ok, "Expected user error result to be a string")
 					assert.Contains(t, textContent.Text, expectedErrString, "User error message mismatch")
 				} else {
-					if expectedStr, ok := tc.expectedResult.(string); ok {
+					_, isString := tc.expectedResult.(string)
+					if isString {
 						// Special case for empty array
-						assert.Equal(t, expectedStr, textContent.Text, "Result JSON mismatch")
+						// Empty response should be a PaginatedResponse with empty items
+						var emptyResp PaginatedResponse
+						err := json.Unmarshal([]byte(textContent.Text), &emptyResp)
+						require.NoError(t, err, "Failed to unmarshal empty response")
+						assert.Empty(t, emptyResp.Items, "Empty response should have empty items")
 					} else {
-						// Successful result - compare JSON content
+						// Successful result - compare key fields only
+						// The new format is PaginatedResponse with items (filtered) and optional pagination
 						expectedIssues, ok := tc.expectedResult.([]*gl.Issue)
 						require.True(t, ok, "Expected success result should be []*gl.Issue")
-						expectedJSON, err := json.Marshal(expectedIssues)
-						require.NoError(t, err, "Failed to marshal expected success result")
-						assert.JSONEq(t, string(expectedJSON), textContent.Text, "Result JSON mismatch")
+
+						// Unmarshal actual response as PaginatedResponse
+						var actualResp PaginatedResponse
+						err := json.Unmarshal([]byte(textContent.Text), &actualResp)
+						require.NoError(t, err, "Failed to unmarshal actual response as PaginatedResponse")
+
+						// Convert items to []interface{} first, then to []map for field checking
+						actualItemsSlice, ok := actualResp.Items.([]interface{})
+						require.True(t, ok, "Items should be []interface{}")
+
+						// Check that we have the expected number of issues
+						assert.Equal(t, len(expectedIssues), len(actualItemsSlice), "Number of issues should match")
+
+						// Verify key fields are present in each issue
+						for i, expectedIssue := range expectedIssues {
+							if i < len(actualItemsSlice) {
+								actualIssue, ok := actualItemsSlice[i].(map[string]interface{})
+								require.True(t, ok, "Item should be map[string]interface{}")
+
+								assert.Equal(t, expectedIssue.ID, int(actualIssue["id"].(float64)), "ID should match")
+								assert.Equal(t, expectedIssue.IID, int(actualIssue["iid"].(float64)), "IID should match")
+								assert.Equal(t, expectedIssue.Title, actualIssue["title"], "Title should match")
+
+								// Verify that unwanted fields are removed
+								assert.NotContains(t, actualIssue, "_links", "Should not contain _links")
+								assert.NotContains(t, actualIssue, "web_url", "Should not contain web_url")
+								assert.NotContains(t, actualIssue, "epic_issue_id", "Should not contain epic_issue_id")
+								assert.NotContains(t, actualIssue, "issue_link_id", "Should not contain issue_link_id")
+								assert.NotContains(t, actualIssue, "label_details", "Should not contain label_details")
+								assert.NotContains(t, actualIssue, "service_desk_reply_to", "Should not contain service_desk_reply_to")
+								assert.NotContains(t, actualIssue, "user_notes_count", "Should not contain user_notes_count")
+							}
+						}
 					}
 				}
 			}
