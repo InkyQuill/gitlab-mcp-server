@@ -14,6 +14,10 @@
       "projectId": {
         "description": "The GitLab project ID (e.g., 'owner/repo' or numeric ID).",
         "type": "string"
+      },
+      "server": {
+        "description": "Server name (e.g., 'work', 'personal'). If not specified, will be auto-detected from Git remote.",
+        "type": "string"
       }
     },
     "required": [

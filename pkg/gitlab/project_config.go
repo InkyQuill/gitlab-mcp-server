@@ -20,6 +20,7 @@ type ProjectConfig struct {
 	ProjectID   string    `json:"projectId"`
 	GitLabHost  string    `json:"gitlabHost,omitempty"`
 	TokenName   string    `json:"tokenName,omitempty"` // Reference to token in MCP config
+	Server      string    `json:"server,omitempty"`    // Server name (e.g., "work", "personal")
 	LastUpdated time.Time `json:"lastUpdated"`
 }
 

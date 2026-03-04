@@ -11,9 +11,9 @@ import (
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/toolsets"
 	log "github.com/sirupsen/logrus"
-	gl "gitlab.com/gitlab-org/api/client-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
 // TestRaceCondition_ClientPool_ConcurrentAccess tests for race conditions
@@ -42,10 +42,10 @@ func TestRaceCondition_ClientPool_ConcurrentAccess(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < iterations; j++ {
 				name := "client-" + string(rune('A'+index%26)) + "-" + string(rune('0'+index%10))
-				cp.AddClient(name, clients[index%len(clients)])
-				cp.GetClient(name)
+				_ = cp.AddClient(name, clients[index%len(clients)])
+				_, _ = cp.GetClient(name)
 				cp.ListClients()
-				cp.GetDefaultClient()
+				_, _, _ = cp.GetDefaultClient()
 			}
 		}(i)
 	}

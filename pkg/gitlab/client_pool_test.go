@@ -239,8 +239,8 @@ func TestClientPool_ListClients(t *testing.T) {
 		cp2 := NewClientPool(store, logger)
 		mockClient := &gl.Client{}
 
-		cp2.AddClient("server1", mockClient)
-		cp2.AddClient("server2", mockClient)
+		_ = cp2.AddClient("server1", mockClient)
+		_ = cp2.AddClient("server2", mockClient)
 
 		err := cp2.RemoveClient("server1")
 		require.NoError(t, err)
@@ -321,8 +321,8 @@ func TestClientPool_ConcurrentAccess(t *testing.T) {
 		go func(index int) {
 			defer wg.Done()
 			name := "server-" + string(rune('A'+index%26)) + "-" + string(rune('0'+index%10))
-			cp.AddClient(name, mockClient)
-			cp.GetClient(name)
+			_ = cp.AddClient(name, mockClient)
+			_, _ = cp.GetClient(name)
 			cp.ListClients()
 		}(i)
 	}
@@ -339,7 +339,7 @@ func TestClientPool_ConcurrentAccess(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			cp.ListClients()
-			cp.GetDefaultClient()
+			_, _, _ = cp.GetDefaultClient()
 		}()
 	}
 

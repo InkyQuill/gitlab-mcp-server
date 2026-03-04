@@ -43,7 +43,7 @@ func TestClientResolver_Resolve_NoConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -84,7 +84,7 @@ func TestClientResolver_Resolve_WithTokenName(t *testing.T) {
 
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -121,7 +121,7 @@ func TestClientResolver_Resolve_InvalidTokenNameFallback(t *testing.T) {
 
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -161,7 +161,7 @@ func TestClientResolver_Resolve_HostMatching(t *testing.T) {
 
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -198,7 +198,7 @@ func TestClientResolver_Resolve_HostMatchingFallback(t *testing.T) {
 
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -239,7 +239,7 @@ func TestClientResolver_Resolve_GitLabComHost(t *testing.T) {
 
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -278,7 +278,7 @@ func TestClientResolver_Resolve_DefaultServer(t *testing.T) {
 
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -314,7 +314,7 @@ func TestClientResolver_Resolve_DefaultServerNotFound(t *testing.T) {
 
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -346,7 +346,7 @@ func TestClientResolver_Resolve_NoClients(t *testing.T) {
 
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -377,7 +377,7 @@ func TestClientResolver_GetClientFn(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -403,7 +403,7 @@ func TestClientResolver_GetClientFn_Error(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -432,7 +432,7 @@ func TestClientResolver_ResolveForProject(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -459,7 +459,7 @@ func TestClientResolver_ResolveForProject_Error(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -507,7 +507,7 @@ func TestClientResolver_PriorityOrder(t *testing.T) {
 
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
@@ -546,7 +546,7 @@ func TestClientResolver_MultiLevelFallback(t *testing.T) {
 
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
