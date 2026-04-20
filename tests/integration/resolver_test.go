@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/gitlab"
-	gl "gitlab.com/gitlab-org/api/client-go"
 	log "github.com/sirupsen/logrus"
+	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
 func TestClientResolverFlow(t *testing.T) {
@@ -23,7 +23,7 @@ func TestClientResolverFlow(t *testing.T) {
 		pc := &gitlab.ProjectConfig{
 			ProjectID:  "owner/repo",
 			GitLabHost: "https://gitlab.com",
-			TokenName:   "server1",
+			TokenName:  "server1",
 		}
 		_, err := gitlab.WriteProjectConfig(tmpDir, pc)
 		if err != nil {
@@ -69,7 +69,7 @@ func TestClientResolverFlow(t *testing.T) {
 		pc := &gitlab.ProjectConfig{
 			ProjectID:  "owner/repo",
 			GitLabHost: "https://gitlab.com",
-			TokenName:   "nonexistent",
+			TokenName:  "nonexistent",
 		}
 		gitlab.WriteProjectConfig(tmpDir, pc)
 
@@ -187,7 +187,7 @@ func TestClientResolverFlow(t *testing.T) {
 		pc := &gitlab.ProjectConfig{
 			ProjectID:  "owner/repo",
 			GitLabHost: "https://gitlab.example.com",
-			TokenName:   "preferred",
+			TokenName:  "preferred",
 		}
 		gitlab.WriteProjectConfig(tmpDir, pc)
 
@@ -228,7 +228,7 @@ func TestClientResolverFlow(t *testing.T) {
 		// Create .gmcprc
 		pc := &gitlab.ProjectConfig{
 			ProjectID: "mygroup/myproject",
-			TokenName:  "work",
+			TokenName: "work",
 		}
 		gitlab.WriteProjectConfig(tmpDir, pc)
 
@@ -267,7 +267,7 @@ func TestClientResolverFlow(t *testing.T) {
 		// Create .gmcprc
 		pc := &gitlab.ProjectConfig{
 			ProjectID: "owner/repo",
-			TokenName:  "test",
+			TokenName: "test",
 		}
 		gitlab.WriteProjectConfig(tmpDir, pc)
 
@@ -310,14 +310,14 @@ func TestClientResolverFlow(t *testing.T) {
 		// Create .gmcprc in parent
 		parentPC := &gitlab.ProjectConfig{
 			ProjectID: "parent/repo",
-			TokenName:  "parent-token",
+			TokenName: "parent-token",
 		}
 		gitlab.WriteProjectConfig(tmpDir, parentPC)
 
 		// Create .gmcprc in subdirectory
 		subPC := &gitlab.ProjectConfig{
 			ProjectID: "child/repo",
-			TokenName:  "child-token",
+			TokenName: "child-token",
 		}
 		gitlab.WriteProjectConfig(subDir, subPC)
 

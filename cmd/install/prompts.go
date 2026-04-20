@@ -304,9 +304,9 @@ func PrintWarning(message string) {
 
 // InteractiveInstallOptions holds options for interactive installation.
 type InteractiveInstallOptions struct {
-	Editor      string
-	BinaryPath  string
-	ConfigPath  string
+	Editor       string
+	BinaryPath   string
+	ConfigPath   string
 	CreateConfig bool
 	SetupProject bool
 }

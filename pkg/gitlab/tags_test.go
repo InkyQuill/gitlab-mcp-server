@@ -39,8 +39,8 @@ func TestListRepositoryTagsHandler(t *testing.T) {
 
 	createTag := func(name string, message string) *gl.Tag {
 		return &gl.Tag{
-			Name: name,
-			Target: fmt.Sprintf("commit-sha-for-%s", name),
+			Name:    name,
+			Target:  fmt.Sprintf("commit-sha-for-%s", name),
 			Message: message,
 			Commit: &gl.Commit{
 				ID: fmt.Sprintf("commit-sha-for-%s", name),
@@ -154,11 +154,11 @@ func TestListRepositoryTagsHandler(t *testing.T) {
 			errorContains:      "failed to list tags",
 		},
 		{
-			name:               "Error - Missing projectId",
-			inputArgs:          map[string]any{"search": searchQuery},
-			mockSetup:          func() {},
-			expectResultError:  true,
-			errorContains:      "Validation Error: missing required parameter: projectId",
+			name:              "Error - Missing projectId",
+			inputArgs:         map[string]any{"search": searchQuery},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "Validation Error: missing required parameter: projectId",
 		},
 		{
 			name: "Error - Unauthorized (401)",
@@ -171,7 +171,7 @@ func TestListRepositoryTagsHandler(t *testing.T) {
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("401 Unauthorized"))
 			},
 			expectResultError: true,
-			errorContains:      "Authentication failed (401)",
+			errorContains:     "Authentication failed (401)",
 		},
 		{
 			name: "Error - Forbidden (403)",
@@ -308,18 +308,18 @@ func TestTagHandler_Get(t *testing.T) {
 			errorContains:     "not found or access denied (404)",
 		},
 		{
-			name:               "Error - Missing tagName",
-			inputArgs:          map[string]any{"action": "get", "projectId": projectID},
-			mockSetup:          func() {},
-			expectResultError:  true,
-			errorContains:      "Validation Error: missing required parameter: tagName",
+			name:              "Error - Missing tagName",
+			inputArgs:         map[string]any{"action": "get", "projectId": projectID},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "Validation Error: missing required parameter: tagName",
 		},
 		{
-			name:               "Error - Missing projectId",
-			inputArgs:          map[string]any{"action": "get", "tagName": tagName},
-			mockSetup:          func() {},
-			expectResultError:  true,
-			errorContains:      "Validation Error: missing required parameter: projectId",
+			name:              "Error - Missing projectId",
+			inputArgs:         map[string]any{"action": "get", "tagName": tagName},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "Validation Error: missing required parameter: projectId",
 		},
 		{
 			name: "Error - Unauthorized (401)",
@@ -463,18 +463,18 @@ func TestTagHandler_Create(t *testing.T) {
 			errorContains:     "failed to create",
 		},
 		{
-			name:               "Error - Missing tagName",
-			inputArgs:          map[string]any{"action": "create", "projectId": projectID, "ref": ref},
-			mockSetup:          func() {},
-			expectResultError:  true,
-			errorContains:      "Validation Error: missing required parameter: tagName",
+			name:              "Error - Missing tagName",
+			inputArgs:         map[string]any{"action": "create", "projectId": projectID, "ref": ref},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "Validation Error: missing required parameter: tagName",
 		},
 		{
-			name:               "Error - Missing ref",
-			inputArgs:          map[string]any{"action": "create", "projectId": projectID, "tagName": tagName},
-			mockSetup:          func() {},
-			expectResultError:  true,
-			errorContains:      "Validation Error: missing required parameter: ref",
+			name:              "Error - Missing ref",
+			inputArgs:         map[string]any{"action": "create", "projectId": projectID, "tagName": tagName},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "Validation Error: missing required parameter: ref",
 		},
 		{
 			name: "Error - Invalid Ref (404)",
@@ -608,11 +608,11 @@ func TestTagHandler_Delete(t *testing.T) {
 			errorContains:     "not found or access denied (404)",
 		},
 		{
-			name:               "Error - Missing tagName",
-			inputArgs:          map[string]any{"action": "delete", "projectId": projectID},
-			mockSetup:          func() {},
-			expectResultError:  true,
-			errorContains:      "Validation Error: missing required parameter: tagName",
+			name:              "Error - Missing tagName",
+			inputArgs:         map[string]any{"action": "delete", "projectId": projectID},
+			mockSetup:         func() {},
+			expectResultError: true,
+			errorContains:     "Validation Error: missing required parameter: tagName",
 		},
 		{
 			name: "Error - Forbidden (403)",
@@ -627,7 +627,7 @@ func TestTagHandler_Delete(t *testing.T) {
 					Return(&gl.Response{Response: &http.Response{StatusCode: 403}}, errors.New("403 Forbidden"))
 			},
 			expectHandlerError: true,
-			errorContains:     "failed to process tag",
+			errorContains:      "failed to process tag",
 		},
 		{
 			name: "Error - Unauthorized (401)",

@@ -2,8 +2,8 @@
 package config
 
 import (
-	"github.com/charmbracelet/bubbletea"
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
+	"github.com/charmbracelet/bubbletea"
 )
 
 // RunTUI launches the interactive TUI for managing GitLab MCP configuration.

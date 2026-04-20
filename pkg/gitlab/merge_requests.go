@@ -80,158 +80,157 @@ func GetMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.Tool,
 // This consolidates getMergeRequestComments, createMergeRequestComment, and updateMergeRequestComment.
 func MergeRequestComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
-		"mergeRequestComment",
-		mcp.WithDescription(translations.Translate(t, translations.TOOL_MERGE_REQUEST_COMMENT_DESCRIPTION)),
-		mcp.WithString("action",
-			mcp.Description("The action to perform on the merge request comment"),
-			mcp.Required(),
-			mcp.Enum("list", "create", "update"),
-		),
-		mcp.WithString("projectId",
-			mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
-			mcp.Required(),
-		),
-		mcp.WithNumber("mergeRequestIid",
-			mcp.Description("The IID (internal ID, integer) of the merge request within the project."),
-			mcp.Required(),
-		),
-		mcp.WithNumber("noteId",
-			mcp.Description("The ID of the note (comment) to update (required for update action)."),
-		),
-		mcp.WithString("body",
-			mcp.Description("The content of the comment (required for create/update actions)."),
-		),
-		WithPagination(),
-		mcp.WithToolAnnotation(mcp.ToolAnnotation{
-			Title:        "Manage Merge Request Comments",
-			ReadOnlyHint: true,
-		}),
-	), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		// Parse required parameters
-		projectID, err := requiredParam[string](&request, "projectId")
-		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-		}
-
-		mrIidFloat, err := requiredParam[float64](&request, "mergeRequestIid")
-		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-		}
-		mrIid := int(mrIidFloat)
-		if float64(mrIid) != mrIidFloat {
-			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: mergeRequestIid %v is not a valid integer", mrIidFloat)), nil
-		}
-
-		action, err := requiredParam[string](&request, "action")
-		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-		}
-
-		// Obtain GitLab client
-		glClient, err := getClient(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
-		}
-
-		// Execute action based on action parameter
-		switch action {
-		case "list":
-			page, perPage, err := OptionalPaginationParams(&request)
+			"mergeRequestComment",
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_MERGE_REQUEST_COMMENT_DESCRIPTION)),
+			mcp.WithString("action",
+				mcp.Description("The action to perform on the merge request comment"),
+				mcp.Required(),
+				mcp.Enum("list", "create", "update"),
+			),
+			mcp.WithString("projectId",
+				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
+				mcp.Required(),
+			),
+			mcp.WithNumber("mergeRequestIid",
+				mcp.Description("The IID (internal ID, integer) of the merge request within the project."),
+				mcp.Required(),
+			),
+			mcp.WithNumber("noteId",
+				mcp.Description("The ID of the note (comment) to update (required for update action)."),
+			),
+			mcp.WithString("body",
+				mcp.Description("The content of the comment (required for create/update actions)."),
+			),
+			WithPagination(),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title:        "Manage Merge Request Comments",
+				ReadOnlyHint: true,
+			}),
+		), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			// Parse required parameters
+			projectID, err := requiredParam[string](&request, "projectId")
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
 
-			opts := &gl.ListMergeRequestNotesOptions{
-				ListOptions: gl.ListOptions{
-					Page:    page,
-					PerPage: perPage,
-				},
+			mrIidFloat, err := requiredParam[float64](&request, "mergeRequestIid")
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+			mrIid := int(mrIidFloat)
+			if float64(mrIid) != mrIidFloat {
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: mergeRequestIid %v is not a valid integer", mrIidFloat)), nil
 			}
 
-			notes, resp, err := glClient.Notes.ListMergeRequestNotes(projectID, mrIid, opts, gl.WithContext(ctx))
+			action, err := requiredParam[string](&request, "action")
 			if err != nil {
-				result, apiErr := HandleAPIError(err, resp, fmt.Sprintf("comments for merge request %d in project %q", mrIid, projectID))
-				if result != nil {
-					return result, nil
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+			}
+
+			// Obtain GitLab client
+			glClient, err := getClient(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize GitLab client: %w", err)
+			}
+
+			// Execute action based on action parameter
+			switch action {
+			case "list":
+				page, perPage, err := OptionalPaginationParams(&request)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				return nil, apiErr
-			}
 
-			if len(notes) == 0 {
-				return mcp.NewToolResultText("[]"), nil
-			}
-
-			data, err := json.Marshal(notes)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal merge request comments data: %w", err)
-			}
-			return mcp.NewToolResultText(string(data)), nil
-
-		case "create":
-			body, err := requiredParam[string](&request, "body")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
-
-			opts := &gl.CreateMergeRequestNoteOptions{
-				Body: &body,
-			}
-
-			note, resp, err := glClient.Notes.CreateMergeRequestNote(projectID, mrIid, opts, gl.WithContext(ctx))
-			if err != nil {
-				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("merge request %d in project %q", mrIid, projectID), "create comment")
-				if result != nil {
-					return result, nil
+				opts := &gl.ListMergeRequestNotesOptions{
+					ListOptions: gl.ListOptions{
+						Page:    page,
+						PerPage: perPage,
+					},
 				}
-				return nil, apiErr
-			}
 
-			data, err := json.Marshal(note)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal comment data: %w", err)
-			}
-			return mcp.NewToolResultText(string(data)), nil
-
-		case "update":
-			noteIDFloat, err := requiredParam[float64](&request, "noteId")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
-			noteID := int(noteIDFloat)
-			if float64(noteID) != noteIDFloat {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: noteId %v is not a valid integer", noteIDFloat)), nil
-			}
-
-			body, err := requiredParam[string](&request, "body")
-			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
-			}
-
-			opts := &gl.UpdateMergeRequestNoteOptions{
-				Body: &body,
-			}
-
-			note, resp, err := glClient.Notes.UpdateMergeRequestNote(projectID, mrIid, noteID, opts, gl.WithContext(ctx))
-			if err != nil {
-				result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("merge request %d or note %d in project %q", mrIid, noteID, projectID), "update comment")
-				if result != nil {
-					return result, nil
+				notes, resp, err := glClient.Notes.ListMergeRequestNotes(projectID, mrIid, opts, gl.WithContext(ctx))
+				if err != nil {
+					result, apiErr := HandleAPIError(err, resp, fmt.Sprintf("comments for merge request %d in project %q", mrIid, projectID))
+					if result != nil {
+						return result, nil
+					}
+					return nil, apiErr
 				}
-				return nil, apiErr
-			}
 
-			data, err := json.Marshal(note)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal comment data: %w", err)
-			}
-			return mcp.NewToolResultText(string(data)), nil
+				if len(notes) == 0 {
+					return mcp.NewToolResultText("[]"), nil
+				}
 
-		default:
-			return mcp.NewToolResultError(fmt.Sprintf("Validation Error: unsupported action '%s'", action)), nil
+				data, err := json.Marshal(notes)
+				if err != nil {
+					return nil, fmt.Errorf("failed to marshal merge request comments data: %w", err)
+				}
+				return mcp.NewToolResultText(string(data)), nil
+
+			case "create":
+				body, err := requiredParam[string](&request, "body")
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+				}
+
+				opts := &gl.CreateMergeRequestNoteOptions{
+					Body: &body,
+				}
+
+				note, resp, err := glClient.Notes.CreateMergeRequestNote(projectID, mrIid, opts, gl.WithContext(ctx))
+				if err != nil {
+					result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("merge request %d in project %q", mrIid, projectID), "create comment")
+					if result != nil {
+						return result, nil
+					}
+					return nil, apiErr
+				}
+
+				data, err := json.Marshal(note)
+				if err != nil {
+					return nil, fmt.Errorf("failed to marshal comment data: %w", err)
+				}
+				return mcp.NewToolResultText(string(data)), nil
+
+			case "update":
+				noteIDFloat, err := requiredParam[float64](&request, "noteId")
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+				}
+				noteID := int(noteIDFloat)
+				if float64(noteID) != noteIDFloat {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: noteId %v is not a valid integer", noteIDFloat)), nil
+				}
+
+				body, err := requiredParam[string](&request, "body")
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
+				}
+
+				opts := &gl.UpdateMergeRequestNoteOptions{
+					Body: &body,
+				}
+
+				note, resp, err := glClient.Notes.UpdateMergeRequestNote(projectID, mrIid, noteID, opts, gl.WithContext(ctx))
+				if err != nil {
+					result, apiErr := HandleCreateUpdateAPIError(err, resp, fmt.Sprintf("merge request %d or note %d in project %q", mrIid, noteID, projectID), "update comment")
+					if result != nil {
+						return result, nil
+					}
+					return nil, apiErr
+				}
+
+				data, err := json.Marshal(note)
+				if err != nil {
+					return nil, fmt.Errorf("failed to marshal comment data: %w", err)
+				}
+				return mcp.NewToolResultText(string(data)), nil
+
+			default:
+				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: unsupported action '%s'", action)), nil
+			}
 		}
-	}
 }
-
 
 // ListMergeRequests defines the MCP tool for listing merge requests with pagination and filtering.
 func ListMergeRequests(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
@@ -804,4 +803,3 @@ func UpdateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.To
 			return mcp.NewToolResultText(string(data)), nil
 		}
 }
-

@@ -548,10 +548,10 @@ func TestSecurityTools_MissingRequiredParameter(t *testing.T) {
 	}
 
 	tests := []struct {
-		name            string
-		getToolAndFunc  func() (mcp.Tool, server.ToolHandlerFunc)
-		arguments       map[string]any
-		errorContains   string
+		name           string
+		getToolAndFunc func() (mcp.Tool, server.ToolHandlerFunc)
+		arguments      map[string]any
+		errorContains  string
 	}{
 		{
 			name:           "getProjectSAST - missing pid",

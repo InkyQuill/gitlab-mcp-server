@@ -21,7 +21,7 @@ func TestProjectConfigFlow(t *testing.T) {
 		pc := &gitlab.ProjectConfig{
 			ProjectID:  "owner/repo",
 			GitLabHost: "https://gitlab.com",
-			TokenName:   "test",
+			TokenName:  "test",
 		}
 
 		configPath, err := gitlab.WriteProjectConfig(tmpDir, pc)
@@ -190,7 +190,7 @@ func TestProjectConfigFlow(t *testing.T) {
 		pc := &gitlab.ProjectConfig{
 			ProjectID:  "original/repo",
 			GitLabHost: "https://gitlab.com",
-			TokenName:   "old-token",
+			TokenName:  "old-token",
 		}
 
 		gitlab.WriteProjectConfig(tmpDir, pc)
@@ -199,7 +199,7 @@ func TestProjectConfigFlow(t *testing.T) {
 		updatedPC := &gitlab.ProjectConfig{
 			ProjectID:  "updated/repo",
 			GitLabHost: "https://gitlab.example.com",
-			TokenName:   "new-token",
+			TokenName:  "new-token",
 		}
 
 		_, err := gitlab.WriteProjectConfig(tmpDir, updatedPC)

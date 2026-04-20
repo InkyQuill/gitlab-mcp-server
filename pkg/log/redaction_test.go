@@ -272,8 +272,8 @@ func TestRedactString_GitLabTokens(t *testing.T) {
 			expected: `private_token-***REDACTED***`,
 		},
 		{
-			name:     "private-token pattern",
-			input:    `private-token: abcdef123456789012345`,
+			name:  "private-token pattern",
+			input: `private-token: abcdef123456789012345`,
 			// The pattern normalizes both private_token and private-token to private_token
 			expected: `private_token-***REDACTED***`,
 		},
@@ -512,7 +512,7 @@ func TestRedactJSON_TokensInStringValues(t *testing.T) {
 		validate func(t *testing.T, got string)
 	}{
 		{
-			name: "GitLab token in message field",
+			name:  "GitLab token in message field",
 			input: `{"message":"token is glpat-12345678901234567890"}`,
 			validate: func(t *testing.T, got string) {
 				var parsed map[string]interface{}
@@ -525,7 +525,7 @@ func TestRedactJSON_TokensInStringValues(t *testing.T) {
 			},
 		},
 		{
-			name: "GitHub token in description",
+			name:  "GitHub token in description",
 			input: `{"description":"Use ghp_123456789012345678901234567890123456 to access"}`,
 			validate: func(t *testing.T, got string) {
 				var parsed map[string]interface{}
@@ -538,7 +538,7 @@ func TestRedactJSON_TokensInStringValues(t *testing.T) {
 			},
 		},
 		{
-			name: "JWT in authorization message",
+			name:  "JWT in authorization message",
 			input: `{"msg":"Auth: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc123def456"}`,
 			validate: func(t *testing.T, got string) {
 				var parsed map[string]interface{}
@@ -576,28 +576,28 @@ func TestRedactJSON_NonJSON(t *testing.T) {
 	r := NewRedactor()
 
 	tests := []struct {
-		name           string
-		input          string
+		name             string
+		input            string
 		shouldBeRedacted bool
 	}{
 		{
-			name:           "plain text",
-			input:          "plain text message",
+			name:             "plain text",
+			input:            "plain text message",
 			shouldBeRedacted: false,
 		},
 		{
-			name:           "plain text with token",
-			input:          "use token glpat-12345678901234567890",
+			name:             "plain text with token",
+			input:            "use token glpat-12345678901234567890",
 			shouldBeRedacted: true,
 		},
 		{
-			name:           "invalid JSON",
-			input:          `{invalid json}`,
+			name:             "invalid JSON",
+			input:            `{invalid json}`,
 			shouldBeRedacted: false,
 		},
 		{
-			name:           "empty string",
-			input:          "",
+			name:             "empty string",
+			input:            "",
 			shouldBeRedacted: false,
 		},
 	}

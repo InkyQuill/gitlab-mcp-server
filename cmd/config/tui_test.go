@@ -64,10 +64,10 @@ func TestMenuItem(t *testing.T) {
 func TestServerItem(t *testing.T) {
 	t.Run("serverItem with default server", func(t *testing.T) {
 		serverCfg := &config.ServerConfig{
-			Name:     "test-server",
-			Host:     "https://gitlab.com",
-			Username: "testuser",
-			ReadOnly: false,
+			Name:      "test-server",
+			Host:      "https://gitlab.com",
+			Username:  "testuser",
+			ReadOnly:  false,
 			IsDefault: true,
 		}
 
@@ -81,10 +81,10 @@ func TestServerItem(t *testing.T) {
 
 	t.Run("serverItem with read-only server", func(t *testing.T) {
 		serverCfg := &config.ServerConfig{
-			Name:     "readonly-server",
-			Host:     "https://gitlab.example.com",
-			Username: "readonlyuser",
-			ReadOnly: true,
+			Name:      "readonly-server",
+			Host:      "https://gitlab.example.com",
+			Username:  "readonlyuser",
+			ReadOnly:  true,
 			IsDefault: false,
 		}
 
@@ -96,10 +96,10 @@ func TestServerItem(t *testing.T) {
 
 	t.Run("serverItem with empty username", func(t *testing.T) {
 		serverCfg := &config.ServerConfig{
-			Name:     "new-server",
-			Host:     "https://gitlab.com",
-			Username: "",
-			ReadOnly: false,
+			Name:      "new-server",
+			Host:      "https://gitlab.com",
+			Username:  "",
+			ReadOnly:  false,
 			IsDefault: false,
 		}
 

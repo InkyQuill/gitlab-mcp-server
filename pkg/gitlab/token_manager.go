@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/awnumar/memguard"
-	gl "gitlab.com/gitlab-org/api/client-go"
 	log "github.com/sirupsen/logrus"
+	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
 // TokenMetadata stores information about a GitLab access token

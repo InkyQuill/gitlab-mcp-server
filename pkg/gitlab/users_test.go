@@ -41,14 +41,18 @@ func TestGetCurrentUserHandler(t *testing.T) {
 			},
 		},
 		{
-			name:              "Error - 401",
-			mockSetup:         func() { mockUsers.EXPECT().CurrentUser(gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
+			name: "Error - 401",
+			mockSetup: func() {
+				mockUsers.EXPECT().CurrentUser(gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized"))
+			},
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
-			name:                "Error - 500",
-			mockSetup:           func() { mockUsers.EXPECT().CurrentUser(gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
+			name: "Error - 500",
+			mockSetup: func() {
+				mockUsers.EXPECT().CurrentUser(gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error"))
+			},
 			expectInternalError: true,
 			errorContains:       "failed to process current user",
 		},
@@ -59,7 +63,9 @@ func TestGetCurrentUserHandler(t *testing.T) {
 			request := mcp.CallToolRequest{Params: struct {
 				Name      string                 `json:"name"`
 				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+				Meta      *struct {
+					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+				} `json:"_meta,omitempty"`
 			}{Name: tool.Name}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
@@ -110,16 +116,20 @@ func TestGetUserHandler(t *testing.T) {
 			errorContains:     "missing required parameter: userId",
 		},
 		{
-			name:              "Error - 404",
-			args:              map[string]any{"userId": float64(999)},
-			mockSetup:         func() { mockUsers.EXPECT().GetUser(999, gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("not found")) },
+			name: "Error - 404",
+			args: map[string]any{"userId": float64(999)},
+			mockSetup: func() {
+				mockUsers.EXPECT().GetUser(999, gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("not found"))
+			},
 			expectResultError: true,
 			errorContains:     "user not found or access denied (404)",
 		},
 		{
-			name:                "Error - 500",
-			args:                map[string]any{"userId": float64(1)},
-			mockSetup:           func() { mockUsers.EXPECT().GetUser(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
+			name: "Error - 500",
+			args: map[string]any{"userId": float64(1)},
+			mockSetup: func() {
+				mockUsers.EXPECT().GetUser(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error"))
+			},
 			expectInternalError: true,
 			errorContains:       "failed to process user",
 		},
@@ -130,7 +140,9 @@ func TestGetUserHandler(t *testing.T) {
 			request := mcp.CallToolRequest{Params: struct {
 				Name      string                 `json:"name"`
 				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+				Meta      *struct {
+					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+				} `json:"_meta,omitempty"`
 			}{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
@@ -181,16 +193,20 @@ func TestGetUserStatusHandler(t *testing.T) {
 			errorContains:     "missing required parameter: userId",
 		},
 		{
-			name:              "Error - 404",
-			args:              map[string]any{"userId": float64(999)},
-			mockSetup:         func() { mockUsers.EXPECT().GetUserStatus(999, gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("not found")) },
+			name: "Error - 404",
+			args: map[string]any{"userId": float64(999)},
+			mockSetup: func() {
+				mockUsers.EXPECT().GetUserStatus(999, gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("not found"))
+			},
 			expectResultError: true,
 			errorContains:     "user status not found or access denied (404)",
 		},
 		{
-			name:                "Error - 500",
-			args:                map[string]any{"userId": float64(1)},
-			mockSetup:           func() { mockUsers.EXPECT().GetUserStatus(gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
+			name: "Error - 500",
+			args: map[string]any{"userId": float64(1)},
+			mockSetup: func() {
+				mockUsers.EXPECT().GetUserStatus(gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error"))
+			},
 			expectInternalError: true,
 			errorContains:       "failed to process user status",
 		},
@@ -201,7 +217,9 @@ func TestGetUserStatusHandler(t *testing.T) {
 			request := mcp.CallToolRequest{Params: struct {
 				Name      string                 `json:"name"`
 				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+				Meta      *struct {
+					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+				} `json:"_meta,omitempty"`
 			}{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
@@ -253,16 +271,20 @@ func TestListUsersHandler(t *testing.T) {
 			},
 		},
 		{
-			name:              "Error - 401",
-			args:              map[string]any{},
-			mockSetup:         func() { mockUsers.EXPECT().ListUsers(gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
+			name: "Error - 401",
+			args: map[string]any{},
+			mockSetup: func() {
+				mockUsers.EXPECT().ListUsers(gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized"))
+			},
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
-			name:                "Error - 500",
-			args:                map[string]any{},
-			mockSetup:           func() { mockUsers.EXPECT().ListUsers(gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
+			name: "Error - 500",
+			args: map[string]any{},
+			mockSetup: func() {
+				mockUsers.EXPECT().ListUsers(gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error"))
+			},
 			expectInternalError: true,
 			errorContains:       "failed to list users",
 		},
@@ -288,7 +310,9 @@ func TestListUsersHandler(t *testing.T) {
 			request := mcp.CallToolRequest{Params: struct {
 				Name      string                 `json:"name"`
 				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+				Meta      *struct {
+					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+				} `json:"_meta,omitempty"`
 			}{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
@@ -345,16 +369,20 @@ func TestListProjectUsersHandler(t *testing.T) {
 			errorContains:     "missing required parameter: pid",
 		},
 		{
-			name:              "Error - 401",
-			args:              map[string]any{"pid": "myproject"},
-			mockSetup:         func() { mockPM.EXPECT().ListProjectMembers(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized")) },
+			name: "Error - 401",
+			args: map[string]any{"pid": "myproject"},
+			mockSetup: func() {
+				mockPM.EXPECT().ListProjectMembers(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized"))
+			},
 			expectResultError: true,
 			errorContains:     "Authentication failed (401)",
 		},
 		{
-			name:                "Error - 500",
-			args:                map[string]any{"pid": "myproject"},
-			mockSetup:           func() { mockPM.EXPECT().ListProjectMembers(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error")) },
+			name: "Error - 500",
+			args: map[string]any{"pid": "myproject"},
+			mockSetup: func() {
+				mockPM.EXPECT().ListProjectMembers(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error"))
+			},
 			expectInternalError: true,
 			errorContains:       "failed to list project members",
 		},
@@ -365,7 +393,9 @@ func TestListProjectUsersHandler(t *testing.T) {
 			request := mcp.CallToolRequest{Params: struct {
 				Name      string                 `json:"name"`
 				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct { ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"` } `json:"_meta,omitempty"`
+				Meta      *struct {
+					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+				} `json:"_meta,omitempty"`
 			}{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
@@ -385,7 +415,6 @@ func TestListProjectUsersHandler(t *testing.T) {
 		})
 	}
 }
-
 
 // TestUserTools_SchemaSnapshots verifies that user tool schemas match their snapshots
 func TestUserTools_SchemaSnapshots(t *testing.T) {

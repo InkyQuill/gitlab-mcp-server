@@ -6,8 +6,8 @@ import (
 
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/gitlab"
-	gl "gitlab.com/gitlab-org/api/client-go"
 	log "github.com/sirupsen/logrus"
+	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
 func TestClientPoolFlow(t *testing.T) {

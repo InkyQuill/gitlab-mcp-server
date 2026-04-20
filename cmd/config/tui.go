@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
@@ -18,7 +18,7 @@ import (
 var (
 	titleStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("::FA")). // rose
-			Background(lipgloss.Color("::25")).  // background
+			Background(lipgloss.Color("::25")). // background
 			Padding(0, 2)
 
 	subtitleStyle = lipgloss.NewStyle().
@@ -26,9 +26,9 @@ var (
 			Padding(0, 1)
 
 	selectedItemStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("::FA")). // rose
-			Background(lipgloss.Color("::25")).  // background
-			Padding(0, 1)
+				Foreground(lipgloss.Color("::FA")). // rose
+				Background(lipgloss.Color("::25")). // background
+				Padding(0, 1)
 
 	normalItemStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("::DA")). // text

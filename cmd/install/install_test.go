@@ -535,8 +535,8 @@ func TestConfigReader(t *testing.T) {
 		// Write config with multiple servers
 		testConfig := map[string]interface{}{
 			"mcpServers": map[string]interface{}{
-				"gitlab":  map[string]interface{}{"command": "/gitlab/bin"},
-				"github":  map[string]interface{}{"command": "/github/bin"},
+				"gitlab":     map[string]interface{}{"command": "/gitlab/bin"},
+				"github":     map[string]interface{}{"command": "/github/bin"},
 				"filesystem": map[string]interface{}{"command": "/fs/bin"},
 			},
 		}

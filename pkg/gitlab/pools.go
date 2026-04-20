@@ -8,7 +8,7 @@ import (
 // bufferPool maintains a pool of bytes.Buffer objects for reuse
 // This reduces allocations when building strings or JSON
 var bufferPool = syncBufferPool{
-	 buffers: make([]*bytes.Buffer, 0, 16),
+	buffers: make([]*bytes.Buffer, 0, 16),
 }
 
 // syncBufferPool is a simple pool for bytes.Buffer objects
@@ -70,9 +70,9 @@ func MarshalJSONToString(v interface{}) (string, error) {
 
 // byteSlicePool maintains byte slices for temporary use
 var byteSlicePool = struct {
-	s64  [][]byte  // 64-byte slices
-	s256 [][]byte  // 256-byte slices
-	s1k  [][]byte  // 1KB slices
+	s64  [][]byte // 64-byte slices
+	s256 [][]byte // 256-byte slices
+	s1k  [][]byte // 1KB slices
 }{
 	s64:  make([][]byte, 0, 8),
 	s256: make([][]byte, 0, 8),
@@ -119,6 +119,6 @@ func PutByteSlice(slice []byte) {
 		byteSlicePool.s256 = append(byteSlicePool.s256, slice)
 	case capacity == 1024:
 		byteSlicePool.s1k = append(byteSlicePool.s1k, slice)
-	// Don't pool other sizes
+		// Don't pool other sizes
 	}
 }
