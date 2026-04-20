@@ -22,9 +22,13 @@ type EncryptedFileBackend struct {
 }
 
 // NewEncryptedFileBackend constructs a backend writing to the given path.
-// The CryptoManager must be IsEnabled() for reads/writes to succeed.
-func NewEncryptedFileBackend(path string, crypto *CryptoManager) *EncryptedFileBackend {
-	return &EncryptedFileBackend{path: path, crypto: crypto}
+// The CryptoManager must be enabled — a nil or disabled manager is rejected
+// so a backend named "Encrypted" cannot silently write plaintext secrets.
+func NewEncryptedFileBackend(path string, crypto *CryptoManager) (*EncryptedFileBackend, error) {
+	if crypto == nil || !crypto.IsEnabled() {
+		return nil, errors.New("file backend: requires an enabled CryptoManager")
+	}
+	return &EncryptedFileBackend{path: path, crypto: crypto}, nil
 }
 
 // Scheme implements SecretBackend.
@@ -128,8 +132,16 @@ func (e *EncryptedFileBackend) saveLocked(store map[string]string) error {
 	if err := os.MkdirAll(filepath.Dir(e.path), 0700); err != nil {
 		return fmt.Errorf("file backend: mkdir: %w", err)
 	}
-	if err := os.WriteFile(e.path, raw, 0600); err != nil {
+	// Write to a sibling temp file first, then atomically rename into place.
+	// This both prevents torn-writes on crash and enforces 0600 on every write
+	// (os.WriteFile only applies perm when CREATING the file).
+	tmp := e.path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0600); err != nil {
 		return fmt.Errorf("file backend: write: %w", err)
+	}
+	if err := os.Rename(tmp, e.path); err != nil {
+		_ = os.Remove(tmp) // best-effort cleanup on rename failure
+		return fmt.Errorf("file backend: rename: %w", err)
 	}
 	return nil
 }
