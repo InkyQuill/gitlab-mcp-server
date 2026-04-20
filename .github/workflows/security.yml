@@ -65,7 +65,7 @@ jobs:
     # action errors with "not supported on this repository". Gated to
     # only run on PRs where the graph is already available; govulncheck
     # + gosec cover SCA/SAST in the meantime.
-    if: github.event_name == 'pull_request' && github.repository_owner != 'InkyQuill'
+    if: github.event_name == 'pull_request' 
 
     steps:
       - name: Checkout code
