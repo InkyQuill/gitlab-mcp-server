@@ -401,7 +401,7 @@ func TestTokenStore_ValidateToken(t *testing.T) {
 		assert.NotNil(t, validatedMetadata)
 
 		// Verify metadata was updated
-		assert.Equal(t, 12345, validatedMetadata.UserID)
+		assert.Equal(t, int64(12345), validatedMetadata.UserID)
 		assert.Equal(t, "testuser", validatedMetadata.Username)
 		assert.False(t, validatedMetadata.IsExpiredFlag)
 		assert.True(t, validatedMetadata.LastValidated.After(validatedMetadata.CreatedAt))
@@ -409,7 +409,7 @@ func TestTokenStore_ValidateToken(t *testing.T) {
 		// Verify token was updated in store
 		storedToken, err := ts.GetToken("test-token")
 		require.NoError(t, err)
-		assert.Equal(t, 12345, storedToken.UserID)
+		assert.Equal(t, int64(12345), storedToken.UserID)
 		assert.Equal(t, "testuser", storedToken.Username)
 	})
 
@@ -438,14 +438,14 @@ func TestTokenStore_ValidateToken(t *testing.T) {
 		assert.NotNil(t, validatedMetadata)
 
 		// Verify new metadata was created
-		assert.Equal(t, 67890, validatedMetadata.UserID)
+		assert.Equal(t, int64(67890), validatedMetadata.UserID)
 		assert.Equal(t, "newuser", validatedMetadata.Username)
 		assert.Equal(t, "new-token", validatedMetadata.Name)
 
 		// Verify token was added to store
 		storedToken, err := ts.GetToken("new-token")
 		require.NoError(t, err)
-		assert.Equal(t, 67890, storedToken.UserID)
+		assert.Equal(t, int64(67890), storedToken.UserID)
 	})
 
 	t.Run("Error - Invalid token (401)", func(t *testing.T) {

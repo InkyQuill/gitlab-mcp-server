@@ -104,7 +104,7 @@ func TestGetUserHandler(t *testing.T) {
 			name: "Success",
 			args: map[string]any{"userId": float64(1)},
 			mockSetup: func() {
-				mockUsers.EXPECT().GetUser(1, gomock.Any(), gomock.Any()).
+				mockUsers.EXPECT().GetUser(int64(1), gomock.Any(), gomock.Any()).
 					Return(&gl.User{ID: 1, Username: "testuser"}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 		},
@@ -119,7 +119,7 @@ func TestGetUserHandler(t *testing.T) {
 			name: "Error - 404",
 			args: map[string]any{"userId": float64(999)},
 			mockSetup: func() {
-				mockUsers.EXPECT().GetUser(999, gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("not found"))
+				mockUsers.EXPECT().GetUser(int64(999), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("not found"))
 			},
 			expectResultError: true,
 			errorContains:     "user not found or access denied (404)",
@@ -155,7 +155,7 @@ func TestGetUserHandler(t *testing.T) {
 				require.NoError(t, err)
 				var user gl.User
 				json.Unmarshal([]byte(getTextResult(t, result).Text), &user)
-				assert.Equal(t, 1, user.ID)
+				assert.Equal(t, int64(1), user.ID)
 			}
 		})
 	}
@@ -181,7 +181,7 @@ func TestGetUserStatusHandler(t *testing.T) {
 			name: "Success",
 			args: map[string]any{"userId": float64(1)},
 			mockSetup: func() {
-				mockUsers.EXPECT().GetUserStatus(1, gomock.Any()).
+				mockUsers.EXPECT().GetUserStatus(int64(1), gomock.Any()).
 					Return(&gl.UserStatus{Message: "Working on it"}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 		},
@@ -196,7 +196,7 @@ func TestGetUserStatusHandler(t *testing.T) {
 			name: "Error - 404",
 			args: map[string]any{"userId": float64(999)},
 			mockSetup: func() {
-				mockUsers.EXPECT().GetUserStatus(999, gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("not found"))
+				mockUsers.EXPECT().GetUserStatus(int64(999), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("not found"))
 			},
 			expectResultError: true,
 			errorContains:     "user status not found or access denied (404)",

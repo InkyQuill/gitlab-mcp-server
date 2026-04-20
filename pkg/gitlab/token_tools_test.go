@@ -143,7 +143,7 @@ func TestAddTokenHandler(t *testing.T) {
 		// Verify token was actually stored
 		storedToken, err := tokenStore.GetToken("test-token")
 		require.NoError(t, err)
-		assert.Equal(t, 123, storedToken.UserID)
+		assert.Equal(t, int64(123), storedToken.UserID)
 		assert.Equal(t, "testuser", storedToken.Username)
 		assert.Equal(t, "https://gitlab.example.com", storedToken.GitLabHost)
 		assert.Equal(t, "glpat-testtoken123", storedToken.Token)
@@ -433,7 +433,7 @@ func TestUpdateTokenHandler(t *testing.T) {
 		// Verify token metadata was updated
 		storedToken, err := tokenStore.GetToken("work")
 		require.NoError(t, err)
-		assert.Equal(t, 789, storedToken.UserID)
+		assert.Equal(t, int64(789), storedToken.UserID)
 		assert.Equal(t, "workuser", storedToken.Username)
 	})
 
@@ -504,7 +504,7 @@ func TestUpdateTokenHandler(t *testing.T) {
 		storedToken, err := tokenStore.GetToken("personal")
 		require.NoError(t, err)
 		assert.Equal(t, "new-personal-token", storedToken.Token)
-		assert.Equal(t, 999, storedToken.UserID)
+		assert.Equal(t, int64(999), storedToken.UserID)
 	})
 }
 
@@ -1054,7 +1054,7 @@ func TestTokenManagementIntegration(t *testing.T) {
 		// Verify token metadata
 		storedToken, err := tokenStore.GetToken("integration-test")
 		require.NoError(t, err)
-		assert.Equal(t, 999, storedToken.UserID)
+		assert.Equal(t, int64(999), storedToken.UserID)
 		assert.Equal(t, "integrationuser", storedToken.Username)
 
 		// Step 3: Remove token

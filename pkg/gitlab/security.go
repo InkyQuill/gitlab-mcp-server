@@ -368,7 +368,7 @@ func getSecurityFindings(ctx context.Context, req mcp.CallToolRequest, getClient
 	}
 
 	var responseData ProjectSecurityResponse
-	resp, err := client.GraphQL.Do(ctx, graphqlReq, &responseData)
+	resp, err := client.GraphQL.Do(graphqlReq, &responseData, gl.WithContext(ctx))
 	if err != nil {
 		result, apiErr := HandleGraphQLError(err, resp, fmt.Sprintf("%s findings", reportType))
 		if result != nil {
@@ -415,7 +415,7 @@ func getLicenseCompliance(ctx context.Context, req mcp.CallToolRequest, getClien
 	}
 
 	var responseData LicenseComplianceResponse
-	resp, err := client.GraphQL.Do(ctx, graphqlReq, &responseData)
+	resp, err := client.GraphQL.Do(graphqlReq, &responseData, gl.WithContext(ctx))
 	if err != nil {
 		result, apiErr := HandleGraphQLError(err, resp, "license compliance")
 		if result != nil {

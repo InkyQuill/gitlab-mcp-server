@@ -73,8 +73,8 @@ func TestGetProjectBranchesHandler(t *testing.T) {
 					ListBranches(projectID, expectedOptsMatcher, gomock.Any()).
 					DoAndReturn(func(_ interface{}, opts *gl.ListBranchesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Branch, *gl.Response, error) {
 						assert.Nil(t, opts.Search, "Search should be nil by default")
-						assert.Equal(t, 1, opts.Page, "Default page")
-						assert.Equal(t, DefaultPerPage, opts.PerPage, "Default perPage")
+						assert.Equal(t, int64(1), opts.Page, "Default page")
+						assert.Equal(t, int64(DefaultPerPage), opts.PerPage, "Default perPage")
 						return []*gl.Branch{
 							createBranch("main", false, true),
 							createBranch("develop", false, false),
@@ -116,8 +116,8 @@ func TestGetProjectBranchesHandler(t *testing.T) {
 				mockBranches.EXPECT().
 					ListBranches(projectID, expectedOptsMatcher, gomock.Any()).
 					DoAndReturn(func(_ interface{}, opts *gl.ListBranchesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Branch, *gl.Response, error) {
-						assert.Equal(t, 2, opts.Page)
-						assert.Equal(t, 1, opts.PerPage)
+						assert.Equal(t, int64(2), opts.Page)
+						assert.Equal(t, int64(1), opts.PerPage)
 						return []*gl.Branch{createBranch("release/v1.1", false, true)}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},

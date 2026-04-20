@@ -1850,79 +1850,24 @@ func TestSearchSnippetTitlesHandler(t *testing.T) {
 }
 
 func TestSearchSnippetBlobsHandler(t *testing.T) {
+	// snippet_blobs search was removed from the GitLab client-go v1 API.
+	// The handler now returns a validation error when this resource type is requested.
 	ctx := context.Background()
-	mockClient, mockSearch, ctrl := setupMockClientForSearch(t)
+	mockClient, _, ctrl := setupMockClientForSearch(t)
 	defer ctrl.Finish()
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
 	tool, handler := Search(mockGetClient, nil)
 
-	tests := []struct {
-		name                string
-		args                map[string]any
-		mockSetup           func()
-		expectResultError   bool
-		expectInternalError bool
-		errorContains       string
-	}{
-		{
-			name: "Success",
-			args: map[string]any{"resourceType": "snippet_blobs", "search": "function"},
-			mockSetup: func() {
-				mockSearch.EXPECT().SnippetBlobs("function", gomock.Any(), gomock.Any()).
-					Return([]*gl.Snippet{{ID: 1, Title: "Code"}}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
-			},
-		},
-		{
-			name:              "Error - Missing search",
-			args:              map[string]any{"resourceType": "snippet_blobs"},
-			mockSetup:         func() {},
-			expectResultError: true,
-			errorContains:     "missing required parameter: search",
-		},
-		{
-			name: "Error - 401",
-			args: map[string]any{"resourceType": "snippet_blobs", "search": "function"},
-			mockSetup: func() {
-				mockSearch.EXPECT().SnippetBlobs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("unauthorized"))
-			},
-			expectResultError: true,
-			errorContains:     "Authentication failed (401)",
-		},
-		{
-			name: "Error - 500",
-			args: map[string]any{"resourceType": "snippet_blobs", "search": "function"},
-			mockSetup: func() {
-				mockSearch.EXPECT().SnippetBlobs(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("server error"))
-			},
-			expectInternalError: true,
-			errorContains:       "failed to list snippet_blobs (scope=global)",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
-			result, err := handler(ctx, request)
-			if tc.expectInternalError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.errorContains)
-			} else if tc.expectResultError {
-				require.NoError(t, err)
-				assert.Contains(t, getTextResult(t, result).Text, tc.errorContains)
-			} else {
-				require.NoError(t, err)
-				var snippets []*gl.Snippet
-				json.Unmarshal([]byte(getTextResult(t, result).Text), &snippets)
-				assert.Len(t, snippets, 1)
-			}
-		})
-	}
+	request := mcp.CallToolRequest{Params: struct {
+		Name      string                 `json:"name"`
+		Arguments map[string]interface{} `json:"arguments,omitempty"`
+		Meta      *struct {
+			ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+		} `json:"_meta,omitempty"`
+	}{Name: tool.Name, Arguments: map[string]any{"resourceType": "snippet_blobs", "search": "function"}}}
+	result, err := handler(ctx, request)
+	require.NoError(t, err)
+	assert.Contains(t, getTextResult(t, result).Text, "no longer supported")
 }
 
 func TestSearchWikiBlobsHandler(t *testing.T) {

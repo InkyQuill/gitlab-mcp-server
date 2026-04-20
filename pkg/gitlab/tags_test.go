@@ -67,7 +67,7 @@ func TestListRepositoryTagsHandler(t *testing.T) {
 					ListTags(projectID, gomock.Any(), gomock.Any()).
 					DoAndReturn(func(_ interface{}, opts *gl.ListTagsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Tag, *gl.Response, error) {
 						assert.Nil(t, opts.Search)
-						assert.Equal(t, 1, opts.Page)
+						assert.Equal(t, int64(1), opts.Page)
 						return []*gl.Tag{
 							createTag("v1.0.0", "Release v1.0.0"),
 							createTag("v1.1.0", "Release v1.1.0"),
@@ -107,8 +107,8 @@ func TestListRepositoryTagsHandler(t *testing.T) {
 				mockTags.EXPECT().
 					ListTags(projectID, gomock.Any(), gomock.Any()).
 					DoAndReturn(func(_ interface{}, opts *gl.ListTagsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Tag, *gl.Response, error) {
-						assert.Equal(t, 2, opts.Page)
-						assert.Equal(t, 1, opts.PerPage)
+						assert.Equal(t, int64(2), opts.Page)
+						assert.Equal(t, int64(1), opts.PerPage)
 						return []*gl.Tag{createTag("v2.0.0", "Release v2.0.0")}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},

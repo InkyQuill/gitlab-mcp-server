@@ -317,8 +317,8 @@ func TestMilestoneHandler_Update(t *testing.T) {
 					UpdatedAt: &timeNow,
 				}
 				mockMilestones.EXPECT().
-					UpdateMilestone(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.UpdateMilestoneOptions, _ ...gl.RequestOptionFunc) (*gl.Milestone, *gl.Response, error) {
+					UpdateMilestone(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.UpdateMilestoneOptions, _ ...gl.RequestOptionFunc) (*gl.Milestone, *gl.Response, error) {
 						assert.Equal(t, "Updated Sprint 1", *opts.Title)
 						return expectedMilestone, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -352,8 +352,8 @@ func TestMilestoneHandler_Update(t *testing.T) {
 					UpdatedAt: &timeNow,
 				}
 				mockMilestones.EXPECT().
-					UpdateMilestone(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.UpdateMilestoneOptions, _ ...gl.RequestOptionFunc) (*gl.Milestone, *gl.Response, error) {
+					UpdateMilestone(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.UpdateMilestoneOptions, _ ...gl.RequestOptionFunc) (*gl.Milestone, *gl.Response, error) {
 						assert.Equal(t, "close", *opts.StateEvent)
 						return expectedMilestone, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -400,7 +400,7 @@ func TestMilestoneHandler_Update(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockMilestones.EXPECT().
-					UpdateMilestone(projectID, 999, gomock.Any(), gomock.Any()).
+					UpdateMilestone(projectID, int64(999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Milestone Not Found"))
 			},
 			expectedResult:      "milestone 999 in project \"group/project\" not found or access denied (404)",
@@ -416,7 +416,7 @@ func TestMilestoneHandler_Update(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockMilestones.EXPECT().
-					UpdateMilestone(projectID, 1, gomock.Any(), gomock.Any()).
+					UpdateMilestone(projectID, int64(1), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectedResult:      nil,
@@ -519,7 +519,7 @@ func TestMilestoneHandler_Get(t *testing.T) {
 					CreatedAt:   &timeNow,
 				}
 				mockMilestones.EXPECT().
-					GetMilestone(projectID, 1, nil, gomock.Any()).
+					GetMilestone(projectID, int64(1), nil, gomock.Any()).
 					Return(expectedMilestone, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 			expectedResult: &gl.Milestone{
@@ -554,7 +554,7 @@ func TestMilestoneHandler_Get(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockMilestones.EXPECT().
-					GetMilestone(projectID, 999, nil, gomock.Any()).
+					GetMilestone(projectID, int64(999), nil, gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Milestone Not Found"))
 			},
 			expectedResult:      "milestone 999 in project \"group/project\" not found or access denied (404)",
@@ -570,7 +570,7 @@ func TestMilestoneHandler_Get(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockMilestones.EXPECT().
-					GetMilestone(projectID, 1, nil, gomock.Any()).
+					GetMilestone(projectID, int64(1), nil, gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectedResult:      nil,
@@ -681,8 +681,8 @@ func TestListMilestonesHandler(t *testing.T) {
 				mockMilestones.EXPECT().
 					ListMilestones(projectID, gomock.Any(), gomock.Any()).
 					DoAndReturn(func(_ any, opts *gl.ListMilestonesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Milestone, *gl.Response, error) {
-						assert.Equal(t, 1, opts.Page)
-						assert.Equal(t, DefaultPerPage, opts.PerPage)
+						assert.Equal(t, int64(1), opts.Page)
+						assert.Equal(t, int64(DefaultPerPage), opts.PerPage)
 						return expectedMilestones, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},
@@ -732,8 +732,8 @@ func TestListMilestonesHandler(t *testing.T) {
 					DoAndReturn(func(_ any, opts *gl.ListMilestonesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Milestone, *gl.Response, error) {
 						assert.Equal(t, "active", *opts.State)
 						assert.Equal(t, "Sprint", *opts.Search)
-						assert.Equal(t, 2, opts.Page)
-						assert.Equal(t, 5, opts.PerPage)
+						assert.Equal(t, int64(2), opts.Page)
+						assert.Equal(t, int64(5), opts.PerPage)
 						return expectedMilestones, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},

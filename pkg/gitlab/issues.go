@@ -55,7 +55,7 @@ func GetIssue(getClient GetClientFn, t map[string]string) (mcp.Tool, server.Tool
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			issueIid := int(issueIidFloat) // Convert float64 to int for API call
+			issueIid := int64(issueIidFloat) // Convert float64 to int for API call
 			// Check if conversion lost precision (optional but good practice)
 			if float64(issueIid) != issueIidFloat {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: issueIid %v is not a valid integer", issueIidFloat)), nil
@@ -238,8 +238,8 @@ func ListIssues(getClient GetClientFn, t map[string]string) (tool mcp.Tool, hand
 			// --- Construct GitLab API options
 			opts := &gl.ListProjectIssuesOptions{
 				ListOptions: gl.ListOptions{
-					Page:    page,
-					PerPage: perPage,
+					Page:    int64(page),
+					PerPage: int64(perPage),
 				},
 			}
 
@@ -266,13 +266,13 @@ func ListIssues(getClient GetClientFn, t map[string]string) (tool mcp.Tool, hand
 
 			// Only set the author and assignee IDs if they were provided
 			if authorIDFloat != 0 {
-				authorID := int(authorIDFloat)
+				authorID := int64(authorIDFloat)
 				opts.AuthorID = &authorID
 			}
 
 			if assigneeIDFloat != 0 {
-				assigneeID := int(assigneeIDFloat)
-				opts.AssigneeID = &assigneeID
+				assigneeID := int64(assigneeIDFloat)
+				opts.AssigneeID = gl.AssigneeID(assigneeID)
 			}
 
 			if search != "" {
@@ -375,7 +375,7 @@ func IssueComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, ha
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			issueIid := int(issueIidFloat)
+			issueIid := int64(issueIidFloat)
 			if float64(issueIid) != issueIidFloat {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: issueIid %v is not a valid integer", issueIidFloat)), nil
 			}
@@ -401,8 +401,8 @@ func IssueComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, ha
 
 				opts := &gl.ListIssueNotesOptions{
 					ListOptions: gl.ListOptions{
-						Page:    page,
-						PerPage: perPage,
+						Page:    int64(page),
+						PerPage: int64(perPage),
 					},
 				}
 
@@ -455,7 +455,7 @@ func IssueComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, ha
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				noteID := int(noteIDFloat)
+				noteID := int64(noteIDFloat)
 				if float64(noteID) != noteIDFloat {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: noteId %v is not a valid integer", noteIDFloat)), nil
 				}
@@ -521,7 +521,7 @@ func GetIssueLabels(getClient GetClientFn, t map[string]string) (tool mcp.Tool, 
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			issueIid := int(issueIidFloat) // Convert float64 to int for API call
+			issueIid := int64(issueIidFloat) // Convert float64 to int for API call
 			// Check if conversion lost precision
 			if float64(issueIid) != issueIidFloat {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: issueIid %v is not a valid integer", issueIidFloat)), nil
@@ -671,7 +671,8 @@ func CreateIssue(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				opts.MilestoneID = &milestoneID
+				milestoneID64 := int64(milestoneID)
+				opts.MilestoneID = &milestoneID64
 			}
 
 			if dueDateStr != "" {
@@ -756,7 +757,7 @@ func UpdateIssue(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			issueIid := int(issueIidFloat)
+			issueIid := int64(issueIidFloat)
 			if float64(issueIid) != issueIidFloat {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: issueIid %v is not a valid integer", issueIidFloat)), nil
 			}
@@ -833,7 +834,7 @@ func UpdateIssue(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				opts.MilestoneID = gl.Ptr(milestoneID)
+				opts.MilestoneID = gl.Ptr(int64(milestoneID))
 			}
 
 			if dueDateStr != "" {

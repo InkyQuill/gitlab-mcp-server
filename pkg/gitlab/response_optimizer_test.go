@@ -84,10 +84,10 @@ func TestExtractPagination(t *testing.T) {
 			var resp *gl.Response
 			if tt.headers != nil {
 				// Parse headers to get values
-				totalItems := 0
-				totalPages := 0
-				currentPage := 0
-				itemsPerPage := 0
+				var totalItems int64
+				var totalPages int64
+				var currentPage int64
+				var itemsPerPage int64
 
 				if v, ok := tt.headers["X-Total"]; ok && v != "" {
 					fmt.Sscanf(v, "%d", &totalItems)
@@ -389,10 +389,10 @@ func TestResponseOptimizer_Integration(t *testing.T) {
 	assert.NotNil(t, result.Pagination)
 
 	// Verify pagination
-	assert.Equal(t, 100, result.Pagination.TotalItems)
-	assert.Equal(t, 5, result.Pagination.TotalPages)
-	assert.Equal(t, 1, result.Pagination.CurrentPage)
-	assert.Equal(t, 20, result.Pagination.ItemsPerPage)
+	assert.Equal(t, int64(100), result.Pagination.TotalItems)
+	assert.Equal(t, int64(5), result.Pagination.TotalPages)
+	assert.Equal(t, int64(1), result.Pagination.CurrentPage)
+	assert.Equal(t, int64(20), result.Pagination.ItemsPerPage)
 
 	// Verify items are filtered and truncated
 	items, ok := result.Items.([]map[string]interface{})

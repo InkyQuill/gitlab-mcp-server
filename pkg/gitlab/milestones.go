@@ -95,7 +95,7 @@ func milestoneGet(ctx context.Context, request *mcp.CallToolRequest, glClient *g
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 	}
-	milestoneID := int(milestoneIDFloat)
+	milestoneID := int64(milestoneIDFloat)
 	if float64(milestoneID) != milestoneIDFloat {
 		return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
 	}
@@ -198,7 +198,7 @@ func milestoneUpdate(ctx context.Context, request *mcp.CallToolRequest, glClient
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 	}
-	milestoneID := int(milestoneIDFloat)
+	milestoneID := int64(milestoneIDFloat)
 	if float64(milestoneID) != milestoneIDFloat {
 		return mcp.NewToolResultError(fmt.Sprintf("Validation Error: milestoneId %v is not a valid integer", milestoneIDFloat)), nil
 	}
@@ -341,8 +341,8 @@ func ListMilestones(getClient GetClientFn, t map[string]string) (tool mcp.Tool, 
 			// --- Construct GitLab API options
 			opts := &gl.ListMilestonesOptions{
 				ListOptions: gl.ListOptions{
-					Page:    page,
-					PerPage: perPage,
+					Page:    int64(page),
+					PerPage: int64(perPage),
 				},
 			}
 

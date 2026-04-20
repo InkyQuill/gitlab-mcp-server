@@ -180,8 +180,8 @@ func ListRepositoryTags(getClient GetClientFn, t map[string]string) (tool mcp.To
 			// Construct GitLab API options
 			opts := &gl.ListTagsOptions{
 				ListOptions: gl.ListOptions{
-					Page:    page,
-					PerPage: perPage,
+					Page:    int64(page),
+					PerPage: int64(perPage),
 				},
 			}
 			if search != "" {

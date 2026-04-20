@@ -25,7 +25,7 @@ func TestGetProjectHandler(t *testing.T) {
 	require.NoError(t, toolsnaps.Test(getProjectTool.Name, getProjectTool), "tool schema should match snapshot")
 
 	ctx := context.Background()
-	projectIDInt := 123
+	projectIDInt := int64(123)
 	projectIDStr := "123"          // Use string for ID in tests for consistency with API calls expecting 'any'
 	projectPath := "group/project" // Example path
 
@@ -228,7 +228,7 @@ func TestListProjectsHandler(t *testing.T) {
 
 	// --- Helper for Creating Expected Projects ---
 	createMockProject := func(id int, name string) *gl.Project {
-		return &gl.Project{ID: id, Name: name, PathWithNamespace: fmt.Sprintf("group/%s", name)}
+		return &gl.Project{ID: int64(id), Name: name, PathWithNamespace: fmt.Sprintf("group/%s", name)}
 	}
 
 	// --- Test Cases ---
@@ -249,8 +249,8 @@ func TestListProjectsHandler(t *testing.T) {
 					ListProjects(gomock.Any(), gomock.Any()).                                                                        // Use gomock.Any() for options
 					DoAndReturn(func(opts *gl.ListProjectsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Project, *gl.Response, error) { // Use DoAndReturn, ignore rofs
 						// Assertions on the actual options passed
-						assert.Equal(t, 1, opts.Page, "Default page should be 1")
-						assert.Equal(t, DefaultPerPage, opts.PerPage, "Default perPage should be used")
+						assert.Equal(t, int64(1), opts.Page, "Default page should be 1")
+						assert.Equal(t, int64(DefaultPerPage), opts.PerPage, "Default perPage should be used")
 						assert.Nil(t, opts.Search)
 						assert.Nil(t, opts.Owned)
 						// Return the expected result for this specific call
@@ -269,8 +269,8 @@ func TestListProjectsHandler(t *testing.T) {
 				mockProjects.EXPECT().
 					ListProjects(gomock.Any(), gomock.Any()).
 					DoAndReturn(func(opts *gl.ListProjectsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Project, *gl.Response, error) {
-						assert.Equal(t, 2, opts.Page)
-						assert.Equal(t, 5, opts.PerPage)
+						assert.Equal(t, int64(2), opts.Page)
+						assert.Equal(t, int64(5), opts.PerPage)
 						return []*gl.Project{createMockProject(6, "proj6")}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},
@@ -285,8 +285,8 @@ func TestListProjectsHandler(t *testing.T) {
 					DoAndReturn(func(opts *gl.ListProjectsOptions, _ ...gl.RequestOptionFunc) ([]*gl.Project, *gl.Response, error) {
 						require.NotNil(t, opts.Search)
 						assert.Equal(t, "foo", *opts.Search)
-						assert.Equal(t, 1, opts.Page)
-						assert.Equal(t, DefaultPerPage, opts.PerPage)
+						assert.Equal(t, int64(1), opts.Page)
+						assert.Equal(t, int64(DefaultPerPage), opts.PerPage)
 						return []*gl.Project{createMockProject(10, "foobar")}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},
@@ -516,7 +516,7 @@ func TestListProjectsHandler(t *testing.T) {
 							actualProject, ok := actualItemsSlice[i].(map[string]interface{})
 							require.True(t, ok, "Item should be map[string]interface{}")
 
-							assert.Equal(t, expectedProject.ID, int(actualProject["id"].(float64)), "ID should match")
+							assert.Equal(t, expectedProject.ID, int64(actualProject["id"].(float64)), "ID should match")
 							assert.Equal(t, expectedProject.Name, actualProject["name"], "Name should match")
 
 							// Verify that unwanted fields are removed

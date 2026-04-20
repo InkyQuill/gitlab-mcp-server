@@ -27,7 +27,7 @@ type ServerConfig struct {
 	ReadOnly  bool   `json:"readOnly,omitempty"`
 	IsDefault bool   `json:"isDefault,omitempty"`
 	// Metadata fields populated from API
-	UserID        int    `json:"userId,omitempty"`
+	UserID        int64  `json:"userId,omitempty"`
 	Username      string `json:"username,omitempty"`
 	LastValidated string `json:"lastValidated,omitempty"` // ISO 8601 format
 }

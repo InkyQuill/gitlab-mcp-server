@@ -19,7 +19,7 @@ type TokenMetadata struct {
 	ExpiresAt     *time.Time `json:"expiresAt,omitempty"` // Token expiration time
 	CreatedAt     time.Time  `json:"createdAt"`           // When token was added to store
 	LastValidated time.Time  `json:"lastValidated"`       // Last successful validation
-	UserID        int        `json:"userId,omitempty"`    // GitLab user ID
+	UserID        int64      `json:"userId,omitempty"`    // GitLab user ID
 	Username      string     `json:"username,omitempty"`  // GitLab username
 	IsExpiredFlag bool       `json:"isExpired"`           // Flag indicating if token is expired
 }
@@ -207,7 +207,7 @@ type TokenValidationResult struct {
 	Success         bool   `json:"success"`
 	Error           string `json:"error,omitempty"`
 	IsExpired       bool   `json:"isExpired"`
-	UserID          int    `json:"userId,omitempty"`
+	UserID          int64  `json:"userId,omitempty"`
 	Username        string `json:"username,omitempty"`
 	DaysUntilExpiry int    `json:"daysUntilExpiry,omitempty"`
 }

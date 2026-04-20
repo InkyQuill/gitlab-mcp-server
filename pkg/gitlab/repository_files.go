@@ -137,8 +137,8 @@ func ListProjectFiles(getClient GetClientFn, t map[string]string) (tool mcp.Tool
 			// --- Construct GitLab API options
 			opts := &gl.ListTreeOptions{
 				ListOptions: gl.ListOptions{
-					Page:    page,
-					PerPage: perPage,
+					Page:    int64(page),
+					PerPage: int64(perPage),
 				},
 				Recursive: recursive, // Assign directly, pointers handled by OptionalBoolParam
 			}
