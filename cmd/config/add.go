@@ -73,6 +73,7 @@ func runAdd(ctx context.Context, cfgManager *config.Manager, registry *config.Ba
 
 	var secret string
 	var tokenRef string
+	var storedHere bool // true if we just called registry.Store — so we can clean up on validation failure
 	switch {
 	case addToken != "" && addTokenRef != "":
 		return fmt.Errorf("--token and --token-ref are mutually exclusive")
@@ -83,6 +84,7 @@ func runAdd(ctx context.Context, cfgManager *config.Manager, registry *config.Ba
 		}
 		secret = s
 		tokenRef = addTokenRef
+		// storedHere stays false — user populated the ref themselves.
 	case addToken != "":
 		fmt.Fprintln(os.Stderr, "DEPRECATION: --token exposes the secret in shell history and process listings. "+
 			"Use --token-ref or interactive mode. --token will be removed in v3.0.")
@@ -92,6 +94,7 @@ func runAdd(ctx context.Context, cfgManager *config.Manager, registry *config.Ba
 			return fmt.Errorf("store secret in %q backend: %w", addBackend, err)
 		}
 		tokenRef = ref
+		storedHere = true
 	default:
 		s, err := promptSecret(fmt.Sprintf("GitLab access token for %q: ", name))
 		if err != nil {
@@ -106,15 +109,22 @@ func runAdd(ctx context.Context, cfgManager *config.Manager, registry *config.Ba
 			return fmt.Errorf("store secret in %q backend: %w", addBackend, err)
 		}
 		tokenRef = ref
+		storedHere = true
 	}
 
 	fmt.Printf("Validating token for %s...\n", name)
 	client, err := createGitLabClient(host, secret)
 	if err != nil {
+		if storedHere {
+			_ = registry.Delete(ctx, tokenRef)
+		}
 		return fmt.Errorf("failed to create GitLab client: %w", err)
 	}
 	user, resp, err := client.Users.CurrentUser(gl.WithContext(ctx))
 	if err != nil {
+		if storedHere {
+			_ = registry.Delete(ctx, tokenRef)
+		}
 		if resp != nil && resp.StatusCode == 401 {
 			return fmt.Errorf("token validation failed: invalid or expired token (401)")
 		}
@@ -131,9 +141,15 @@ func runAdd(ctx context.Context, cfgManager *config.Manager, registry *config.Ba
 		Username: user.Username,
 	}
 	if err := cfgManager.AddServer(cfg); err != nil {
+		if storedHere {
+			_ = registry.Delete(ctx, tokenRef)
+		}
 		return fmt.Errorf("failed to add server: %w", err)
 	}
 	if err := cfgManager.Save(); err != nil {
+		if storedHere {
+			_ = registry.Delete(ctx, tokenRef)
+		}
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 	fmt.Printf("\nServer '%s' added.\n", name)
