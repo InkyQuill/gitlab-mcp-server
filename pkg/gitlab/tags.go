@@ -152,7 +152,7 @@ func ListRepositoryTags(getClient GetClientFn, t map[string]string) (tool mcp.To
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_LIST_REPOSITORY_TAGS_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List Repository Tags",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			mcp.WithString("projectId",
 				mcp.Required(),

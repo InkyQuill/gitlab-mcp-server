@@ -18,7 +18,7 @@ func GetProjectBranches(getClient GetClientFn, t map[string]string) (tool mcp.To
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_BRANCHES_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List Project Branches",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			mcp.WithString("projectId",
 				mcp.Required(),

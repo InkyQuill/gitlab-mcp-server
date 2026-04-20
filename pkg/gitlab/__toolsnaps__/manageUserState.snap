@@ -1,10 +1,10 @@
 {
   "annotations": {
-    "title": "Manage GitLab User State"
+    "title": "Manage GitLab User State",
+    "readOnlyHint": false
   },
   "description": "TOOL_MANAGE_USER_STATE_DESCRIPTION",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "action": {
         "description": "The administrative action to perform on the user",
@@ -27,7 +27,8 @@
     "required": [
       "userId",
       "action"
-    ]
+    ],
+    "type": "object"
   },
   "name": "manageUserState"
 }

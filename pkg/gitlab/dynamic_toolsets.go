@@ -43,7 +43,7 @@ func (dtm *DynamicToolsetManager) RegisterDiscoveryTools() {
 		mcp.WithDescription("Lists all available GitLab MCP toolsets that can be enabled."),
 		mcp.WithToolAnnotation(mcp.ToolAnnotation{
 			Title:        "List Available Toolsets",
-			ReadOnlyHint: true,
+			ReadOnlyHint: boolPtr(true),
 		}),
 	)
 	dtm.mcpServer.AddTool(listToolsets, dtm.handleListToolsets)
@@ -83,7 +83,8 @@ func (dtm *DynamicToolsetManager) handleListToolsets(ctx context.Context, reques
 // handleEnableToolset enables a specific toolset and registers its tools.
 func (dtm *DynamicToolsetManager) handleEnableToolset(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Parse toolset name from arguments
-	toolsetArg, ok := request.Params.Arguments["toolset"]
+	args := request.GetArguments()
+	toolsetArg, ok := args["toolset"]
 	if !ok {
 		return mcp.NewToolResultError("Missing required parameter: toolset"), nil
 	}

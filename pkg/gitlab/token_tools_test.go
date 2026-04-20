@@ -55,13 +55,7 @@ func TestAddTokenHandler(t *testing.T) {
 	for _, tc := range validationTests {
 		t.Run(tc.name, func(t *testing.T) {
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      tool.Name,
 					Arguments: tc.inputArgs,
 				},
@@ -108,13 +102,7 @@ func TestAddTokenHandler(t *testing.T) {
 		tool, handler := AddToken(mockClientFactory, logger, tokenStore)
 
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: tool.Name,
 				Arguments: map[string]any{
 					"name":       "test-token",
@@ -175,13 +163,7 @@ func TestAddTokenHandler(t *testing.T) {
 		tool, handler := AddToken(mockClientFactory, logger, tokenStore)
 
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: tool.Name,
 				Arguments: map[string]any{
 					"name":  "default-token",
@@ -269,13 +251,7 @@ func TestListTokensHandler(t *testing.T) {
 			tc.setup()
 
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name: tool.Name,
 				},
 			}
@@ -328,13 +304,7 @@ func TestUpdateTokenHandler(t *testing.T) {
 	for _, tc := range validationTests {
 		t.Run(tc.name, func(t *testing.T) {
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      tool.Name,
 					Arguments: tc.inputArgs,
 				},
@@ -358,13 +328,7 @@ func TestUpdateTokenHandler(t *testing.T) {
 	t.Run("Error - Token not found", func(t *testing.T) {
 		// This tests the error path when token doesn't exist in store
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      tool.Name,
 				Arguments: map[string]any{"name": "nonexistent"},
 			},
@@ -404,13 +368,7 @@ func TestUpdateTokenHandler(t *testing.T) {
 		tool, handler := UpdateToken(mockClientFactory, logger, tokenStore)
 
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      tool.Name,
 				Arguments: map[string]any{"name": "work"}, // No new token provided, just revalidate
 			},
@@ -471,13 +429,7 @@ func TestUpdateTokenHandler(t *testing.T) {
 		tool, handler := UpdateToken(mockClientFactory, logger, tokenStore)
 
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: tool.Name,
 				Arguments: map[string]any{
 					"name":  "personal",
@@ -523,13 +475,7 @@ func TestValidateTokenHandler(t *testing.T) {
 		tool, handler := ValidateToken(nil, logger, tokenStore)
 
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: tool.Name,
 			},
 		}
@@ -578,13 +524,7 @@ func TestValidateTokenHandler(t *testing.T) {
 		tool, handler := ValidateToken(mockClientFactory, logger, tokenStore)
 
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      tool.Name,
 				Arguments: map[string]any{"name": "test-token"},
 			},
@@ -662,13 +602,7 @@ func TestValidateTokenHandler(t *testing.T) {
 		tool, handler := ValidateToken(mockClientFactory, logger, tokenStore)
 
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: tool.Name, // No name provided = validate all
 			},
 		}
@@ -718,13 +652,7 @@ func TestValidateTokenHandler(t *testing.T) {
 		tool, handler := ValidateToken(mockClientFactory, logger, tokenStore)
 
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      tool.Name,
 				Arguments: map[string]any{"name": "invalid-token"},
 			},
@@ -791,13 +719,7 @@ func TestGetNotificationsToolHandler(t *testing.T) {
 			tc.setup()
 
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name: tool.Name,
 				},
 			}
@@ -835,13 +757,7 @@ func TestClearNotificationsToolHandler(t *testing.T) {
 		})
 
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: tool.Name,
 			},
 		}
@@ -931,13 +847,7 @@ func TestRemoveTokenHandler(t *testing.T) {
 			// For "Error - Token not found", we want the token to already be removed
 
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      tool.Name,
 					Arguments: tc.inputArgs,
 				},
@@ -1005,13 +915,7 @@ func TestTokenManagementIntegration(t *testing.T) {
 		// Step 1: Add token
 		addTool, addHandler := AddToken(mockClientFactory, logger, tokenStore)
 		addReq := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: addTool.Name,
 				Arguments: map[string]any{
 					"name":  "integration-test",
@@ -1033,13 +937,7 @@ func TestTokenManagementIntegration(t *testing.T) {
 		// Step 2: List tokens
 		listTool, listHandler := ListTokens(tokenStore)
 		listReq := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: listTool.Name,
 			},
 		}
@@ -1060,13 +958,7 @@ func TestTokenManagementIntegration(t *testing.T) {
 		// Step 3: Remove token
 		removeTool, removeHandler := RemoveToken(tokenStore)
 		removeReq := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: removeTool.Name,
 				Arguments: map[string]any{
 					"name": "integration-test",

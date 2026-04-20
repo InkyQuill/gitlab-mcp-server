@@ -289,7 +289,7 @@ func ListMilestones(getClient GetClientFn, t map[string]string) (tool mcp.Tool, 
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_LIST_MILESTONES_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List GitLab Milestones",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			// Required parameters
 			mcp.WithString("projectId",

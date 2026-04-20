@@ -35,7 +35,8 @@ func NewServer(appName, appVersion string) *server.MCPServer {
 func requiredParam[T comparable](r *mcp.CallToolRequest, p string) (T, error) {
 	var zero T
 
-	val, ok := r.Params.Arguments[p]
+	args := r.GetArguments()
+	val, ok := args[p]
 	if !ok {
 		return zero, fmt.Errorf("missing required parameter: %s", p)
 	}
@@ -58,7 +59,8 @@ func requiredParam[T comparable](r *mcp.CallToolRequest, p string) (T, error) {
 func OptionalParam[T any](r *mcp.CallToolRequest, p string) (T, error) {
 	var zero T
 
-	val, ok := r.Params.Arguments[p]
+	args := r.GetArguments()
+	val, ok := args[p]
 	if !ok {
 		return zero, nil // Not present, return zero value, no error
 	}
@@ -74,7 +76,8 @@ func OptionalParam[T any](r *mcp.CallToolRequest, p string) (T, error) {
 
 // OptionalParamOK fetches an optional parameter, returning value, presence bool, and type error.
 func OptionalParamOK[T any](r *mcp.CallToolRequest, p string) (value T, ok bool, err error) {
-	val, exists := r.Params.Arguments[p]
+	args := r.GetArguments()
+	val, exists := args[p]
 	if !exists {
 		// Not present, return zero value, false, no error
 		return
@@ -172,7 +175,8 @@ func OptionalIntParamWithDefault(r *mcp.CallToolRequest, p string, defaultValue 
 // It returns a pointer to the boolean value if found and valid, or nil if not present.
 // Returns an error if the parameter exists but is not a valid boolean.
 func OptionalBoolParam(r *mcp.CallToolRequest, p string) (*bool, error) {
-	rawVal, ok := r.Params.Arguments[p]
+	args := r.GetArguments()
+	rawVal, ok := args[p]
 	if !ok || rawVal == nil {
 		return nil, nil // Not present or explicitly null
 	}

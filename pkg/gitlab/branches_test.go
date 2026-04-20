@@ -216,13 +216,7 @@ func TestGetProjectBranchesHandler(t *testing.T) {
 
 			// Create the request
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      getProjectBranchesTool.Name,
 					Arguments: tc.inputArgs,
 				},

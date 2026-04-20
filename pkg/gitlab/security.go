@@ -250,7 +250,7 @@ func GetProjectSAST(getClient GetClientFn, t map[string]string) (tool mcp.Tool, 
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab Project SAST Findings",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return getSecurityFindings(ctx, req, getClient, "SAST", graphqlQuerySAST)
@@ -268,7 +268,7 @@ func GetProjectDAST(getClient GetClientFn, t map[string]string) (tool mcp.Tool, 
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab Project DAST Findings",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return getSecurityFindings(ctx, req, getClient, "DAST", graphqlQueryDAST)
@@ -286,7 +286,7 @@ func GetProjectDependencyScanning(getClient GetClientFn, t map[string]string) (t
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab Project Dependency Scanning Findings",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return getSecurityFindings(ctx, req, getClient, "Dependency Scanning", graphqlQueryDependencyScanning)
@@ -304,7 +304,7 @@ func GetProjectContainerScanning(getClient GetClientFn, t map[string]string) (to
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab Project Container Scanning Findings",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return getSecurityFindings(ctx, req, getClient, "Container Scanning", graphqlQueryContainerScanning)
@@ -322,7 +322,7 @@ func GetProjectSecretDetection(getClient GetClientFn, t map[string]string) (tool
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab Project Secret Detection Findings",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return getSecurityFindings(ctx, req, getClient, "Secret Detection", graphqlQuerySecretDetection)
@@ -340,7 +340,7 @@ func GetProjectLicenseCompliance(getClient GetClientFn, t map[string]string) (to
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab Project License Compliance",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			return getLicenseCompliance(ctx, req, getClient)

@@ -192,13 +192,7 @@ func TestPipelineJobHandler_List(t *testing.T) {
 			tt.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      listPipelineJobsTool.Name,
 					Arguments: tt.inputArgs,
 				},
@@ -329,13 +323,7 @@ func TestPipelineJobHandler_Get(t *testing.T) {
 			tt.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      getPipelineJobTool.Name,
 					Arguments: tt.inputArgs,
 				},
@@ -473,13 +461,7 @@ func TestPipelineJobHandler_Trace(t *testing.T) {
 			tt.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      getPipelineJobTraceTool.Name,
 					Arguments: tt.inputArgs,
 				},
@@ -618,13 +600,7 @@ func TestRetryPipelineJobHandler(t *testing.T) {
 			tt.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      retryPipelineJobTool.Name,
 					Arguments: tt.inputArgs,
 				},
@@ -745,13 +721,7 @@ func TestPlayPipelineJobHandler(t *testing.T) {
 			tt.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      playPipelineJobTool.Name,
 					Arguments: tt.inputArgs,
 				},
@@ -889,13 +859,7 @@ func TestPipelineHandler_Cancel(t *testing.T) {
 			tt.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      cancelPipelineTool.Name,
 					Arguments: tt.inputArgs,
 				},
@@ -1033,13 +997,7 @@ func TestPipelineHandler_Retry(t *testing.T) {
 			tt.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      retryPipelineTool.Name,
 					Arguments: tt.inputArgs,
 				},

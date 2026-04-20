@@ -146,13 +146,7 @@ func TestGetMergeRequestHandler(t *testing.T) {
 
 			// Create the request
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      getMergeRequestTool.Name,
 					Arguments: tc.inputArgs,
 				},
@@ -197,13 +191,7 @@ func TestGetMergeRequestHandler(t *testing.T) {
 		_, handler := GetMergeRequest(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: getMergeRequestTool.Name,
 				Arguments: map[string]any{
 					"projectId":       projectID,
@@ -443,13 +431,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 
 			// Prepare request using correct structure
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      getMRCommentsTool.Name,
 					Arguments: tc.inputArgs,
 				},
@@ -503,13 +485,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 		_, handler := MergeRequestComment(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: getMRCommentsTool.Name,
 				Arguments: map[string]any{
 					"action":          "list",
@@ -946,13 +922,7 @@ func TestListMergeRequestsHandler(t *testing.T) {
 
 			// Create the request
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      listMergeRequestsTool.Name,
 					Arguments: tc.inputArgs,
 				},
@@ -1030,13 +1000,7 @@ func TestListMergeRequestsHandler(t *testing.T) {
 		_, handler := ListMergeRequests(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: listMergeRequestsTool.Name,
 				Arguments: map[string]any{
 					"projectId": projectID,
@@ -1269,13 +1233,7 @@ func TestCreateMergeRequestHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      createMRTool.Name,
 					Arguments: tc.args,
 				},
@@ -1542,13 +1500,7 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      updateMRTool.Name,
 					Arguments: tc.args,
 				},
@@ -1700,13 +1652,7 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      createCommentTool.Name,
 					Arguments: tc.args,
 				},
@@ -2007,13 +1953,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      updateCommentTool.Name,
 					Arguments: tc.args,
 				},

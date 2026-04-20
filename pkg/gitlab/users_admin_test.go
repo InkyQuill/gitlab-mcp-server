@@ -27,13 +27,7 @@ func TestBlockUserHandler_AdminCheck(t *testing.T) {
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 		mockUsers.EXPECT().BlockUser(int64(1), gomock.Any()).Return(nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "block"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "block"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully blocked")
@@ -43,13 +37,7 @@ func TestBlockUserHandler_AdminCheck(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: false}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "block"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "block"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -69,13 +57,7 @@ func TestUnblockUserHandler_AdminCheck(t *testing.T) {
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 		mockUsers.EXPECT().UnblockUser(int64(1), gomock.Any()).Return(nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unblock"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unblock"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully unblocked")
@@ -85,13 +67,7 @@ func TestUnblockUserHandler_AdminCheck(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: false}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unblock"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unblock"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -111,13 +87,7 @@ func TestBanUserHandler_AdminCheck(t *testing.T) {
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 		mockUsers.EXPECT().BanUser(int64(1), gomock.Any()).Return(nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "ban"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "ban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully banned")
@@ -127,13 +97,7 @@ func TestBanUserHandler_AdminCheck(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: false}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "ban"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "ban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -153,13 +117,7 @@ func TestUnbanUserHandler_AdminCheck(t *testing.T) {
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 		mockUsers.EXPECT().UnbanUser(int64(1), gomock.Any()).Return(nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unban"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully unbanned")
@@ -169,13 +127,7 @@ func TestUnbanUserHandler_AdminCheck(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: false}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unban"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "unban"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -195,13 +147,7 @@ func TestActivateUserHandler_AdminCheck(t *testing.T) {
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 		mockUsers.EXPECT().ActivateUser(int64(1), gomock.Any()).Return(nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "activate"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "activate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully activated")
@@ -211,13 +157,7 @@ func TestActivateUserHandler_AdminCheck(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: false}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "activate"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "activate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -237,13 +177,7 @@ func TestDeactivateUserHandler_AdminCheck(t *testing.T) {
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 		mockUsers.EXPECT().DeactivateUser(int64(1), gomock.Any()).Return(nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "deactivate"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "deactivate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully deactivated")
@@ -253,13 +187,7 @@ func TestDeactivateUserHandler_AdminCheck(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: false}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "deactivate"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "deactivate"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")
@@ -279,13 +207,7 @@ func TestApproveUserHandler_AdminCheck(t *testing.T) {
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 		mockUsers.EXPECT().ApproveUser(int64(1), gomock.Any()).Return(nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "approve"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "approve"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "successfully approved")
@@ -295,13 +217,7 @@ func TestApproveUserHandler_AdminCheck(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: false}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 
-		request := mcp.CallToolRequest{Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "approve"}}}
+		request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"userId": float64(1), "action": "approve"}}}
 		result, err := handler(ctx, request)
 		require.NoError(t, err)
 		assert.Contains(t, getTextResult(t, result).Text, "Admin permission required")

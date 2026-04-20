@@ -21,7 +21,7 @@ func GetProject(getClient GetClientFn, t map[string]string) (tool mcp.Tool, hand
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get Project Details",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			mcp.WithString("projectId",
 				mcp.Required(),
@@ -70,7 +70,7 @@ func ListProjects(getClient GetClientFn, t map[string]string) (tool mcp.Tool, ha
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_LIST_PROJECTS_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List Projects",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			// GitLab API ListProjectsOptions parameters
 			mcp.WithString("search", mcp.Description("Return list of projects matching the search criteria.")),

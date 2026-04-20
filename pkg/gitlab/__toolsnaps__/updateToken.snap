@@ -1,11 +1,12 @@
 {
   "annotations": {
+    "readOnlyHint": false,
     "destructiveHint": true,
+    "idempotentHint": false,
     "openWorldHint": true
   },
   "description": "Updates an existing GitLab token. Validates the new token before updating.",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "name": {
         "description": "Token name to update.",
@@ -18,7 +19,8 @@
     },
     "required": [
       "name"
-    ]
+    ],
+    "type": "object"
   },
   "name": "updateToken"
 }

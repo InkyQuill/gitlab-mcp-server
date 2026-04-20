@@ -1,10 +1,14 @@
 {
   "annotations": {
+    "readOnlyHint": false,
     "destructiveHint": true,
+    "idempotentHint": false,
     "openWorldHint": true
   },
   "description": "Auto-detects the GitLab project from the Git remote URL in the current directory. Useful for quickly setting up the project context.",
   "inputSchema": {
+    "properties": {},
+    "required": [],
     "type": "object"
   },
   "name": "detectProject"

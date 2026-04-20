@@ -107,13 +107,7 @@ func TestSearchProjectsHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      searchProjectsTool.Name,
 					Arguments: tc.args,
 				},
@@ -241,13 +235,7 @@ func TestSearchIssuesHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      searchIssuesTool.Name,
 					Arguments: tc.args,
 				},
@@ -360,13 +348,7 @@ func TestSearchMergeRequestsHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      searchMRsTool.Name,
 					Arguments: tc.args,
 				},
@@ -504,13 +486,7 @@ func TestSearchBlobsHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      searchBlobsTool.Name,
 					Arguments: tc.args,
 				},
@@ -619,13 +595,7 @@ func TestSearchCommitsHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      searchCommitsTool.Name,
 					Arguments: tc.args,
 				},
@@ -673,13 +643,7 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 		tool, _ := Search(nil, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      tool.Name,
 				Arguments: map[string]any{"resourceType": "projects", "search": "test"},
 			},
@@ -696,13 +660,7 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 		tool, _ := Search(nil, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      tool.Name,
 				Arguments: map[string]any{"resourceType": "issues", "search": "test"},
 			},
@@ -719,13 +677,7 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 		tool, _ := Search(nil, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      tool.Name,
 				Arguments: map[string]any{"resourceType": "merge_requests", "search": "test"},
 			},
@@ -742,13 +694,7 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 		tool, _ := Search(nil, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      tool.Name,
 				Arguments: map[string]any{"resourceType": "blobs", "search": "test"},
 			},
@@ -765,13 +711,7 @@ func TestSearchTools_ClientInitError(t *testing.T) {
 		tool, _ := Search(nil, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      tool.Name,
 				Arguments: map[string]any{"resourceType": "commits", "search": "test"},
 			},
@@ -880,13 +820,7 @@ func TestSearchProjectsByGroupHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      tool.Name,
 					Arguments: tc.args,
 				},
@@ -1000,13 +934,7 @@ func TestSearchIssuesByGroupHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      tool.Name,
 					Arguments: tc.args,
 				},
@@ -1090,13 +1018,7 @@ func TestSearchMergeRequestsByGroupHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -1173,13 +1095,7 @@ func TestSearchMilestonesByGroupHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -1256,13 +1172,7 @@ func TestSearchBlobsByGroupHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -1339,13 +1249,7 @@ func TestSearchIssuesByProjectHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -1422,13 +1326,7 @@ func TestSearchMergeRequestsByProjectHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -1505,13 +1403,7 @@ func TestSearchMilestonesByProjectHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -1588,13 +1480,7 @@ func TestSearchBlobsByProjectHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -1671,13 +1557,7 @@ func TestSearchCommitsByProjectHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -1749,13 +1629,7 @@ func TestSearchMilestonesHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -1825,13 +1699,7 @@ func TestSearchSnippetTitlesHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -1858,13 +1726,7 @@ func TestSearchSnippetBlobsHandler(t *testing.T) {
 	mockGetClient := func(_ context.Context) (*gl.Client, error) { return mockClient, nil }
 	tool, handler := Search(mockGetClient, nil)
 
-	request := mcp.CallToolRequest{Params: struct {
-		Name      string                 `json:"name"`
-		Arguments map[string]interface{} `json:"arguments,omitempty"`
-		Meta      *struct {
-			ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-		} `json:"_meta,omitempty"`
-	}{Name: tool.Name, Arguments: map[string]any{"resourceType": "snippet_blobs", "search": "function"}}}
+	request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: map[string]any{"resourceType": "snippet_blobs", "search": "function"}}}
 	result, err := handler(ctx, request)
 	require.NoError(t, err)
 	assert.Contains(t, getTextResult(t, result).Text, "no longer supported")
@@ -1922,13 +1784,7 @@ func TestSearchWikiBlobsHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -2005,13 +1861,7 @@ func TestSearchNotesByProjectHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)

@@ -235,13 +235,7 @@ func TestDynamicToolsetManager_handleEnableToolset(t *testing.T) {
 
 			// Create request
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      "enable_toolset",
 					Arguments: tc.requestArgs,
 				},
@@ -361,13 +355,7 @@ func TestDynamicToolsetManager_Integration_EnableThenList(t *testing.T) {
 
 	// Enable projects toolset
 	enableRequest := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name:      "enable_toolset",
 			Arguments: map[string]interface{}{"toolset": "projects"},
 		},

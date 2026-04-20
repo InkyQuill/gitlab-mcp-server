@@ -5,7 +5,6 @@
   },
   "description": "Lists merge requests for a GitLab project with filtering and pagination options.",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "assignee_id": {
         "description": "Return merge requests assigned to the specified user ID.",
@@ -95,7 +94,8 @@
     },
     "required": [
       "projectId"
-    ]
+    ],
+    "type": "object"
   },
   "name": "listMergeRequests"
 }

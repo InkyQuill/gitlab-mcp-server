@@ -158,13 +158,7 @@ func TestGetProjectHandler(t *testing.T) {
 
 			// Create the request using the correct structure
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      getProjectTool.Name,
 					Arguments: tc.inputArgs,
 				},
@@ -470,13 +464,7 @@ func TestListProjectsHandler(t *testing.T) {
 
 			// --- Create Request ---
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      listProjectsTool.Name,
 					Arguments: tc.inputArgs,
 				},

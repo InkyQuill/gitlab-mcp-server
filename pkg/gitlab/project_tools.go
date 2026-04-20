@@ -36,8 +36,9 @@ func SetCurrentProject(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
 
-			server, _ := request.Params.Arguments["server"].(string)
-			gitlabHost, _ := request.Params.Arguments["gitlabHost"].(string)
+			args := request.GetArguments()
+			server, _ := args["server"].(string)
+			gitlabHost, _ := args["gitlabHost"].(string)
 
 			// If server is not specified, try to detect from Git remote
 			if server == "" {
@@ -283,7 +284,8 @@ func AutoDetectAndSetProject(getClient GetClientFn) (tool mcp.Tool, handler serv
 // GetProjectIDWithFallback tries to get project ID from parameter, then from .gmcprc, then from Git detection
 func GetProjectIDWithFallback(request *mcp.CallToolRequest) (string, error) {
 	// First, try to get from explicit parameter
-	if projectID, ok := request.Params.Arguments["projectId"].(string); ok && projectID != "" {
+	args := request.GetArguments()
+	if projectID, ok := args["projectId"].(string); ok && projectID != "" {
 		return projectID, nil
 	}
 

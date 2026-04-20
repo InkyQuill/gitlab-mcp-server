@@ -138,13 +138,7 @@ func TestGetIssueHandler(t *testing.T) {
 		_, handler := GetIssue(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      getIssueTool.Name,
 				Arguments: map[string]any{"projectId": "any", "issueIid": 1.0},
 			},
@@ -172,13 +166,7 @@ func TestGetIssueHandler(t *testing.T) {
 
 			// Prepare request using correct structure
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      getIssueTool.Name, // Use the tool name from the definition
 					Arguments: args,
 				},
@@ -670,13 +658,7 @@ func TestListIssuesHandler(t *testing.T) {
 		_, handler := ListIssues(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      listIssuesTool.Name,
 				Arguments: map[string]any{"projectId": "any"},
 			},
@@ -696,13 +678,7 @@ func TestListIssuesHandler(t *testing.T) {
 
 			// Prepare request using correct structure
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      listIssuesTool.Name, // Use the tool name from the definition
 					Arguments: tc.args,
 				},
@@ -1008,13 +984,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 		_, handler := IssueComment(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      getIssueCommentsTool.Name,
 				Arguments: map[string]any{"action": "list", "projectId": "any", "issueIid": 1.0},
 			},
@@ -1034,13 +1004,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 
 			// Prepare request using correct structure
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      getIssueCommentsTool.Name,
 					Arguments: tc.args,
 				},
@@ -1275,13 +1239,7 @@ func TestGetIssueLabelsHandler(t *testing.T) {
 		_, handler := GetIssueLabels(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      getIssueLabelssTool.Name,
 				Arguments: map[string]any{"projectId": "any", "issueIid": 1.0},
 			},
@@ -1301,13 +1259,7 @@ func TestGetIssueLabelsHandler(t *testing.T) {
 
 			// Prepare request using correct structure
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      getIssueLabelssTool.Name,
 					Arguments: tc.args,
 				},
@@ -1544,13 +1496,7 @@ func TestCreateIssueHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      createIssueTool.Name,
 					Arguments: tc.args,
 				},
@@ -1591,13 +1537,7 @@ func TestCreateIssueHandler(t *testing.T) {
 		_, handler := CreateIssue(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      createIssueTool.Name,
 				Arguments: map[string]any{"projectId": projectID, "title": "Test"},
 			},
@@ -1941,13 +1881,7 @@ func TestUpdateIssueHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      updateIssueTool.Name,
 					Arguments: tc.args,
 				},
@@ -2107,13 +2041,7 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      createCommentTool.Name,
 					Arguments: tc.args,
 				},
@@ -2354,13 +2282,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      updateCommentTool.Name,
 					Arguments: tc.args,
 				},
@@ -2460,13 +2382,7 @@ func TestUpdateIssueHandler_RealAPI_Integration(t *testing.T) {
 	updateTool, handler := UpdateIssue(mockGetClient, map[string]string{})
 
 	closeRequest := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: updateTool.Name,
 			Arguments: map[string]interface{}{
 				"projectId":  testProjectID,
@@ -2498,13 +2414,7 @@ func TestUpdateIssueHandler_RealAPI_Integration(t *testing.T) {
 
 	// Step 3: Test stateEvent="reopen"
 	reopenRequest := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: updateTool.Name,
 			Arguments: map[string]interface{}{
 				"projectId":  testProjectID,
@@ -2543,13 +2453,7 @@ func TestUpdateIssueHandler_RealAPI_Integration(t *testing.T) {
 		}
 
 		milestoneRequest := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: updateTool.Name,
 				Arguments: map[string]interface{}{
 					"projectId":   testProjectID,

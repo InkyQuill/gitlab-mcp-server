@@ -4,7 +4,6 @@
   },
   "description": "Updates an existing merge request in a GitLab project.",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "assigneeIds": {
         "description": "Comma-separated list of user IDs to assign the merge request to.",
@@ -59,7 +58,8 @@
     "required": [
       "projectId",
       "mergeRequestIid"
-    ]
+    ],
+    "type": "object"
   },
   "name": "updateMergeRequest"
 }

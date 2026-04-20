@@ -11,20 +11,14 @@ import (
 // createMCPRequest is a helper function to create a CallToolRequest pointer for tests
 func createMCPRequest(params map[string]interface{}) *mcp.CallToolRequest {
 	return &mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Arguments: params,
 		},
 	}
 }
 
-// boolPtr is a helper function to get a pointer to a bool
-func boolPtr(b bool) *bool {
+// testBoolPtr is a helper function to get a pointer to a bool
+func testBoolPtr(b bool) *bool {
 	return &b
 }
 
@@ -616,84 +610,84 @@ func TestOptionalBoolParam(t *testing.T) {
 			name:        "Parameter is true (bool)",
 			params:      map[string]interface{}{"myBool": true},
 			paramName:   "myBool",
-			expectedVal: boolPtr(true),
+			expectedVal: testBoolPtr(true),
 			expectError: false,
 		},
 		{
 			name:        "Parameter is false (bool)",
 			params:      map[string]interface{}{"myBool": false},
 			paramName:   "myBool",
-			expectedVal: boolPtr(false),
+			expectedVal: testBoolPtr(false),
 			expectError: false,
 		},
 		{
 			name:        "Parameter is string 'true'",
 			params:      map[string]interface{}{"myBool": "true"},
 			paramName:   "myBool",
-			expectedVal: boolPtr(true),
+			expectedVal: testBoolPtr(true),
 			expectError: false,
 		},
 		{
 			name:        "Parameter is string 'false'",
 			params:      map[string]interface{}{"myBool": "false"},
 			paramName:   "myBool",
-			expectedVal: boolPtr(false),
+			expectedVal: testBoolPtr(false),
 			expectError: false,
 		},
 		{
 			name:        "Parameter is string '1'",
 			params:      map[string]interface{}{"myBool": "1"},
 			paramName:   "myBool",
-			expectedVal: boolPtr(true),
+			expectedVal: testBoolPtr(true),
 			expectError: false,
 		},
 		{
 			name:        "Parameter is string '0'",
 			params:      map[string]interface{}{"myBool": "0"},
 			paramName:   "myBool",
-			expectedVal: boolPtr(false),
+			expectedVal: testBoolPtr(false),
 			expectError: false,
 		},
 		{
 			name:        "Parameter is string 'yes'",
 			params:      map[string]interface{}{"myBool": "yes"},
 			paramName:   "myBool",
-			expectedVal: boolPtr(true),
+			expectedVal: testBoolPtr(true),
 			expectError: false,
 		},
 		{
 			name:        "Parameter is string 'no'",
 			params:      map[string]interface{}{"myBool": "no"},
 			paramName:   "myBool",
-			expectedVal: boolPtr(false),
+			expectedVal: testBoolPtr(false),
 			expectError: false,
 		},
 		{
 			name:        "Parameter is string 't'",
 			params:      map[string]interface{}{"myBool": "t"},
 			paramName:   "myBool",
-			expectedVal: boolPtr(true),
+			expectedVal: testBoolPtr(true),
 			expectError: false,
 		},
 		{
 			name:        "Parameter is string 'f'",
 			params:      map[string]interface{}{"myBool": "f"},
 			paramName:   "myBool",
-			expectedVal: boolPtr(false),
+			expectedVal: testBoolPtr(false),
 			expectError: false,
 		},
 		{
 			name:        "Parameter is string 'y'",
 			params:      map[string]interface{}{"myBool": "y"},
 			paramName:   "myBool",
-			expectedVal: boolPtr(true),
+			expectedVal: testBoolPtr(true),
 			expectError: false,
 		},
 		{
 			name:        "Parameter is string 'n'",
 			params:      map[string]interface{}{"myBool": "n"},
 			paramName:   "myBool",
-			expectedVal: boolPtr(false),
+			expectedVal: testBoolPtr(false),
 			expectError: false,
 		},
 		{
