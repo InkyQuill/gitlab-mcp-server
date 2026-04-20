@@ -108,10 +108,43 @@ This server supports multiple GitLab instances and can be configured via:
 
 			logger.Info("Starting main execution flow...")
 
-			// Try to load global config first
-			cfgManager, err := config.NewManager("")
+			// Build the secret backend registry.
+			registry := config.NewBackendRegistry()
+			if err := registry.Register(config.NewKeyringBackend("gitlab-mcp-server")); err != nil {
+				logger.Warnf("Failed to register keyring backend: %v", err)
+			}
+			cfgManager, err := config.NewManagerWithRegistry("", registry)
 			if err != nil {
 				logger.Warnf("Failed to create config manager: %v", err)
+			}
+
+			// If config has external-cmd templates, register those schemes too.
+			if cfgManager != nil && cfgManager.Config().Backends != nil &&
+				len(cfgManager.Config().Backends.External) > 0 {
+				ext := config.NewExternalCmdBackend(cfgManager.Config().Backends.External)
+				if err := ext.RegisterAll(registry); err != nil {
+					logger.Warnf("Failed to register external-cmd backends: %v", err)
+				} else {
+					logger.Infof("Registered external-cmd schemes: %v", ext.Schemes())
+				}
+			}
+
+			// If any server uses file:// refs, register the encrypted-file backend with its path.
+			if cfgManager != nil {
+				for _, s := range cfgManager.ListServers() {
+					if strings.HasPrefix(s.TokenRef, "file://") {
+						if path, _, refErr := parseFileRefFromRef(s.TokenRef); refErr == nil {
+							crypto, cerr := config.NewCryptoManager(true)
+							if cerr == nil {
+								fb, ferr := config.NewEncryptedFileBackend(path, crypto)
+								if ferr == nil {
+									_ = registry.Register(fb)
+								}
+							}
+							break // one file backend suffices
+						}
+					}
+				}
 			}
 
 			hasConfigServers := false
@@ -145,8 +178,11 @@ This server supports multiple GitLab instances and can be configured via:
 			defaultServer := "default"
 			if hasConfigServers {
 				servers := cfgManager.ListServers()
+				resolveToken := func(ctx context.Context, name string) (string, error) {
+					return cfgManager.ResolveServerToken(ctx, name)
+				}
 				for _, serverCfg := range servers {
-					if err := clientPool.AddServerFromConfig(ctx, serverCfg); err != nil {
+					if err := clientPool.AddServerFromConfig(ctx, serverCfg, resolveToken); err != nil {
 						logger.Warnf("Failed to initialize client '%s': %v", serverCfg.Name, err)
 					} else {
 						logger.Infof("Added client '%s' from config", serverCfg.Name)
@@ -426,4 +462,20 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error executing command: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// parseFileRefFromRef parses a file://<path>#<entry> ref. Tiny duplicate of
+// pkg/config.parseFileRef (unexported) to avoid widening that package's API
+// just for startup wiring.
+func parseFileRefFromRef(ref string) (path, entry string, err error) {
+	const prefix = "file://"
+	if !strings.HasPrefix(ref, prefix) {
+		return "", "", fmt.Errorf("not a file ref: %s", ref)
+	}
+	rest := ref[len(prefix):]
+	hash := strings.LastIndex(rest, "#")
+	if hash < 0 {
+		return "", "", fmt.Errorf("missing #entry: %s", ref)
+	}
+	return rest[:hash], rest[hash+1:], nil
 }

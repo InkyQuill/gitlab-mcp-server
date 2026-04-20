@@ -280,7 +280,10 @@ func TestClientPoolFlow(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		err := pool.AddServerFromConfig(ctx, serverCfg)
+		resolve := func(_ context.Context, _ string) (string, error) {
+			return "test-token", nil
+		}
+		err := pool.AddServerFromConfig(ctx, serverCfg, resolve)
 		if err != nil {
 			t.Fatalf("AddServerFromConfig() error = %v", err)
 		}

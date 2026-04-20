@@ -159,10 +159,13 @@ func BenchmarkClientPool_AddServerFromConfig(b *testing.B) {
 		Host:  "https://gitlab.example.com",
 		Token: "test-token",
 	}
+	resolve := func(_ context.Context, _ string) (string, error) {
+		return "test-token", nil
+	}
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		pool.clients = make(map[string]*gl.Client) // Reset map
-		_ = pool.AddServerFromConfig(ctx, server)
+		_ = pool.AddServerFromConfig(ctx, server, resolve)
 	}
 }
