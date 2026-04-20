@@ -621,3 +621,51 @@ func TestConfig_BackendsSection_Roundtrips(t *testing.T) {
 	require.NotNil(t, m2.Config().Backends)
 	assert.Equal(t, "op read %s", m2.Config().Backends.External["op"])
 }
+
+func TestManager_Save_BumpsVersionWhenTokenRefPresent(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.json")
+
+	v1 := `{"version":"1.0","servers":{"work":{"name":"work","host":"https://gitlab.example.com","token":"plain-token"}}}`
+	require.NoError(t, os.WriteFile(path, []byte(v1), 0600))
+
+	reg := NewBackendRegistry()
+	fake := NewFakeSecretBackend("keyring")
+	require.NoError(t, reg.Register(fake))
+
+	m, err := NewManagerWithRegistry(path, reg)
+	require.NoError(t, err)
+
+	require.NoError(t, m.UpdateServer("work", &ServerConfig{
+		Name:     "work",
+		Host:     "https://gitlab.example.com",
+		TokenRef: "keyring://work",
+	}))
+	require.NoError(t, m.Save())
+
+	raw, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Contains(t, string(raw), `"version": "2.0"`)
+
+	bak, err := os.ReadFile(path + ".bak")
+	require.NoError(t, err)
+	assert.Contains(t, string(bak), `"version":"1.0"`)
+}
+
+func TestManager_Save_NoBumpWhenOnlyLegacyTokens(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.json")
+
+	m, err := NewManager(path)
+	require.NoError(t, err)
+	require.NoError(t, m.AddServer(&ServerConfig{
+		Name:  "work",
+		Host:  "https://gitlab.example.com",
+		Token: "plain",
+	}))
+	require.NoError(t, m.Save())
+
+	raw, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Contains(t, string(raw), `"version": "1.0"`)
+}

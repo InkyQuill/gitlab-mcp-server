@@ -118,12 +118,32 @@ func (m *Manager) Load() error {
 	return nil
 }
 
-// Save saves the configuration to disk
+// Save saves the configuration to disk. When any server carries a TokenRef,
+// the on-disk schema is bumped to "2.0" and a one-time backup of the prior
+// file is written next to it as config.json.bak.
 func (m *Manager) Save() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Ensure config directory exists
+	hasTokenRef := false
+	for _, s := range m.config.Servers {
+		if s.TokenRef != "" {
+			hasTokenRef = true
+			break
+		}
+	}
+
+	if hasTokenRef && m.config.Version != "2.0" {
+		// Backup the prior file (best-effort; missing prior file is fine).
+		if prior, err := os.ReadFile(m.FilePath); err == nil {
+			_ = os.WriteFile(m.FilePath+".bak", prior, 0600)
+		}
+		m.config.Version = "2.0"
+	}
+	if !hasTokenRef && m.config.Version == "" {
+		m.config.Version = "1.0"
+	}
+
 	configDir := filepath.Dir(m.FilePath)
 	if err := os.MkdirAll(configDir, 0700); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
@@ -133,11 +153,9 @@ func (m *Manager) Save() error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
-
 	if err := os.WriteFile(m.FilePath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
-
 	return nil
 }
 
