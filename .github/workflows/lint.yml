@@ -18,16 +18,20 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25.9'
           cache: true
 
       - name: Download dependencies
         run: go mod download
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        # v7 is required for golangci-lint v2. v6 only supports v1.
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: v1.64.8
+          # v2.11.4 is the latest v2 at time of writing; built with a Go
+          # toolchain that accepts our go 1.25.9 directive. v2.0.2 was
+          # still built with Go 1.24 and errors the same way v1 did.
+          version: v2.11.4
           args: --timeout=5m --config=.golangci.yml ./...
 
   go-vet:
@@ -41,7 +45,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25.9'
           cache: true
 
       - name: Run go vet
@@ -58,7 +62,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25.9'
 
       - name: Check formatting
         run: |
