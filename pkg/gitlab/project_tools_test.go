@@ -101,13 +101,7 @@ func TestSetCurrentProjectHandler(t *testing.T) {
 
 			// Create request
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      tool.Name,
 					Arguments: tc.inputArgs,
 				},
@@ -233,13 +227,7 @@ func TestGetCurrentProjectHandler(t *testing.T) {
 
 			// Create request
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name: tool.Name,
 				},
 			}
@@ -358,13 +346,7 @@ func TestGetProjectIDWithFallback(t *testing.T) {
 
 			// Create request
 			request := &mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Arguments: tc.requestArgs,
 				},
 			}
@@ -488,13 +470,7 @@ func TestDetectProjectHandler(t *testing.T) {
 
 			// Create request
 			req := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name: tool.Name,
 				},
 			}
@@ -543,13 +519,7 @@ func TestAutoDetectAndSetProjectHandler(t *testing.T) {
 		require.NoError(t, err)
 
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: tool.Name,
 			},
 		}
@@ -602,13 +572,7 @@ func TestAutoDetectAndSetProjectHandler(t *testing.T) {
 			Return(expectedProject, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 
 		req := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: tool.Name,
 			},
 		}
@@ -660,13 +624,7 @@ func TestProjectConfigWorkflow(t *testing.T) {
 		// Step 1: Set current project
 		setTool, setHandler := SetCurrentProject(mockGetClient, tokenStore)
 		setReq := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: setTool.Name,
 				Arguments: map[string]any{
 					"projectId":  "mygroup/myproject",
@@ -691,13 +649,7 @@ func TestProjectConfigWorkflow(t *testing.T) {
 		// Step 2: Get current project
 		getTool, getHandler := GetCurrentProject(mockGetClient, tokenStore)
 		getReq := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: getTool.Name,
 			},
 		}

@@ -58,7 +58,8 @@ func AddToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *Token
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
 
-			gitlabHost, _ := request.Params.Arguments["gitlabHost"].(string)
+			args := request.GetArguments()
+			gitlabHost, _ := args["gitlabHost"].(string)
 			if gitlabHost == "" {
 				gitlabHost = "https://gitlab.com"
 			}
@@ -190,7 +191,8 @@ func UpdateToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *To
 			}
 
 			// Check if new token value is provided
-			newToken, hasNewToken := request.Params.Arguments["token"].(string)
+			args := request.GetArguments()
+			newToken, hasNewToken := args["token"].(string)
 
 			var tokenToValidate string
 			if hasNewToken {
@@ -265,7 +267,8 @@ func ValidateToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			// Parse parameters
-			tokenName, _ := request.Params.Arguments["name"].(string)
+			args := request.GetArguments()
+			tokenName, _ := args["name"].(string)
 
 			// Get client function for validation
 			getClientForName := func(name string) (*gl.Client, error) {

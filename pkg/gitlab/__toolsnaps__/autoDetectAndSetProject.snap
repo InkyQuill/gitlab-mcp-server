@@ -1,10 +1,14 @@
 {
   "annotations": {
+    "readOnlyHint": false,
     "destructiveHint": true,
+    "idempotentHint": false,
     "openWorldHint": true
   },
   "description": "Auto-detects the GitLab project from Git remote and creates a .gmcprc file. This is a convenience command that combines detectProject and setCurrentProject.",
   "inputSchema": {
+    "properties": {},
+    "required": [],
     "type": "object"
   },
   "name": "autoDetectAndSetProject"

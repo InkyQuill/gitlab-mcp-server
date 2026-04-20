@@ -1,10 +1,14 @@
 {
   "annotations": {
+    "readOnlyHint": false,
     "destructiveHint": true,
+    "idempotentHint": false,
     "openWorldHint": true
   },
   "description": "Returns recent notifications about token issues, validation results, and other important messages.",
   "inputSchema": {
+    "properties": {},
+    "required": [],
     "type": "object"
   },
   "name": "getNotifications"

@@ -226,13 +226,7 @@ func TestGetProjectSASTHandler(t *testing.T) {
 	tool, handler := GetProjectSAST(mockGetClient, nil)
 
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name:      tool.Name,
 			Arguments: map[string]any{"pid": "mygroup/myproject"},
 		},
@@ -269,13 +263,7 @@ func TestGetProjectSASTHandler_EmptyResults(t *testing.T) {
 	tool, handler := GetProjectSAST(mockGetClient, nil)
 
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name:      tool.Name,
 			Arguments: map[string]any{"pid": "mygroup/myproject"},
 		},
@@ -309,13 +297,7 @@ func TestGetProjectDASTHandler(t *testing.T) {
 	tool, handler := GetProjectDAST(mockGetClient, nil)
 
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name:      tool.Name,
 			Arguments: map[string]any{"pid": "mygroup/myproject"},
 		},
@@ -350,13 +332,7 @@ func TestGetProjectDependencyScanningHandler(t *testing.T) {
 	tool, handler := GetProjectDependencyScanning(mockGetClient, nil)
 
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name:      tool.Name,
 			Arguments: map[string]any{"pid": "mygroup/myproject"},
 		},
@@ -391,13 +367,7 @@ func TestGetProjectContainerScanningHandler(t *testing.T) {
 	tool, handler := GetProjectContainerScanning(mockGetClient, nil)
 
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name:      tool.Name,
 			Arguments: map[string]any{"pid": "mygroup/myproject"},
 		},
@@ -432,13 +402,7 @@ func TestGetProjectSecretDetectionHandler(t *testing.T) {
 	tool, handler := GetProjectSecretDetection(mockGetClient, nil)
 
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name:      tool.Name,
 			Arguments: map[string]any{"pid": "mygroup/myproject"},
 		},
@@ -473,13 +437,7 @@ func TestGetProjectLicenseComplianceHandler(t *testing.T) {
 	tool, handler := GetProjectLicenseCompliance(mockGetClient, nil)
 
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name:      tool.Name,
 			Arguments: map[string]any{"pid": "mygroup/myproject"},
 		},
@@ -516,13 +474,7 @@ func TestGetProjectLicenseComplianceHandler_EmptyResults(t *testing.T) {
 	tool, handler := GetProjectLicenseCompliance(mockGetClient, nil)
 
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name:      tool.Name,
 			Arguments: map[string]any{"pid": "mygroup/myproject"},
 		},
@@ -596,13 +548,7 @@ func TestSecurityTools_MissingRequiredParameter(t *testing.T) {
 			tool, handler := tt.getToolAndFunc()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      tool.Name,
 					Arguments: tt.arguments,
 				},
@@ -639,13 +585,7 @@ func TestSecurityTools_GraphQLErrorResponse(t *testing.T) {
 	tool, handler := GetProjectSAST(mockGetClient, nil)
 
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name:      tool.Name,
 			Arguments: map[string]any{"pid": "nonexistent/project"},
 		},
@@ -677,13 +617,7 @@ func TestSecurityTools_NoMatchingGraphQLQuery(t *testing.T) {
 	tool, handler := GetProjectSAST(mockGetClient, nil)
 
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name:      tool.Name,
 			Arguments: map[string]any{"pid": "mygroup/myproject"},
 		},

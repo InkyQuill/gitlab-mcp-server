@@ -206,13 +206,7 @@ func TestListRepositoryTagsHandler(t *testing.T) {
 			tt.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      listRepositoryTagsTool.Name,
 					Arguments: tt.inputArgs,
 				},
@@ -343,13 +337,7 @@ func TestTagHandler_Get(t *testing.T) {
 			tt.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      getRepositoryTagTool.Name,
 					Arguments: tt.inputArgs,
 				},
@@ -515,13 +503,7 @@ func TestTagHandler_Create(t *testing.T) {
 			tt.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      createRepositoryTagTool.Name,
 					Arguments: tt.inputArgs,
 				},
@@ -651,13 +633,7 @@ func TestTagHandler_Delete(t *testing.T) {
 			tt.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      deleteRepositoryTagTool.Name,
 					Arguments: tt.inputArgs,
 				},

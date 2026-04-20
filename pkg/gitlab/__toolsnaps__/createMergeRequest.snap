@@ -4,7 +4,6 @@
   },
   "description": "TOOL_CREATE_MERGE_REQUEST_DESCRIPTION",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "assigneeIds": {
         "description": "Comma-separated list of user IDs to assign the merge request to.",
@@ -52,7 +51,8 @@
       "sourceBranch",
       "targetBranch",
       "title"
-    ]
+    ],
+    "type": "object"
   },
   "name": "createMergeRequest"
 }

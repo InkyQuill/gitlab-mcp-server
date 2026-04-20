@@ -5,7 +5,6 @@
   },
   "description": "TOOL_GET_PROJECT_FILE_DESCRIPTION",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "filePath": {
         "description": "The path to the file within the repository.",
@@ -24,7 +23,8 @@
       "projectId",
       "filePath",
       "ref"
-    ]
+    ],
+    "type": "object"
   },
   "name": "getProjectFile"
 }

@@ -44,7 +44,7 @@ func Search(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler 
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Search GitLab Resources",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			client, err := getClient(ctx)

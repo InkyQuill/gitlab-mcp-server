@@ -4,7 +4,6 @@
   },
   "description": "TOOL_PIPELINE_JOB_DESCRIPTION",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "action": {
         "description": "The action to perform on the pipeline job.",
@@ -39,7 +38,8 @@
     "required": [
       "action",
       "projectId"
-    ]
+    ],
+    "type": "object"
   },
   "name": "pipelineJob"
 }

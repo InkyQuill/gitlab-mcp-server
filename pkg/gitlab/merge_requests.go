@@ -20,7 +20,7 @@ func GetMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.Tool,
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_MERGE_REQUEST_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab Merge Request",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			mcp.WithString("projectId",
 				mcp.Required(),
@@ -104,7 +104,7 @@ func MergeRequestComment(getClient GetClientFn, t map[string]string) (tool mcp.T
 			WithPagination(),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Manage Merge Request Comments",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			// Parse required parameters
@@ -239,7 +239,7 @@ func ListMergeRequests(getClient GetClientFn, t map[string]string) (tool mcp.Too
 			mcp.WithDescription("Lists merge requests for a GitLab project with filtering and pagination options."),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List GitLab Merge Requests",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			// Required parameters
 			mcp.WithString("projectId",

@@ -4,7 +4,6 @@
   },
   "description": "TOOL_TAG_DESCRIPTION",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "action": {
         "description": "The action to perform on the tag.",
@@ -37,7 +36,8 @@
       "action",
       "projectId",
       "tagName"
-    ]
+    ],
+    "type": "object"
   },
   "name": "tag"
 }

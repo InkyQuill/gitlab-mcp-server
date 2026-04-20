@@ -18,7 +18,7 @@ func GetCurrentUser(getClient GetClientFn, t map[string]string) (tool mcp.Tool, 
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_CURRENT_USER_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get Current GitLab User",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			client, err := getClient(ctx)
@@ -55,7 +55,7 @@ func GetUser(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab User by ID",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			client, err := getClient(ctx)
@@ -101,7 +101,7 @@ func GetUserStatus(getClient GetClientFn, t map[string]string) (tool mcp.Tool, h
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab User Status",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			client, err := getClient(ctx)
@@ -152,7 +152,7 @@ func ListUsers(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handl
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List GitLab Users",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			client, err := getClient(ctx)
@@ -235,7 +235,7 @@ func ListProjectUsers(getClient GetClientFn, t map[string]string) (tool mcp.Tool
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List GitLab Project Users",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			client, err := getClient(ctx)
@@ -316,7 +316,7 @@ func ManageUserState(getClient GetClientFn, t map[string]string) (tool mcp.Tool,
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Manage GitLab User State",
-				ReadOnlyHint: false,
+				ReadOnlyHint: boolPtr(false),
 			}),
 		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			client, err := getClient(ctx)

@@ -5,7 +5,6 @@
   },
   "description": "TOOL_LIST_PROJECTS_DESCRIPTION",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "membership": {
         "description": "Limit by projects that the current user is a member of.",
@@ -60,7 +59,9 @@
         ],
         "type": "string"
       }
-    }
+    },
+    "required": [],
+    "type": "object"
   },
   "name": "listProjects"
 }

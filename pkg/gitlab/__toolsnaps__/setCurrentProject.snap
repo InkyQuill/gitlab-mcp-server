@@ -1,11 +1,12 @@
 {
   "annotations": {
+    "readOnlyHint": false,
     "destructiveHint": true,
+    "idempotentHint": false,
     "openWorldHint": true
   },
   "description": "Sets the current GitLab project for this directory by creating a .gmcprc file. The project ID will be automatically used by other tools if not explicitly specified.",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "gitlabHost": {
         "description": "Optional GitLab host URL (e.g., 'https://gitlab.example.com'). If not specified, uses default or detected from Git remote.",
@@ -22,7 +23,8 @@
     },
     "required": [
       "projectId"
-    ]
+    ],
+    "type": "object"
   },
   "name": "setCurrentProject"
 }

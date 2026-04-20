@@ -1,10 +1,10 @@
 {
   "annotations": {
-    "title": "Retry Pipeline Job"
+    "title": "Retry Pipeline Job",
+    "readOnlyHint": false
   },
   "description": "TOOL_RETRY_PIPELINE_JOB_DESCRIPTION",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "jobId": {
         "description": "The ID of the job to retry.",
@@ -18,7 +18,8 @@
     "required": [
       "projectId",
       "jobId"
-    ]
+    ],
+    "type": "object"
   },
   "name": "retryPipelineJob"
 }

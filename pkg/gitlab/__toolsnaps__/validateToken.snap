@@ -1,17 +1,20 @@
 {
   "annotations": {
+    "readOnlyHint": false,
     "destructiveHint": true,
+    "idempotentHint": false,
     "openWorldHint": true
   },
   "description": "Manually validates a GitLab token by calling the GitLab API. If no token name is provided, validates all configured tokens.",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "name": {
         "description": "Token name to validate. If not provided, validates all tokens.",
         "type": "string"
       }
-    }
+    },
+    "required": [],
+    "type": "object"
   },
   "name": "validateToken"
 }

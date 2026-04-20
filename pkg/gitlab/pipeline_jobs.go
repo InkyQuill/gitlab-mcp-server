@@ -239,7 +239,7 @@ func RetryPipelineJob(getClient GetClientFn, t map[string]string) (tool mcp.Tool
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_RETRY_PIPELINE_JOB_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Retry Pipeline Job",
-				ReadOnlyHint: false,
+				ReadOnlyHint: boolPtr(false),
 			}),
 			mcp.WithString("projectId",
 				mcp.Required(),
@@ -298,7 +298,7 @@ func PlayPipelineJob(getClient GetClientFn, t map[string]string) (tool mcp.Tool,
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_PLAY_PIPELINE_JOB_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Play Pipeline Job",
-				ReadOnlyHint: false,
+				ReadOnlyHint: boolPtr(false),
 			}),
 			mcp.WithString("projectId",
 				mcp.Required(),

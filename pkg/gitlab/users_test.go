@@ -60,13 +60,7 @@ func TestGetCurrentUserHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -137,13 +131,7 @@ func TestGetUserHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -214,13 +202,7 @@ func TestGetUserStatusHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -307,13 +289,7 @@ func TestListUsersHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)
@@ -390,13 +366,7 @@ func TestListProjectUsersHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.mockSetup()
-			request := mcp.CallToolRequest{Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{Name: tool.Name, Arguments: tc.args}}
+			request := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool.Name, Arguments: tc.args}}
 			result, err := handler(ctx, request)
 			if tc.expectInternalError {
 				require.Error(t, err)

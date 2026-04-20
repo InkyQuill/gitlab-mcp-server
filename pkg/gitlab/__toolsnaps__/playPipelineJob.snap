@@ -1,10 +1,10 @@
 {
   "annotations": {
-    "title": "Play Pipeline Job"
+    "title": "Play Pipeline Job",
+    "readOnlyHint": false
   },
   "description": "TOOL_PLAY_PIPELINE_JOB_DESCRIPTION",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "jobId": {
         "description": "The ID of the job to play.",
@@ -18,7 +18,8 @@
     "required": [
       "projectId",
       "jobId"
-    ]
+    ],
+    "type": "object"
   },
   "name": "playPipelineJob"
 }

@@ -19,7 +19,7 @@ func GetProjectFile(getClient GetClientFn, t map[string]string) (tool mcp.Tool, 
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_FILE_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get Project File Content",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			mcp.WithString("projectId",
 				mcp.Required(),
@@ -92,7 +92,7 @@ func ListProjectFiles(getClient GetClientFn, t map[string]string) (tool mcp.Tool
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_LIST_PROJECT_FILES_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List Project Files/Directories",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			mcp.WithString("projectId",
 				mcp.Required(),

@@ -18,7 +18,7 @@ func GetProjectCommits(getClient GetClientFn, t map[string]string) (tool mcp.Too
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_COMMITS_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List Project Commits",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			mcp.WithString("projectId",
 				mcp.Required(),

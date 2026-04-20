@@ -1,11 +1,12 @@
 {
   "annotations": {
+    "readOnlyHint": false,
     "destructiveHint": true,
+    "idempotentHint": false,
     "openWorldHint": true
   },
   "description": "Adds a new GitLab token configuration to the runtime token store. Note: This only affects the current session. For permanent configuration, use the installer.",
   "inputSchema": {
-    "type": "object",
     "properties": {
       "gitlabHost": {
         "description": "GitLab host URL (e.g., 'https://gitlab.com'). Defaults to https://gitlab.com.",
@@ -23,7 +24,8 @@
     "required": [
       "name",
       "token"
-    ]
+    ],
+    "type": "object"
   },
   "name": "addToken"
 }

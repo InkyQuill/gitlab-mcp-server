@@ -200,13 +200,7 @@ func TestMilestoneHandler_Create(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      milestoneTool.Name,
 					Arguments: tc.args,
 				},
@@ -247,13 +241,7 @@ func TestMilestoneHandler_Create(t *testing.T) {
 		_, handler := Milestone(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name: milestoneTool.Name,
 				Arguments: map[string]any{
 					"action":    "create",
@@ -431,13 +419,7 @@ func TestMilestoneHandler_Update(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      milestoneTool.Name,
 					Arguments: tc.args,
 				},
@@ -585,13 +567,7 @@ func TestMilestoneHandler_Get(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      milestoneTool.Name,
 					Arguments: tc.args,
 				},
@@ -842,13 +818,7 @@ func TestListMilestonesHandler(t *testing.T) {
 			tc.mockSetup()
 
 			request := mcp.CallToolRequest{
-				Params: struct {
-					Name      string                 `json:"name"`
-					Arguments map[string]interface{} `json:"arguments,omitempty"`
-					Meta      *struct {
-						ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-					} `json:"_meta,omitempty"`
-				}{
+				Params: mcp.CallToolParams{
 					Name:      listMilestonesTool.Name,
 					Arguments: tc.args,
 				},
@@ -894,13 +864,7 @@ func TestListMilestonesHandler(t *testing.T) {
 		_, handler := ListMilestones(errorGetClientFn, nil)
 
 		request := mcp.CallToolRequest{
-			Params: struct {
-				Name      string                 `json:"name"`
-				Arguments map[string]interface{} `json:"arguments,omitempty"`
-				Meta      *struct {
-					ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-				} `json:"_meta,omitempty"`
-			}{
+			Params: mcp.CallToolParams{
 				Name:      listMilestonesTool.Name,
 				Arguments: map[string]any{"projectId": projectID},
 			},

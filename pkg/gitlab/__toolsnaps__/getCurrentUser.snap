@@ -5,6 +5,8 @@
   },
   "description": "TOOL_GET_CURRENT_USER_DESCRIPTION",
   "inputSchema": {
+    "properties": {},
+    "required": [],
     "type": "object"
   },
   "name": "getCurrentUser"

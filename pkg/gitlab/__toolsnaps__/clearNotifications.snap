@@ -1,10 +1,14 @@
 {
   "annotations": {
+    "readOnlyHint": false,
     "destructiveHint": true,
+    "idempotentHint": false,
     "openWorldHint": true
   },
   "description": "Clears all stored notifications.",
   "inputSchema": {
+    "properties": {},
+    "required": [],
     "type": "object"
   },
   "name": "clearNotifications"

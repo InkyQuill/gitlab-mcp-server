@@ -30,7 +30,7 @@ func GetIssue(getClient GetClientFn, t map[string]string) (mcp.Tool, server.Tool
 			),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get GitLab Issue", // Add title
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 		),
 
@@ -93,7 +93,7 @@ func ListIssues(getClient GetClientFn, t map[string]string) (tool mcp.Tool, hand
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_LIST_ISSUES_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "List GitLab Issues",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			// Required parameters
 			mcp.WithString("projectId",
@@ -362,7 +362,7 @@ func IssueComment(getClient GetClientFn, t map[string]string) (tool mcp.Tool, ha
 			WithPagination(),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Manage Issue Comments",
-				ReadOnlyHint: true, // Will be overridden based on action
+				ReadOnlyHint: boolPtr(true), // Will be overridden based on action
 			}),
 		), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			// Parse required parameters
@@ -497,7 +497,7 @@ func GetIssueLabels(getClient GetClientFn, t map[string]string) (tool mcp.Tool, 
 			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_ISSUE_LABELS_DESCRIPTION)),
 			mcp.WithToolAnnotation(mcp.ToolAnnotation{
 				Title:        "Get Issue Labels",
-				ReadOnlyHint: true,
+				ReadOnlyHint: boolPtr(true),
 			}),
 			// Required parameters
 			mcp.WithString("projectId",
