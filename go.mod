@@ -1,6 +1,6 @@
 module github.com/InkyQuill/gitlab-mcp-server
 
-go 1.24.2
+go 1.25.9
 
 require (
 	github.com/awnumar/memguard v0.23.0

@@ -1,139 +1,121 @@
+version: "2"
 run:
-  timeout: 5m
-  tests: true
   concurrency: 4
   modules-download-mode: readonly
-
+  tests: true
 linters:
-  # Scope: correctness-first. Stylistic linters (gocritic, goconst,
-  # nilerr, misspell, whitespace, prealloc, errorlint) flag hundreds of
-  # pre-existing nits that don't catch real bugs in this codebase; they
-  # are disabled here and can be re-enabled per-file as the code is
-  # touched.
   enable:
-    - govet
-    - errcheck
-    - staticcheck
-    - ineffassign
-    - unused
     - bodyclose
-    - gosec
-    - unconvert
     - durationcheck
+    - gosec
     - noctx
-
-linters-settings:
-  # Enable a focused subset of vet checks. enable-all was pulling in
-  # fieldalignment, which emits hundreds of micro-optimization warnings
-  # about struct field ordering — noise, not defects.
-  govet:
-    enable:
-      - assign
-      - atomic
-      - bools
-      - buildtag
-      - cgocall
-      - composites
-      - copylocks
-      - errorsas
-      - httpresponse
-      - ifaceassert
-      - loopclosure
-      - lostcancel
-      - nilfunc
-      - printf
-      - shift
-      - stdmethods
-      - stringintconv
-      - structtag
-      - tests
-      - unmarshal
-      - unreachable
-      - unusedresult
-
-  errcheck:
-    check-type-assertions: true
-    check-blank: false
-    # Output/filesystem plumbing where errors are routinely ignored by
-    # convention. The alternative is sprinkling `_ =` throughout the
-    # codebase with no benefit — these are either reported elsewhere or
-    # don't meaningfully recover.
-    exclude-functions:
-      - (*os.File).Close
-      - os.Chdir
-      - os.Mkdir
-      - os.MkdirAll
-      - os.Remove
-      - os.RemoveAll
-      - os.Setenv
-      - os.Unsetenv
-      - os.Chmod
-      - fmt.Fprintf(os.Stderr)
-      - fmt.Fprintln(os.Stderr)
-      - fmt.Fprintf(os.Stdout)
-      - fmt.Fprintln(os.Stdout)
-      - (io.Writer).Write
-      - fmt.Fprintf
-      - fmt.Fprintln
-      - (*text/tabwriter.Writer).Flush
-
-  goconst:
-    min-occurrences: 5
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-    # Opt out of stylistic nits that produce high-volume churn on an
-    # existing codebase without catching real bugs.
-    disabled-checks:
-      - octalLiteral
-      - hugeParam
-      - rangeValCopy
-      - paramTypeCombine
-
-  gosec:
-    excludes:
-      - G104  # unhandled errors — covered by errcheck where it matters
-      - G301  # directory permissions — 0755 is deliberate for config dir
-      - G302  # file permissions
-      - G304  # file path from variable — reviewed case-by-case
-      - G306  # file perms on WriteFile — 0644 deliberate for non-secret
-      - G101  # hardcoded credentials — false positive on constant names
-      - G401  # SHA1 use — not in our code, pulled by deps
-      - G501
-
-  misspell:
-    locale: US
-
-  nakedret:
-    max-func-lines: 30
-
-  whitespace:
-    multi-if: false
-    multi-func: false
-
+    - unconvert
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+      exclude-functions:
+        - (*os.File).Close
+        - os.Chdir
+        - os.Mkdir
+        - os.MkdirAll
+        - os.Remove
+        - os.RemoveAll
+        - os.Setenv
+        - os.Unsetenv
+        - os.Chmod
+        - fmt.Fprintf(os.Stderr)
+        - fmt.Fprintln(os.Stderr)
+        - fmt.Fprintf(os.Stdout)
+        - fmt.Fprintln(os.Stdout)
+        - (io.Writer).Write
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - (*text/tabwriter.Writer).Flush
+    goconst:
+      min-occurrences: 5
+    gocritic:
+      disabled-checks:
+        - octalLiteral
+        - hugeParam
+        - rangeValCopy
+        - paramTypeCombine
+      enabled-tags:
+        - diagnostic
+    gosec:
+      excludes:
+        - G104
+        - G301
+        - G302
+        - G304
+        - G306
+        - G101
+        - G401
+        - G501
+    govet:
+      enable:
+        - assign
+        - atomic
+        - bools
+        - buildtag
+        - cgocall
+        - composites
+        - copylocks
+        - errorsas
+        - httpresponse
+        - ifaceassert
+        - loopclosure
+        - lostcancel
+        - nilfunc
+        - printf
+        - shift
+        - stdmethods
+        - stringintconv
+        - structtag
+        - tests
+        - unmarshal
+        - unreachable
+        - unusedresult
+    misspell:
+      locale: US
+    nakedret:
+      max-func-lines: 30
+    whitespace:
+      multi-if: false
+      multi-func: false
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - errcheck
+          - goconst
+          - gocritic
+          - gosec
+          - ineffassign
+          - noctx
+          - staticcheck
+          - thelper
+          - unparam
+          - unused
+        path: _test\.go
+      # QF1xxx are "quickfix" stylistic suggestions from staticcheck v0.26+
+      # (embedded-field shortcuts, tagged-switch conversions, etc.). Useful
+      # as IDE hints but too noisy to gate CI on.
+      - linters:
+          - staticcheck
+        text: "^QF"
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
   uniq-by-line: true
-  # Relax strict error-checking inside _test.go files — tests already fail
-  # loudly when setup fails, and adding _ = boilerplate everywhere hurts
-  # readability more than it helps correctness.
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - gosec
-        - unparam
-        - gocritic
-        - thelper
-        - goconst
-        - ineffassign
-        - unused
-        - staticcheck
-
-output:
-  print-issued-lines: true
-  print-linter-name: true
-  sort-results: true
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
