@@ -272,7 +272,7 @@ func TestPipelineJobHandler_Get(t *testing.T) {
 				mockJobs.EXPECT().
 					GetJob(projectID, jobID, gomock.Any()).
 					Return(&gl.Job{
-						ID:     int64(jobID),
+						ID:     jobID,
 						Name:   "build",
 						Status: "success",
 					}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -549,7 +549,7 @@ func TestRetryPipelineJobHandler(t *testing.T) {
 				mockJobs.EXPECT().
 					RetryJob(projectID, jobID, gomock.Any()).
 					Return(&gl.Job{
-						ID:     int64(jobID),
+						ID:     jobID,
 						Name:   "build",
 						Status: "pending",
 					}, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil)
@@ -690,7 +690,7 @@ func TestPlayPipelineJobHandler(t *testing.T) {
 				mockJobs.EXPECT().
 					PlayJob(projectID, jobID, gomock.Any(), gomock.Any()).
 					Return(&gl.Job{
-						ID:     int64(jobID),
+						ID:     jobID,
 						Name:   "deploy",
 						Status: "pending",
 					}, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil)
@@ -818,7 +818,7 @@ func TestPipelineHandler_Cancel(t *testing.T) {
 				mockPipelines.EXPECT().
 					CancelPipelineBuild(projectID, pipelineID, gomock.Any()).
 					Return(&gl.Pipeline{
-						ID:     int64(pipelineID),
+						ID:     pipelineID,
 						Status: "canceled",
 					}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
@@ -962,7 +962,7 @@ func TestPipelineHandler_Retry(t *testing.T) {
 				mockPipelines.EXPECT().
 					RetryPipelineBuild(projectID, pipelineID, gomock.Any()).
 					Return(&gl.Pipeline{
-						ID:     int64(pipelineID),
+						ID:     pipelineID,
 						Status: "pending",
 					}, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil)
 			},
