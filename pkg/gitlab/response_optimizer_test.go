@@ -5,17 +5,17 @@ import (
 	"net/http"
 	"testing"
 
-	gl "gitlab.com/gitlab-org/api/client-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
 func TestExtractPagination(t *testing.T) {
 	tests := []struct {
-		name           string
-		headers        map[string]string
-		expected       *PaginationMetadata
-		description    string
+		name        string
+		headers     map[string]string
+		expected    *PaginationMetadata
+		description string
 	}{
 		{
 			name: "Full pagination headers",
@@ -34,9 +34,9 @@ func TestExtractPagination(t *testing.T) {
 			description: "Should extract all pagination fields correctly",
 		},
 		{
-			name:     "Nil response",
-			headers:  nil,
-			expected: nil,
+			name:        "Nil response",
+			headers:     nil,
+			expected:    nil,
 			description: "Should return nil for nil response",
 		},
 		{
@@ -47,7 +47,7 @@ func TestExtractPagination(t *testing.T) {
 				"X-Page":        "",
 				"X-Per-Page":    "",
 			},
-			expected: nil,
+			expected:    nil,
 			description: "Should return nil when all headers are empty",
 		},
 		{
@@ -103,10 +103,10 @@ func TestExtractPagination(t *testing.T) {
 				}
 
 				resp = &gl.Response{
-					Response:    &http.Response{StatusCode: 200},
-					TotalItems:  totalItems,
-					TotalPages:  totalPages,
-					CurrentPage: currentPage,
+					Response:     &http.Response{StatusCode: 200},
+					TotalItems:   totalItems,
+					TotalPages:   totalPages,
+					CurrentPage:  currentPage,
 					ItemsPerPage: itemsPerPage,
 				}
 			}
@@ -316,13 +316,13 @@ func TestFieldFilter_Users(t *testing.T) {
 
 	users := []map[string]interface{}{
 		{
-			"id":         1,
-			"name":       "Test User",
-			"username":   "testuser",
-			"email":      "test@example.com",
-			"state":      "active",
-			"web_url":    "http://example.com/testuser",
-			"avatar_url": "http://example.com/avatar.png",
+			"id":          1,
+			"name":        "Test User",
+			"username":    "testuser",
+			"email":       "test@example.com",
+			"state":       "active",
+			"web_url":     "http://example.com/testuser",
+			"avatar_url":  "http://example.com/avatar.png",
 			"website_url": "http://example.com",
 			"linkedin":    "linkedin",
 			"twitter":     "twitter",
@@ -372,10 +372,10 @@ func TestResponseOptimizer_Integration(t *testing.T) {
 
 	// Create mock response with pagination data
 	resp := &gl.Response{
-		Response:    &http.Response{StatusCode: 200},
-		TotalItems:  100,
-		TotalPages:  5,
-		CurrentPage: 1,
+		Response:     &http.Response{StatusCode: 200},
+		TotalItems:   100,
+		TotalPages:   5,
+		CurrentPage:  1,
 		ItemsPerPage: 20,
 	}
 
@@ -415,8 +415,8 @@ func TestFieldFilter_NilAssignees(t *testing.T) {
 
 	issues := []map[string]interface{}{
 		{
-			"id":       1,
-			"title":    "Test Issue",
+			"id":        1,
+			"title":     "Test Issue",
 			"assignees": nil, // nil slice
 		},
 	}
@@ -437,8 +437,8 @@ func TestFieldFilter_EmptySlice(t *testing.T) {
 
 	issues := []map[string]interface{}{
 		{
-			"id":       1,
-			"title":    "Test Issue",
+			"id":        1,
+			"title":     "Test Issue",
 			"assignees": []interface{}{}, // empty slice
 		},
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -1107,4 +1108,42 @@ func TestDefaultClientFactory(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, client)
 	})
+}
+
+func TestAddToken_EmitsDeprecationFields(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v4/user", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":42,"username":"probe"}`))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	logger := log.New()
+	store := NewTokenStore()
+
+	factory := func(token string, opts ...gl.ClientOptionFunc) (*gl.Client, error) {
+		return gl.NewClient(token, append(opts, gl.WithBaseURL(srv.URL))...)
+	}
+
+	_, handler := AddToken(factory, logger, store)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"name":       "probe",
+		"token":      "glpat-xxx",
+		"gitlabHost": srv.URL,
+	}
+	res, err := handler(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Len(t, res.Content, 1)
+
+	txt, ok := res.Content[0].(mcp.TextContent)
+	require.True(t, ok, "expected TextContent")
+
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(txt.Text), &parsed))
+	assert.Equal(t, true, parsed["deprecated"])
+	assert.Contains(t, parsed["deprecationMessage"], "v3.0")
 }

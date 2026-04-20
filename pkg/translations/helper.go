@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -37,7 +38,7 @@ func TranslationHelper(logger *log.Logger) (map[string]string, func()) {
 
 	// Return function to dump translations
 	dumpTranslations = func() {
-		dumpAllTranslations(logger, configPath)
+		dumpAllTranslations(logger, filepath.Dir(execPath))
 	}
 
 	return translations, dumpTranslations
@@ -55,7 +56,15 @@ func Translate(translations map[string]string, key string) string {
 var dumpTranslations func()
 
 // dumpAllTranslations generates template with all translation keys
-func dumpAllTranslations(logger *log.Logger, configPath string) {
+func dumpAllTranslations(logger *log.Logger, baseDir string) {
+	configPath := filepath.Join(baseDir, configFileName)
+
+	// Validate config path to prevent directory traversal
+	if err := config.ValidatePath(configPath); err != nil {
+		logger.Errorf("Invalid config path: %v", err)
+		return
+	}
+
 	// Collect all keys
 	allKeys := getAllTranslationKeys()
 
@@ -79,7 +88,7 @@ func dumpAllTranslations(logger *log.Logger, configPath string) {
 		return
 	}
 
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := config.SafeWriteFile(baseDir, configFileName, data, 0644); err != nil {
 		logger.Errorf("Failed to write translations: %v", err)
 	} else {
 		fmt.Fprintf(os.Stderr, "Exported %d translation keys to %s\n", len(existing), configPath)
@@ -99,21 +108,21 @@ func getAllTranslationKeys() map[string]string {
 		TOOL_GET_PROJECT_COMMITS_DESCRIPTION:  "Lists commits for a specific branch or ref in a GitLab project.",
 
 		// Issues toolset
-		TOOL_GET_ISSUE_DESCRIPTION:     "Retrieves details for a specific GitLab issue.",
-		TOOL_LIST_ISSUES_DESCRIPTION:   "Lists GitLab issues, with optional filtering.",
-		TOOL_CREATE_ISSUE_DESCRIPTION:  "Creates a new issue in a GitLab project.",
-		TOOL_UPDATE_ISSUE_DESCRIPTION:  "Updates an existing GitLab issue.",
-		TOOL_ISSUE_COMMENT_DESCRIPTION: "Manages comments on GitLab issues (list, create, update).",
+		TOOL_GET_ISSUE_DESCRIPTION:        "Retrieves details for a specific GitLab issue.",
+		TOOL_LIST_ISSUES_DESCRIPTION:      "Lists GitLab issues, with optional filtering.",
+		TOOL_CREATE_ISSUE_DESCRIPTION:     "Creates a new issue in a GitLab project.",
+		TOOL_UPDATE_ISSUE_DESCRIPTION:     "Updates an existing GitLab issue.",
+		TOOL_ISSUE_COMMENT_DESCRIPTION:    "Manages comments on GitLab issues (list, create, update).",
 		TOOL_GET_ISSUE_LABELS_DESCRIPTION: "Retrieves labels for a specific GitLab project.",
-		TOOL_MILESTONE_DESCRIPTION:       "Manages GitLab milestones (get, create, update).",
-		TOOL_LIST_MILESTONES_DESCRIPTION: "Lists milestones for a specific GitLab project.",
+		TOOL_MILESTONE_DESCRIPTION:        "Manages GitLab milestones (get, create, update).",
+		TOOL_LIST_MILESTONES_DESCRIPTION:  "Lists milestones for a specific GitLab project.",
 
 		// Merge Requests toolset
-		TOOL_GET_MERGE_REQUEST_DESCRIPTION:      "Retrieves details for a specific GitLab merge request.",
-		TOOL_LIST_MERGE_REQUESTS_DESCRIPTION:    "Lists GitLab merge requests, with optional filtering.",
-		TOOL_CREATE_MERGE_REQUEST_DESCRIPTION:   "Creates a new merge request in a GitLab project.",
-		TOOL_UPDATE_MERGE_REQUEST_DESCRIPTION:   "Updates an existing GitLab merge request.",
-		TOOL_MERGE_REQUEST_COMMENT_DESCRIPTION:  "Manages comments on GitLab merge requests (list, create, update).",
+		TOOL_GET_MERGE_REQUEST_DESCRIPTION:     "Retrieves details for a specific GitLab merge request.",
+		TOOL_LIST_MERGE_REQUESTS_DESCRIPTION:   "Lists GitLab merge requests, with optional filtering.",
+		TOOL_CREATE_MERGE_REQUEST_DESCRIPTION:  "Creates a new merge request in a GitLab project.",
+		TOOL_UPDATE_MERGE_REQUEST_DESCRIPTION:  "Updates an existing GitLab merge request.",
+		TOOL_MERGE_REQUEST_COMMENT_DESCRIPTION: "Manages comments on GitLab merge requests (list, create, update).",
 
 		// Search toolset
 		TOOL_SEARCH_DESCRIPTION: "Searches across GitLab resources (projects, issues, merge requests, code, milestones, etc.) with support for global, group, and project scopes.",
@@ -135,12 +144,12 @@ func getAllTranslationKeys() map[string]string {
 		TOOL_GET_NOTIFICATIONS_DESCRIPTION: "Retrieves notifications and warnings.",
 
 		// Tags toolset
-		TOOL_TAG_DESCRIPTION:                 "Manages GitLab repository tags (get, create, delete, getCommit).",
+		TOOL_TAG_DESCRIPTION:                  "Manages GitLab repository tags (get, create, delete, getCommit).",
 		TOOL_LIST_REPOSITORY_TAGS_DESCRIPTION: "Lists all tags in a GitLab repository.",
 
 		// Pipeline Jobs toolset
-		TOOL_PIPELINE_JOB_DESCRIPTION:   "Manages CI/CD pipeline jobs (list, get, trace).",
-		TOOL_PIPELINE_DESCRIPTION:        "Controls GitLab CI/CD pipelines (cancel, retry).",
+		TOOL_PIPELINE_JOB_DESCRIPTION:       "Manages CI/CD pipeline jobs (list, get, trace).",
+		TOOL_PIPELINE_DESCRIPTION:           "Controls GitLab CI/CD pipelines (cancel, retry).",
 		TOOL_RETRY_PIPELINE_JOB_DESCRIPTION: "Retries a failed job in a pipeline.",
 		TOOL_PLAY_PIPELINE_JOB_DESCRIPTION:  "Triggers a manual job in a pipeline.",
 	}

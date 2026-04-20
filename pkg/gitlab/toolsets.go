@@ -60,7 +60,6 @@ func InitToolsets(
 		toolsets.NewServerTool(GetNotificationsTool(logger)),
 	)
 	tokenManagementTS.AddWriteTools(
-		toolsets.NewServerTool(AddToken(nil, logger, tokenStore)),
 		toolsets.NewServerTool(UpdateToken(nil, logger, tokenStore)),
 		toolsets.NewServerTool(RemoveToken(tokenStore)),
 		toolsets.NewServerTool(ClearNotificationsTool(logger)),
@@ -68,12 +67,10 @@ func InitToolsets(
 
 	// --- Add tools to projectConfigTS (Project configuration management) ---
 	projectConfigTS.AddReadTools(
-		toolsets.NewServerTool(GetCurrentProject(getClient)),
-		toolsets.NewServerTool(DetectProject(getClient)),
+		toolsets.NewServerTool(GetCurrentProject(getClient, tokenStore)),
 	)
 	projectConfigTS.AddWriteTools(
-		toolsets.NewServerTool(SetCurrentProject(getClient)),
-		toolsets.NewServerTool(AutoDetectAndSetProject(getClient)),
+		toolsets.NewServerTool(SetCurrentProject(getClient, tokenStore)),
 	)
 
 	// --- Add tools to projectsTS (Task 7 & 12) ---

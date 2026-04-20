@@ -15,45 +15,45 @@ import (
 // Milestone defines the consolidated MCP tool for managing GitLab milestones (get, create, update).
 func Milestone(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
-		"milestone",
-		mcp.WithDescription(translations.Translate(t, translations.TOOL_MILESTONE_DESCRIPTION)),
-		mcp.WithToolAnnotation(mcp.ToolAnnotation{
-			Title: "Manage GitLab Milestone",
-		}),
-		// Required parameters
-		mcp.WithString("action",
-			mcp.Description("The action to perform on the milestone."),
-			mcp.Required(),
-			mcp.Enum("get", "create", "update"),
-		),
-		mcp.WithString("projectId",
-			mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
-			mcp.Required(),
-		),
-		// Conditional required parameters
-		mcp.WithNumber("milestoneId",
-			mcp.Description("The ID of the milestone (required for get/update)."),
-		),
-		mcp.WithString("title",
-			mcp.Description("The title of the milestone (required for create, optional for update)."),
-		),
-		// Optional parameters
-		mcp.WithString("description",
-			mcp.Description("The description of the milestone."),
-		),
-		mcp.WithString("dueDate",
-			mcp.Description("The due date of the milestone (ISO 8601 format: YYYY-MM-DD)."),
-		),
-		mcp.WithString("startDate",
-			mcp.Description("The start date of the milestone (ISO 8601 format: YYYY-MM-DD)."),
-		),
-		mcp.WithString("stateEvent",
-			mcp.Description("The state event to perform on the milestone (activate, close). Only for update action."),
-			mcp.Enum("activate", "close"),
-		),
-	), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return milestoneHandler(ctx, request, getClient)
-	}
+			"milestone",
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_MILESTONE_DESCRIPTION)),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title: "Manage GitLab Milestone",
+			}),
+			// Required parameters
+			mcp.WithString("action",
+				mcp.Description("The action to perform on the milestone."),
+				mcp.Required(),
+				mcp.Enum("get", "create", "update"),
+			),
+			mcp.WithString("projectId",
+				mcp.Description("The ID (integer) or URL-encoded path (string) of the project."),
+				mcp.Required(),
+			),
+			// Conditional required parameters
+			mcp.WithNumber("milestoneId",
+				mcp.Description("The ID of the milestone (required for get/update)."),
+			),
+			mcp.WithString("title",
+				mcp.Description("The title of the milestone (required for create, optional for update)."),
+			),
+			// Optional parameters
+			mcp.WithString("description",
+				mcp.Description("The description of the milestone."),
+			),
+			mcp.WithString("dueDate",
+				mcp.Description("The due date of the milestone (ISO 8601 format: YYYY-MM-DD)."),
+			),
+			mcp.WithString("startDate",
+				mcp.Description("The start date of the milestone (ISO 8601 format: YYYY-MM-DD)."),
+			),
+			mcp.WithString("stateEvent",
+				mcp.Description("The state event to perform on the milestone (activate, close). Only for update action."),
+				mcp.Enum("activate", "close"),
+			),
+		), func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return milestoneHandler(ctx, request, getClient)
+		}
 }
 
 // milestoneHandler is the handler function for the Milestone tool

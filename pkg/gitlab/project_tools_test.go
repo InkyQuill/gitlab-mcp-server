@@ -19,7 +19,7 @@ import (
 
 func TestSetCurrentProjectHandler(t *testing.T) {
 	// Tool schema snapshot test
-	tool, _ := SetCurrentProject(nil)
+	tool, _ := SetCurrentProject(nil, nil)
 	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
 
 	mockClient, _, ctrl := setupMockClient(t)
@@ -30,7 +30,7 @@ func TestSetCurrentProjectHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	tool, handler := SetCurrentProject(mockGetClient)
+	tool, handler := SetCurrentProject(mockGetClient, NewTokenStore())
 
 	tests := []struct {
 		name               string
@@ -94,7 +94,7 @@ func TestSetCurrentProjectHandler(t *testing.T) {
 			tmpDir := tc.setupDir()
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
-			defer os.Chdir(oldWd)
+			defer func() { _ = os.Chdir(oldWd) }()
 
 			err = os.Chdir(tmpDir)
 			require.NoError(t, err)
@@ -150,7 +150,7 @@ func TestSetCurrentProjectHandler(t *testing.T) {
 
 func TestGetCurrentProjectHandler(t *testing.T) {
 	// Tool schema snapshot test
-	tool, _ := GetCurrentProject(nil)
+	tool, _ := GetCurrentProject(nil, nil)
 	require.NoError(t, toolsnaps.Test(tool.Name, tool), "tool schema should match snapshot")
 
 	mockClient, _, ctrl := setupMockClient(t)
@@ -160,7 +160,7 @@ func TestGetCurrentProjectHandler(t *testing.T) {
 		return mockClient, nil
 	}
 
-	tool, handler := GetCurrentProject(mockGetClient)
+	tool, handler := GetCurrentProject(mockGetClient, NewTokenStore())
 
 	tests := []struct {
 		name              string
@@ -226,7 +226,7 @@ func TestGetCurrentProjectHandler(t *testing.T) {
 			tmpDir := tc.setupDir()
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
-			defer os.Chdir(oldWd)
+			defer func() { _ = os.Chdir(oldWd) }()
 
 			err = os.Chdir(tmpDir)
 			require.NoError(t, err)
@@ -351,7 +351,7 @@ func TestGetProjectIDWithFallback(t *testing.T) {
 			tmpDir := tc.setupDir()
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
-			defer os.Chdir(oldWd)
+			defer func() { _ = os.Chdir(oldWd) }()
 
 			err = os.Chdir(tmpDir)
 			require.NoError(t, err)
@@ -481,7 +481,7 @@ func TestDetectProjectHandler(t *testing.T) {
 			tmpDir := tc.setupDir()
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
-			defer os.Chdir(oldWd)
+			defer func() { _ = os.Chdir(oldWd) }()
 
 			err = os.Chdir(tmpDir)
 			require.NoError(t, err)
@@ -537,7 +537,7 @@ func TestAutoDetectAndSetProjectHandler(t *testing.T) {
 		tmpDir := t.TempDir()
 		oldWd, err := os.Getwd()
 		require.NoError(t, err)
-		defer os.Chdir(oldWd)
+		defer func() { _ = os.Chdir(oldWd) }()
 
 		err = os.Chdir(tmpDir)
 		require.NoError(t, err)
@@ -566,7 +566,7 @@ func TestAutoDetectAndSetProjectHandler(t *testing.T) {
 		tmpDir := t.TempDir()
 		oldWd, err := os.Getwd()
 		require.NoError(t, err)
-		defer os.Chdir(oldWd)
+		defer func() { _ = os.Chdir(oldWd) }()
 
 		err = os.Chdir(tmpDir)
 		require.NoError(t, err)
@@ -645,18 +645,20 @@ func TestProjectConfigWorkflow(t *testing.T) {
 		return mockClient, nil
 	}
 
+	tokenStore := NewTokenStore()
+
 	// Create temporary directory
 	tmpDir := t.TempDir()
 	oldWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(oldWd)
+	defer func() { _ = os.Chdir(oldWd) }()
 
 	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
 
 	t.Run("Set then Get current project", func(t *testing.T) {
 		// Step 1: Set current project
-		setTool, setHandler := SetCurrentProject(mockGetClient)
+		setTool, setHandler := SetCurrentProject(mockGetClient, tokenStore)
 		setReq := mcp.CallToolRequest{
 			Params: struct {
 				Name      string                 `json:"name"`
@@ -687,7 +689,7 @@ func TestProjectConfigWorkflow(t *testing.T) {
 		assert.FileExists(t, configPath)
 
 		// Step 2: Get current project
-		getTool, getHandler := GetCurrentProject(mockGetClient)
+		getTool, getHandler := GetCurrentProject(mockGetClient, tokenStore)
 		getReq := mcp.CallToolRequest{
 			Params: struct {
 				Name      string                 `json:"name"`

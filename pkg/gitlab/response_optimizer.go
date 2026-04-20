@@ -83,8 +83,8 @@ func NewFieldFilter(entityType string) *FieldFilter {
 			"reviewers.web_url",
 			"reviewers.avatar_url",
 			"label_details",
-			"diff_refs",     // Technical diff references
-			"references",    // Duplicates iid
+			"diff_refs",  // Technical diff references
+			"references", // Duplicates iid
 		}
 	case "project":
 		fields = []string{
@@ -166,16 +166,16 @@ func (f *FieldFilter) removeFields(item map[string]interface{}) {
 
 // ResponseOptimizer combines text truncation and field filtering
 type ResponseOptimizer struct {
-	truncator  *TextTruncator
-	filter     *FieldFilter
+	truncator   *TextTruncator
+	filter      *FieldFilter
 	truncFields []string
 }
 
 // NewResponseOptimizer creates an optimizer for the specified entity type
 func NewResponseOptimizer(entityType string) *ResponseOptimizer {
 	return &ResponseOptimizer{
-		truncator:  NewTextTruncator(MaxFieldLength),
-		filter:     NewFieldFilter(entityType),
+		truncator:   NewTextTruncator(MaxFieldLength),
+		filter:      NewFieldFilter(entityType),
 		truncFields: getTruncationFields(entityType),
 	}
 }

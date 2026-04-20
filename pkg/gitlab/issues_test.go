@@ -279,10 +279,10 @@ func TestListIssuesHandler(t *testing.T) {
 				mockIssues.EXPECT().
 					ListProjectIssues("group/project", listOpts, gomock.Any()).
 					Return(expectedIssues, &gl.Response{
-						Response:    &http.Response{StatusCode: 200},
-						TotalItems:  2,
-						TotalPages:  1,
-						CurrentPage: 1,
+						Response:     &http.Response{StatusCode: 200},
+						TotalItems:   2,
+						TotalPages:   1,
+						CurrentPage:  1,
 						ItemsPerPage: 20,
 					}, nil)
 			},

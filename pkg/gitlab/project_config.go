@@ -7,7 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 )
 
 // ConfigFileName is the name of the local configuration file
@@ -18,6 +21,7 @@ type ProjectConfig struct {
 	ProjectID   string    `json:"projectId"`
 	GitLabHost  string    `json:"gitlabHost,omitempty"`
 	TokenName   string    `json:"tokenName,omitempty"` // Reference to token in MCP config
+	Server      string    `json:"server,omitempty"`    // Server name (e.g., "work", "personal")
 	LastUpdated time.Time `json:"lastUpdated"`
 }
 
@@ -54,6 +58,8 @@ func FindProjectConfig() (*ProjectConfig, string, error) {
 	}
 }
 
+var gmcprcWarnedPaths sync.Map // path → struct{}
+
 // readProjectConfig reads and parses a .gmcprc file
 func readProjectConfig(path string) (*ProjectConfig, error) {
 	data, err := os.ReadFile(path)
@@ -66,21 +72,46 @@ func readProjectConfig(path string) (*ProjectConfig, error) {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
+	// Promote deprecated TokenName if Server is empty.
+	deprecated := []string{}
+	if config.Server == "" && config.TokenName != "" {
+		config.Server = config.TokenName
+		deprecated = append(deprecated, "tokenName")
+	} else if config.TokenName != "" {
+		deprecated = append(deprecated, "tokenName (ignored; 'server' already set)")
+	}
+	if config.GitLabHost != "" {
+		deprecated = append(deprecated, "gitlabHost")
+	}
+	if len(deprecated) > 0 {
+		if _, already := gmcprcWarnedPaths.LoadOrStore(path, struct{}{}); !already {
+			fmt.Fprintf(os.Stderr,
+				"DEPRECATION: %s contains legacy .gmcprc fields: %s. "+
+					"Re-run 'gitlab-mcp-server project init' to migrate. These fields are removed in v3.0.\n",
+				path, strings.Join(deprecated, ", "))
+		}
+	}
+
 	return &config, nil
 }
 
 // WriteProjectConfig writes a .gmcprc file to the specified directory
-func WriteProjectConfig(dir string, config *ProjectConfig) (string, error) {
-	config.LastUpdated = time.Now()
+func WriteProjectConfig(dir string, cfg *ProjectConfig) (string, error) {
+	// Validate the directory path to prevent directory traversal
+	if err := config.ValidatePath(dir); err != nil {
+		return "", fmt.Errorf("invalid directory path: %w", err)
+	}
 
-	data, err := json.MarshalIndent(config, "", "  ")
+	cfg.LastUpdated = time.Now()
+
+	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
 	configPath := filepath.Join(dir, ConfigFileName)
 
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := os.WriteFile(configPath, data, 0600); err != nil {
 		return "", fmt.Errorf("failed to write file: %w", err)
 	}
 

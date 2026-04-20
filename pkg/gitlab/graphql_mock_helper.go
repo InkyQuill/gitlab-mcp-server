@@ -98,12 +98,12 @@ type roundTripper struct {
 }
 
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-		// Capture the response
-		w := &responseRecorder{
-			header: http.Header{},
-		}
+	// Capture the response
+	w := &responseRecorder{
+		header: http.Header{},
+	}
 
-		rt.mux.ServeHTTP(w, req)
+	rt.mux.ServeHTTP(w, req)
 
 	return &http.Response{
 		StatusCode: w.status,

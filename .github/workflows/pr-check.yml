@@ -1,0 +1,70 @@
+name: PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Check commit messages
+        run: |
+          echo "Checking commit messages for conventional commits format..."
+          # Allow merge commits and their immediate children
+          git log --format="%s" origin/main..HEAD | grep -v "Merge pull request" | while read msg; do
+            if ! echo "$msg" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: "; then
+              echo "Warning: Commit message doesn't follow conventional commits: $msg"
+            fi
+          done
+
+      - name: Check for TODO/FIXME in new code
+        run: |
+          echo "Checking for TODO/FIXME comments in new code..."
+          if git diff --name-only origin/main...HEAD | xargs grep -n "TODO\|FIXME" 2>/dev/null | grep -v "// *TODO\|// *FIXME"; then
+            echo "Warning: Found TODO/FIXME comments in new code. Please add issues or remove."
+          fi
+
+      - name: Validate Go modules
+        run: |
+          go mod tidy
+          if [ -n "$(git diff go.mod go.sum)" ]; then
+            echo "go.mod or go.sum is not tidy. Please run 'go mod tidy'."
+            git diff go.mod go.sum
+            exit 1
+          fi
+
+      - name: Quick smoke test
+        run: |
+          go test -short ./...
+
+  check-pr-description:
+    name: Check PR Description
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check PR body length
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if [ -z "$PR_BODY" ] || [ ${#PR_BODY} -lt 50 ]; then
+            echo "PR description is too short. Please provide more details."
+            exit 1
+          fi

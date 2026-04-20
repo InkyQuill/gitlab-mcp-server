@@ -5,9 +5,9 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	gl "gitlab.com/gitlab-org/api/client-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
 func TestTruncator_TruncateString(t *testing.T) {

@@ -1,0 +1,96 @@
+project_name: gitlab-mcp-server
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "7"
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    main: ./cmd/gitlab-mcp-server
+    binary: gitlab-mcp-server
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+      - docs/*
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - '^refactor:'
+      - Merge pull request
+      - Merge branch
+
+release:
+  github:
+    owner: InkyQuill
+    name: gitlab-mcp-server
+  draft: false
+  prerelease: auto
+  mode: replace
+
+brews:
+  - name: gitlab-mcp-server
+    homepage: https://github.com/InkyQuill/gitlab-mcp-server
+    tap:
+      owner: InkyQuill
+      name: homebrew-tap
+      branch: main
+    folder: Formula
+    caveats: |
+      GitLab MCP Server requires a GitLab Personal Access Token.
+      See https://github.com/InkyQuill/gitlab-mcp-server for setup instructions.
+    test: |
+      system "#{bin}/gitlab-mcp-server version"
+
+nfpms:
+  - name: gitlab-mcp-server
+    homepage: https://github.com/InkyQuill/gitlab-mcp-server
+    description: Model Context Protocol (MCP) server for GitLab integration
+    maintainer: InkyQuill
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - archlinux
+    dependencies:
+      - git
+    recommends:
+      - git-lfs

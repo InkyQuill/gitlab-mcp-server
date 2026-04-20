@@ -436,7 +436,7 @@ func TestListProjectsHandler(t *testing.T) {
 			errorContains:      "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.",
 		},
 		{
-			name: "Success - Long Description Truncation",
+			name:      "Success - Long Description Truncation",
 			inputArgs: map[string]any{},
 			mockSetup: func() {
 				longDesc := strings.Repeat("d", 500)

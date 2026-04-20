@@ -3,7 +3,7 @@
     "destructiveHint": true,
     "openWorldHint": true
   },
-  "description": "Gets the current GitLab project configuration from the .gmcprc file in the current or parent directory.",
+  "description": "Gets the current GitLab project configuration. If no .gmcprc is found, auto-detects from Git remote and matches with configured servers.",
   "inputSchema": {
     "type": "object"
   },

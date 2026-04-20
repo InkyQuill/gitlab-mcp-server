@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/translations"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	gl "gitlab.com/gitlab-org/api/client-go"
-	"github.com/InkyQuill/gitlab-mcp-server/pkg/translations"
 )
 
 // GraphQL query templates as constants
@@ -165,9 +165,9 @@ query GetLicenseCompliance($fullPath: ID!) {
 
 // SecurityFinding represents a single security vulnerability finding
 type SecurityFinding struct {
-	Title     string     `json:"title"`
-	Severity  string     `json:"severity"`
-	Location  *Location  `json:"location,omitempty"`
+	Title       string       `json:"title"`
+	Severity    string       `json:"severity"`
+	Location    *Location    `json:"location,omitempty"`
 	Identifiers []Identifier `json:"identifiers,omitempty"`
 }
 
@@ -242,109 +242,109 @@ type License struct {
 // GetProjectSAST defines the MCP tool for retrieving SAST findings
 func GetProjectSAST(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
-		"getProjectSAST",
-		mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_SAST_DESCRIPTION)),
-		mcp.WithString("pid",
-			mcp.Description("The ID or URL-encoded path of the project"),
-			mcp.Required(),
-		),
-		mcp.WithToolAnnotation(mcp.ToolAnnotation{
-			Title:        "Get GitLab Project SAST Findings",
-			ReadOnlyHint: true,
-		}),
-	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return getSecurityFindings(ctx, req, getClient, "SAST", graphqlQuerySAST)
-	}
+			"getProjectSAST",
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_SAST_DESCRIPTION)),
+			mcp.WithString("pid",
+				mcp.Description("The ID or URL-encoded path of the project"),
+				mcp.Required(),
+			),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title:        "Get GitLab Project SAST Findings",
+				ReadOnlyHint: true,
+			}),
+		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return getSecurityFindings(ctx, req, getClient, "SAST", graphqlQuerySAST)
+		}
 }
 
 // GetProjectDAST defines the MCP tool for retrieving DAST findings
 func GetProjectDAST(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
-		"getProjectDAST",
-		mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_DAST_DESCRIPTION)),
-		mcp.WithString("pid",
-			mcp.Description("The ID or URL-encoded path of the project"),
-			mcp.Required(),
-		),
-		mcp.WithToolAnnotation(mcp.ToolAnnotation{
-			Title:        "Get GitLab Project DAST Findings",
-			ReadOnlyHint: true,
-		}),
-	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return getSecurityFindings(ctx, req, getClient, "DAST", graphqlQueryDAST)
-	}
+			"getProjectDAST",
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_DAST_DESCRIPTION)),
+			mcp.WithString("pid",
+				mcp.Description("The ID or URL-encoded path of the project"),
+				mcp.Required(),
+			),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title:        "Get GitLab Project DAST Findings",
+				ReadOnlyHint: true,
+			}),
+		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return getSecurityFindings(ctx, req, getClient, "DAST", graphqlQueryDAST)
+		}
 }
 
 // GetProjectDependencyScanning defines the MCP tool for retrieving dependency scanning findings
 func GetProjectDependencyScanning(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
-		"getProjectDependencyScanning",
-		mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_DEPENDENCY_SCANNING_DESCRIPTION)),
-		mcp.WithString("pid",
-			mcp.Description("The ID or URL-encoded path of the project"),
-			mcp.Required(),
-		),
-		mcp.WithToolAnnotation(mcp.ToolAnnotation{
-			Title:        "Get GitLab Project Dependency Scanning Findings",
-			ReadOnlyHint: true,
-		}),
-	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return getSecurityFindings(ctx, req, getClient, "Dependency Scanning", graphqlQueryDependencyScanning)
-	}
+			"getProjectDependencyScanning",
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_DEPENDENCY_SCANNING_DESCRIPTION)),
+			mcp.WithString("pid",
+				mcp.Description("The ID or URL-encoded path of the project"),
+				mcp.Required(),
+			),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title:        "Get GitLab Project Dependency Scanning Findings",
+				ReadOnlyHint: true,
+			}),
+		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return getSecurityFindings(ctx, req, getClient, "Dependency Scanning", graphqlQueryDependencyScanning)
+		}
 }
 
 // GetProjectContainerScanning defines the MCP tool for retrieving container scanning findings
 func GetProjectContainerScanning(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
-		"getProjectContainerScanning",
-		mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_CONTAINER_SCANNING_DESCRIPTION)),
-		mcp.WithString("pid",
-			mcp.Description("The ID or URL-encoded path of the project"),
-			mcp.Required(),
-		),
-		mcp.WithToolAnnotation(mcp.ToolAnnotation{
-			Title:        "Get GitLab Project Container Scanning Findings",
-			ReadOnlyHint: true,
-		}),
-	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return getSecurityFindings(ctx, req, getClient, "Container Scanning", graphqlQueryContainerScanning)
-	}
+			"getProjectContainerScanning",
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_CONTAINER_SCANNING_DESCRIPTION)),
+			mcp.WithString("pid",
+				mcp.Description("The ID or URL-encoded path of the project"),
+				mcp.Required(),
+			),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title:        "Get GitLab Project Container Scanning Findings",
+				ReadOnlyHint: true,
+			}),
+		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return getSecurityFindings(ctx, req, getClient, "Container Scanning", graphqlQueryContainerScanning)
+		}
 }
 
 // GetProjectSecretDetection defines the MCP tool for retrieving secret detection findings
 func GetProjectSecretDetection(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
-		"getProjectSecretDetection",
-		mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_SECRET_DETECTION_DESCRIPTION)),
-		mcp.WithString("pid",
-			mcp.Description("The ID or URL-encoded path of the project"),
-			mcp.Required(),
-		),
-		mcp.WithToolAnnotation(mcp.ToolAnnotation{
-			Title:        "Get GitLab Project Secret Detection Findings",
-			ReadOnlyHint: true,
-		}),
-	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return getSecurityFindings(ctx, req, getClient, "Secret Detection", graphqlQuerySecretDetection)
-	}
+			"getProjectSecretDetection",
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_SECRET_DETECTION_DESCRIPTION)),
+			mcp.WithString("pid",
+				mcp.Description("The ID or URL-encoded path of the project"),
+				mcp.Required(),
+			),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title:        "Get GitLab Project Secret Detection Findings",
+				ReadOnlyHint: true,
+			}),
+		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return getSecurityFindings(ctx, req, getClient, "Secret Detection", graphqlQuerySecretDetection)
+		}
 }
 
 // GetProjectLicenseCompliance defines the MCP tool for retrieving license compliance information
 func GetProjectLicenseCompliance(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
-		"getProjectLicenseCompliance",
-		mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_LICENSE_COMPLIANCE_DESCRIPTION)),
-		mcp.WithString("pid",
-			mcp.Description("The ID or URL-encoded path of the project"),
-			mcp.Required(),
-		),
-		mcp.WithToolAnnotation(mcp.ToolAnnotation{
-			Title:        "Get GitLab Project License Compliance",
-			ReadOnlyHint: true,
-		}),
-	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return getLicenseCompliance(ctx, req, getClient)
-	}
+			"getProjectLicenseCompliance",
+			mcp.WithDescription(translations.Translate(t, translations.TOOL_GET_PROJECT_LICENSE_COMPLIANCE_DESCRIPTION)),
+			mcp.WithString("pid",
+				mcp.Description("The ID or URL-encoded path of the project"),
+				mcp.Required(),
+			),
+			mcp.WithToolAnnotation(mcp.ToolAnnotation{
+				Title:        "Get GitLab Project License Compliance",
+				ReadOnlyHint: true,
+			}),
+		), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return getLicenseCompliance(ctx, req, getClient)
+		}
 }
 
 // getSecurityFindings is a helper function for security report tools

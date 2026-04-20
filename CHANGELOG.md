@@ -5,6 +5,80 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] — Unreleased
+
+### Added
+- `SecretBackend` abstraction with three implementations: `KeyringBackend`
+  (default, OS keyring), `EncryptedFileBackend` (AES-256-GCM JSON-at-rest),
+  and `ExternalCmdBackend` (templated commands for `op`, `pass`, `age`,
+  `gopass`).
+- `ServerConfig.TokenRef` field: a ref of the form `scheme://opaque` that
+  points to a secret in the backend. Tokens no longer need to be stored in
+  the global config file at all.
+- `BackendsConfig` (`backends.external`) section in the global config for
+  external-cmd command templates.
+- `config add --token-ref <ref>` flag and interactive TTY prompt (no-echo)
+  as the recommended ways to register a server without exposing the secret
+  in shell history or argv.
+- `config backends` subcommand: probes which backends are available, which
+  are reachable, and lists configured external-cmd templates.
+- `StrictResolver` (opt-in via `GITLAB_MCP_STRICT_RESOLVER=1`): looks up
+  the GitLab client strictly by the `server` field of `.gmcprc`, verifies
+  the API host matches the configured host on first use, and never
+  silently falls back to a default or host-based match.
+- Auto-promotion of deprecated `tokenName` → `server` when reading a
+  legacy `.gmcprc`, with a one-time stderr deprecation warning.
+- `project init` now matches the project's Git remote host against
+  configured servers and auto-fills `--server` when exactly one matches.
+
+### Deprecated (removed in v3.0)
+- `GITLAB_TOKEN` / `GITLAB_HOST` env vars for startup configuration.
+- `config add --token <raw>` flag.
+- `addToken` and `updateToken` MCP tools.
+- `.gmcprc` fields `tokenName` and `gitlabHost`.
+- `ClientResolver` fallback cascade.
+
+### Changed
+- Global config schema bumps to version `"2.0"` when any server gains a
+  `TokenRef`. Previous file is saved as `config.json.bak`. Version stays
+  `"1.0"` for pure-legacy configs.
+- `ClientPool.AddServerFromConfig` now takes a `TokenResolver` callback
+  instead of reading `ServerConfig.Token` directly.
+- Docs: `docs/MULTI_SERVER_SETUP.md` now leads with the single-MCP-entry
+  model. Sections that described per-instance IDE entries with
+  `GITLAB_TOKEN`/`GITLAB_HOST` env vars are marked `(legacy)`.
+
+### Security
+- Added `config add --token-ref` and interactive-TTY paths so tokens no
+  longer need to be passed via `--token` (which leaks into shell history
+  and process listings).
+- `EncryptedFileBackend` writes are now atomic (temp-file + rename) and
+  enforce `0600` on every write, including when overwriting a file that
+  started with wider permissions.
+- `EncryptedFileBackend` rejects disabled/nil `CryptoManager` at
+  construction so a backend named "Encrypted" cannot silently write
+  plaintext.
+- `ExternalCmdBackend` applies a default 10s timeout and surfaces stderr
+  on command failure for operator visibility; returns stdout verbatim
+  (trimmed) rather than heuristically picking the "last non-empty line"
+  (which was wrong for `pass`-style multi-line entries).
+- `config add` now best-effort deletes a just-stored secret when GitLab
+  token validation fails afterward, so a bad token cannot leave an
+  orphan in the keyring.
+
+### Not changed in v2.1 (planned for v3.0)
+- Global config file path stays at
+  `~/.gitlab-mcp-server/gitlab-mcp-server-config.json`.
+- `ClientResolver` remains the default resolver.
+- TUI (`cmd/config/tui.go`) "add server" screen still uses the legacy
+  `--token` path; rewrite deferred to v3.0.
+- All deprecation shims still function.
+
+### Toolchain
+- Added direct dependency `golang.org/x/term` for no-echo TTY secret
+  input. Pulled in `x/sys v0.43+`, which bumps the `go` directive to
+  1.25.
+
 ## [2.0.0] - 2025-12-29
 
 ### Breaking Changes

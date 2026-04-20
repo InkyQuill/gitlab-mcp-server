@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	log "github.com/sirupsen/logrus"
 	gl "gitlab.com/gitlab-org/api/client-go"
 )
@@ -132,6 +134,50 @@ func (cp *ClientPool) InitializeFromEnv(ctx context.Context, token string, host 
 	return nil
 }
 
+// TokenResolver resolves a server's token at runtime. Returns the plaintext
+// token for a given server name.
+type TokenResolver func(ctx context.Context, serverName string) (string, error)
+
+// AddServerFromConfig adds a client using a TokenResolver for secret fetching.
+// The resolver may hit a keyring / external tool / encrypted file.
+func (cp *ClientPool) AddServerFromConfig(ctx context.Context, server *config.ServerConfig, resolve TokenResolver) error {
+	if server == nil {
+		return fmt.Errorf("server config cannot be nil")
+	}
+	if server.Name == "" {
+		return fmt.Errorf("server name cannot be empty")
+	}
+	token, err := resolve(ctx, server.Name)
+	if err != nil {
+		return fmt.Errorf("resolve token for %q: %w", server.Name, err)
+	}
+	clientOpts := []gl.ClientOptionFunc{}
+	if server.Host != "" && server.Host != "https://gitlab.com" {
+		clientOpts = append(clientOpts, gl.WithBaseURL(server.Host))
+	}
+	glClient, err := gl.NewClient(token, clientOpts...)
+	if err != nil {
+		return fmt.Errorf("failed to create GitLab client: %w", err)
+	}
+	if err := cp.AddClient(server.Name, glClient); err != nil {
+		return err
+	}
+	metadata := &TokenMetadata{
+		Token:         token,
+		GitLabHost:    server.Host,
+		CreatedAt:     time.Now(),
+		LastValidated: time.Now(),
+	}
+	if server.UserID > 0 {
+		metadata.UserID = server.UserID
+		metadata.Username = server.Username
+	}
+	if err := cp.store.AddToken(server.Name, metadata); err != nil {
+		cp.logger.Warnf("Failed to store token metadata for '%s': %v", server.Name, err)
+	}
+	return nil
+}
+
 // ValidateAllClients validates all clients in the pool
 func (cp *ClientPool) ValidateAllClients(ctx context.Context) []TokenValidationResult {
 	cp.mu.RLock()
@@ -147,4 +193,61 @@ func (cp *ClientPool) ValidateAllClients(ctx context.Context) []TokenValidationR
 	}
 
 	return cp.store.CheckAllTokens(ctx, getClientFunc)
+}
+
+// InitializeFromConfig initializes clients from a global config
+// This is called during server startup to set up clients from config file
+func (cp *ClientPool) InitializeFromConfig(ctx context.Context, cfg *config.Config) error {
+	if len(cfg.Servers) == 0 {
+		return fmt.Errorf("no servers configured in config")
+	}
+
+	// Create a client for each server in the config
+	for name, server := range cfg.Servers {
+		if err := cp.initializeServer(ctx, name, server); err != nil {
+			cp.logger.Warnf("Failed to initialize client '%s': %v", name, err)
+			// Continue with other servers instead of failing completely
+			continue
+		}
+	}
+
+	cp.logger.Infof("Initialized %d clients from config", len(cfg.Servers))
+	return nil
+}
+
+// initializeServer initializes a single server client
+func (cp *ClientPool) initializeServer(ctx context.Context, name string, server *config.ServerConfig) error {
+	// Create client options
+	clientOpts := []gl.ClientOptionFunc{}
+	if server.Host != "" && server.Host != "https://gitlab.com" {
+		clientOpts = append(clientOpts, gl.WithBaseURL(server.Host))
+	}
+
+	// Create GitLab client
+	glClient, err := gl.NewClient(server.Token, clientOpts...)
+	if err != nil {
+		return fmt.Errorf("failed to create GitLab client: %w", err)
+	}
+
+	// Add to pool
+	if err := cp.AddClient(name, glClient); err != nil {
+		return err
+	}
+
+	// Store token metadata in token store (minimal info, will be validated later)
+	metadata := &TokenMetadata{
+		Token:         server.Token,
+		GitLabHost:    server.Host,
+		CreatedAt:     time.Now(),
+		LastValidated: time.Now(),
+	}
+	if server.UserID > 0 {
+		metadata.UserID = server.UserID
+		metadata.Username = server.Username
+	}
+	if err := cp.store.AddToken(name, metadata); err != nil {
+		cp.logger.Warnf("Failed to store token metadata for '%s': %v", name, err)
+	}
+
+	return nil
 }

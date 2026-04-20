@@ -2,6 +2,16 @@
 
 This guide explains how to configure GitLab MCP Server to work with multiple GitLab instances (e.g., work and personal GitLab).
 
+## v2.1 and later: single MCP entry
+
+As of v2.1 the recommended setup is a single MCP server entry. Multiple
+GitLab instances are configured in the global config file via
+`gitlab-mcp-server config add <name>`, and the active instance per project
+is selected by the `server` field in that project's `.gmcprc`.
+
+Per-instance entries with `GITLAB_TOKEN`/`GITLAB_HOST` env vars still work
+in v2.1 but are deprecated and will be removed in v3.0.
+
 ## Overview
 
 The GitLab MCP Server supports connecting to multiple GitLab instances simultaneously. Each server configuration has:
@@ -27,7 +37,11 @@ Configure multiple GitLab servers? (y/n, default: n): [press Enter]
 
 This creates a single MCP server named `gitlab`.
 
-### Multiple Servers
+### (legacy) Multiple Servers
+
+> **Deprecated in v2.1** — prefer a single MCP entry plus
+> `gitlab-mcp-server config add <name>` as described above. The flow below
+> remains functional in v2.1 but will be removed in v3.0.
 
 For multiple GitLab servers:
 
@@ -62,7 +76,12 @@ Enable read-only mode? (y/n, default: n): y
 Add another server? (y/n, default: n): [press Enter]
 ```
 
-## Configuration Files
+## (legacy) Configuration Files
+
+> **Deprecated in v2.1** — these per-instance entries embed
+> `GITLAB_TOKEN`/`GITLAB_HOST` directly in the IDE's MCP config. New
+> installs should use a single MCP entry and declare instances via
+> `gitlab-mcp-server config add <name>`.
 
 After installation, your MCP configuration will contain multiple servers:
 
