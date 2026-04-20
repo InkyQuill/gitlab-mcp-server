@@ -234,15 +234,29 @@ This server supports multiple GitLab instances and can be configured via:
 				}
 			}
 
-			// Create Client Resolver
-			resolver := gitlab.NewClientResolver(clientPool, defaultServer, logger)
-			logger.Infof("Client resolver initialized with default server '%s'", defaultServer)
+			// Create Client Resolver — strict (opt-in via env) or legacy (default).
+			var resolverFn gitlab.GetClientFn
+			if os.Getenv("GITLAB_MCP_STRICT_RESOLVER") == "1" {
+				hostsByName := map[string]string{}
+				if hasConfigServers {
+					for _, s := range cfgManager.ListServers() {
+						hostsByName[s.Name] = s.Host
+					}
+				}
+				sr := gitlab.NewStrictResolver(clientPool, hostsByName, logger)
+				resolverFn = sr.GetClientFn()
+				logger.Info("Strict resolver enabled (GITLAB_MCP_STRICT_RESOLVER=1) — no fallbacks, host verified per session")
+			} else {
+				resolver := gitlab.NewClientResolver(clientPool, defaultServer, logger)
+				resolverFn = resolver.GetClientFn()
+				logger.Infof("Client resolver initialized with default server '%s' (legacy — set GITLAB_MCP_STRICT_RESOLVER=1 for strict mode)", defaultServer)
+			}
 
 			// Check if dynamic toolsets mode is enabled
 			dynamicToolsets := viper.GetBool("dynamic-toolsets")
 
 			// Initialize Toolsets
-			toolsetGroup, err := gitlab.InitToolsets(enabledToolsets, readOnly, resolver.GetClientFn(), logger, tokenStore, t, dynamicToolsets)
+			toolsetGroup, err := gitlab.InitToolsets(enabledToolsets, readOnly, resolverFn, logger, tokenStore, t, dynamicToolsets)
 			if err != nil {
 				logger.Fatalf("Failed to initialize toolsets: %v", err)
 			}
