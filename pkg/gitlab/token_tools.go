@@ -43,6 +43,10 @@ func AddToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *Token
 			),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			logger.Warn("DEPRECATION: addToken MCP tool accepts tokens via LLM input. " +
+				"This tool will be removed in v3.0 for security. Configure tokens via " +
+				"'gitlab-mcp-server config add' (CLI) instead.")
+
 			// Parse parameters
 			name, err := requiredParam[string](&request, "name")
 			if err != nil {
@@ -90,12 +94,14 @@ func AddToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *Token
 
 			// Return success
 			result := map[string]interface{}{
-				"success":    true,
-				"message":    fmt.Sprintf("Token '%s' added and validated successfully", name),
-				"tokenName":  name,
-				"userId":     metadata.UserID,
-				"username":   metadata.Username,
-				"gitlabHost": gitlabHost,
+				"success":            true,
+				"message":            fmt.Sprintf("Token '%s' added and validated successfully", name),
+				"tokenName":          name,
+				"userId":             metadata.UserID,
+				"username":           metadata.Username,
+				"gitlabHost":         gitlabHost,
+				"deprecated":         true,
+				"deprecationMessage": "addToken will be removed in v3.0. Use 'gitlab-mcp-server config add' CLI instead.",
 			}
 
 			data, _ := json.MarshalIndent(result, "", "  ")
@@ -167,6 +173,10 @@ func UpdateToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *To
 			),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			logger.Warn("DEPRECATION: updateToken MCP tool accepts tokens via LLM input. " +
+				"This tool will be removed in v3.0 for security. Configure tokens via " +
+				"'gitlab-mcp-server config add' (CLI) instead.")
+
 			// Parse parameters
 			name, err := requiredParam[string](&request, "name")
 			if err != nil {
@@ -225,12 +235,14 @@ func UpdateToken(clientFactory ClientFactory, logger *log.Logger, tokenStore *To
 
 			// Return success
 			result := map[string]interface{}{
-				"success":   true,
-				"message":   fmt.Sprintf("Token '%s' updated successfully", name),
-				"tokenName": name,
-				"userId":    metadata.UserID,
-				"username":  metadata.Username,
-				"updated":   hasNewToken,
+				"success":            true,
+				"message":            fmt.Sprintf("Token '%s' updated successfully", name),
+				"tokenName":          name,
+				"userId":             metadata.UserID,
+				"username":           metadata.Username,
+				"updated":            hasNewToken,
+				"deprecated":         true,
+				"deprecationMessage": "updateToken will be removed in v3.0. Use 'gitlab-mcp-server config add' CLI instead.",
 			}
 
 			data, _ := json.MarshalIndent(result, "", "  ")

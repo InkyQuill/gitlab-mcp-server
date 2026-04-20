@@ -195,6 +195,9 @@ This server supports multiple GitLab instances and can be configured via:
 
 			// Priority 2: Fallback to environment variables (backward compatibility)
 			if token != "" {
+				logger.Warn("DEPRECATION: GITLAB_TOKEN env var usage is deprecated and will be removed in v3.0. " +
+					"Run 'gitlab-mcp-server config add <name> --host <url>' to migrate to the global config. " +
+					"See docs/MULTI_SERVER_SETUP.md.")
 				logger.Info("Using environment variables for client initialization")
 				if err := clientPool.InitializeFromEnv(ctx, token, host); err != nil {
 					logger.Fatalf("Failed to initialize client from environment: %v", err)
