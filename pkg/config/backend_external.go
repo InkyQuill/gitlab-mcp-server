@@ -1,13 +1,15 @@
 package config
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 )
+
+const defaultExternalCmdTimeout = 10 * time.Second
 
 // ExternalCmdBackend resolves secrets by shelling out to a user-configured command.
 // Schemes are allow-listed at construction time via a templates map:
@@ -59,7 +61,10 @@ func (x *ExternalCmdBackend) RegisterAll(r *BackendRegistry) error {
 	return nil
 }
 
-// Resolve runs the templated command and returns its last non-empty stdout line.
+// Resolve runs the templated command and returns its stdout with trailing
+// whitespace trimmed. Callers whose external tool prints a banner before the
+// secret should strip it with a pipeline in their command template
+// (e.g. "op read %s | tail -n1").
 func (x *ExternalCmdBackend) Resolve(ctx context.Context, ref string) (string, error) {
 	scheme, opaque, err := ParseRef(ref)
 	if err != nil {
@@ -73,12 +78,22 @@ func (x *ExternalCmdBackend) Resolve(ctx context.Context, ref string) (string, e
 	if err != nil {
 		return "", err
 	}
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, defaultExternalCmdTimeout)
+		defer cancel()
+	}
 	cmd := exec.CommandContext(ctx, name, args...)
 	out, err := cmd.Output()
 	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
+			return "", fmt.Errorf("external-cmd backend: %s: %w: %s",
+				name, err, strings.TrimSpace(string(exitErr.Stderr)))
+		}
 		return "", fmt.Errorf("external-cmd backend: %s: %w", name, err)
 	}
-	secret := lastNonEmptyLine(string(out))
+	secret := strings.TrimRight(string(out), "\n\r\t ")
 	if secret == "" {
 		return "", fmt.Errorf("external-cmd backend: empty output from %s", name)
 	}
@@ -117,18 +132,6 @@ func buildExec(tmpl, opaque string) (string, []string, error) {
 		return "", nil, errors.New("external-cmd backend: template missing %s placeholder")
 	}
 	return replaced[0], replaced[1:], nil
-}
-
-func lastNonEmptyLine(s string) string {
-	sc := bufio.NewScanner(strings.NewReader(s))
-	last := ""
-	for sc.Scan() {
-		line := strings.TrimRight(sc.Text(), " \t\r")
-		if line != "" {
-			last = line
-		}
-	}
-	return last
 }
 
 // externalSchemeShim adapts ExternalCmdBackend to the single-scheme Register API.

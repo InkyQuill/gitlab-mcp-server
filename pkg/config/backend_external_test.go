@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +38,12 @@ func buildArgvEcho(t *testing.T) string {
 	bin := filepath.Join(dir, "argvecho")
 	require.NoError(t, os.WriteFile(src, []byte(`package main
 import ("fmt"; "os")
-func main() { for _, a := range os.Args[1:] { fmt.Println(a) }; fmt.Println("SECRET_VALUE") }
+func main() {
+    for _, a := range os.Args[1:] {
+        fmt.Fprintln(os.Stderr, a)
+    }
+    fmt.Println("SECRET_VALUE")
+}
 `), 0600))
 	out, err := runCmd(dir, "go", "build", "-o", bin, src)
 	require.NoError(t, err, "build helper: %s", out)
@@ -78,4 +84,79 @@ func TestExternalCmdBackend_StoreUnsupported(t *testing.T) {
 	_, err := b.Store(context.Background(), "name", "secret")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "store is not supported")
+}
+
+func TestExternalCmdBackend_ReturnsVerbatimStdoutTrimmed(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX helper")
+	}
+	dir := t.TempDir()
+	src := filepath.Join(dir, "main.go")
+	bin := filepath.Join(dir, "multiline")
+	require.NoError(t, os.WriteFile(src, []byte(`package main
+import "fmt"
+func main() {
+    fmt.Print("line1\nline2\nline3\n\n\n")
+}
+`), 0600))
+	out, err := runCmd(dir, "go", "build", "-o", bin, src)
+	require.NoError(t, err, "build: %s", out)
+
+	b := NewExternalCmdBackend(map[string]string{"op": bin + " %s"})
+	got, err := b.Resolve(context.Background(), "op://ignored")
+	require.NoError(t, err)
+	assert.Equal(t, "line1\nline2\nline3", got,
+		"multi-line output must be returned verbatim with only trailing whitespace trimmed")
+}
+
+func TestExternalCmdBackend_IncludesStderrOnFailure(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX helper")
+	}
+	dir := t.TempDir()
+	src := filepath.Join(dir, "main.go")
+	bin := filepath.Join(dir, "failer")
+	require.NoError(t, os.WriteFile(src, []byte(`package main
+import ("fmt"; "os")
+func main() {
+    fmt.Fprintln(os.Stderr, "vault is locked: run 'op signin'")
+    os.Exit(1)
+}
+`), 0600))
+	out, err := runCmd(dir, "go", "build", "-o", bin, src)
+	require.NoError(t, err, "build: %s", out)
+
+	b := NewExternalCmdBackend(map[string]string{"op": bin + " %s"})
+	_, err = b.Resolve(context.Background(), "op://ignored")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "vault is locked",
+		"stderr must be surfaced in the wrapped error so operators can debug")
+}
+
+func TestExternalCmdBackend_AppliesDefaultTimeout(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX helper")
+	}
+	dir := t.TempDir()
+	src := filepath.Join(dir, "main.go")
+	bin := filepath.Join(dir, "hang")
+	require.NoError(t, os.WriteFile(src, []byte(`package main
+import "time"
+func main() { time.Sleep(30 * time.Second) }
+`), 0600))
+	out, err := runCmd(dir, "go", "build", "-o", bin, src)
+	require.NoError(t, err, "build: %s", out)
+
+	// The backend's default 10s timeout is too long for a unit test. We pass
+	// a ctx with a 200ms deadline. This exercises the "ctx with deadline" path
+	// (the wrapping logic skips injecting a default when one is already set).
+	b := NewExternalCmdBackend(map[string]string{"op": bin + " %s"})
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	_, err = b.Resolve(ctx, "op://ignored")
+	elapsed := time.Since(start)
+	require.Error(t, err, "hung command with timed-out ctx must return an error")
+	assert.Less(t, elapsed, 2*time.Second,
+		"resolve must honor the caller's ctx deadline, not wait for the 10s default")
 }
