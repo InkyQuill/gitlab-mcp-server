@@ -150,14 +150,15 @@ func TestDumpAllTranslations(t *testing.T) {
 	tests := []struct {
 		name        string
 		setupConfig func(t *testing.T) string
-		validate    func(t *testing.T, configPath string)
+		validate    func(t *testing.T, baseDir string)
 	}{
 		{
 			name: "Create new config file",
 			setupConfig: func(t *testing.T) string {
 				return t.TempDir()
 			},
-			validate: func(t *testing.T, configPath string) {
+			validate: func(t *testing.T, baseDir string) {
+				configPath := filepath.Join(baseDir, configFileName)
 				// Config file should not exist initially
 				_, err := os.Stat(configPath)
 				assert.True(t, os.IsNotExist(err))
@@ -165,7 +166,7 @@ func TestDumpAllTranslations(t *testing.T) {
 				// Dump translations
 				logger := log.New()
 				logger.SetLevel(log.ErrorLevel)
-				dumpAllTranslations(logger, configPath)
+				dumpAllTranslations(logger, baseDir)
 
 				// Config should now exist
 				data, err := os.ReadFile(configPath)
@@ -203,10 +204,11 @@ func TestDumpAllTranslations(t *testing.T) {
 
 				return tmpDir
 			},
-			validate: func(t *testing.T, configPath string) {
+			validate: func(t *testing.T, baseDir string) {
+				configPath := filepath.Join(baseDir, configFileName)
 				logger := log.New()
 				logger.SetLevel(log.ErrorLevel)
-				dumpAllTranslations(logger, configPath)
+				dumpAllTranslations(logger, baseDir)
 
 				// Read merged config
 				data, err := os.ReadFile(configPath)
@@ -244,10 +246,11 @@ func TestDumpAllTranslations(t *testing.T) {
 
 				return tmpDir
 			},
-			validate: func(t *testing.T, configPath string) {
+			validate: func(t *testing.T, baseDir string) {
+				configPath := filepath.Join(baseDir, configFileName)
 				logger := log.New()
 				logger.SetLevel(log.ErrorLevel)
-				dumpAllTranslations(logger, configPath)
+				dumpAllTranslations(logger, baseDir)
 
 				// Read updated config
 				data, err := os.ReadFile(configPath)
@@ -270,8 +273,7 @@ func TestDumpAllTranslations(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tmpDir := tc.setupConfig(t)
-			configPath := filepath.Join(tmpDir, configFileName)
-			tc.validate(t, configPath)
+			tc.validate(t, tmpDir)
 		})
 	}
 }
@@ -353,7 +355,7 @@ func TestTranslationHelper_InvalidJSON(t *testing.T) {
 
 	// Test that dumpAllTranslations handles invalid JSON gracefully
 	// It should ignore the invalid JSON and create a new file with all keys
-	dumpAllTranslations(logger, configPath)
+	dumpAllTranslations(logger, tmpDir)
 
 	// Config should be rewritten with valid JSON
 	data, err := os.ReadFile(configPath)
@@ -454,7 +456,7 @@ func TestDumpAllTranslations_ExistingInvalidJSON(t *testing.T) {
 
 	// dumpAllTranslations should handle invalid JSON in existing file
 	// It should ignore the invalid JSON and create a new file with all keys
-	dumpAllTranslations(logger, configPath)
+	dumpAllTranslations(logger, tmpDir)
 
 	// Config should be rewritten with valid JSON
 	data, err := os.ReadFile(configPath)
@@ -474,7 +476,7 @@ func TestTranslationHelper_SuccessfulLoad(t *testing.T) {
 	// which returns the actual binary path. We can't easily mock this.
 	// However, we can test that the function works when a valid config file
 	// exists next to the binary (if it does).
-	
+
 	logger := log.New()
 	logger.SetLevel(log.ErrorLevel)
 
