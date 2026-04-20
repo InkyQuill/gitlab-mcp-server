@@ -28,10 +28,10 @@ jobs:
         # v7 is required for golangci-lint v2. v6 only supports v1.
         uses: golangci/golangci-lint-action@v7
         with:
-          # v2.x is built with Go 1.25 and understands our go 1.25.9 directive.
-          # v1.x (last v1.64.8) was built with Go 1.24 and rejects projects
-          # targeting newer Go versions.
-          version: v2.0.2
+          # v2.8.0 is built with Go 1.25.5 and accepts our go 1.25.9 directive.
+          # v2.0.2 was still built with Go 1.24 and errors the same way v1 did.
+          # v1.x (v1.64.8) was built with Go 1.24 and rejects Go 1.25+ targets.
+          version: v2.8.0
           args: --timeout=5m --config=.golangci.yml ./...
 
   go-vet:
