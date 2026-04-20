@@ -38,6 +38,7 @@ func init() {
 		newRemoveCmd(cfgManager),
 		newDefaultCmd(cfgManager),
 		newValidateCmd(cfgManager),
+		newBackendsCmd(),
 	)
 }
 
