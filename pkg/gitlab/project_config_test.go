@@ -760,6 +760,29 @@ func TestDetectProjectFromGit(t *testing.T) {
 	}
 }
 
+func TestReadProjectConfig_PromotesTokenNameToServer(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".gmcprc")
+	body := `{"projectId":"g/p","tokenName":"work"}`
+	require.NoError(t, os.WriteFile(path, []byte(body), 0600))
+
+	cfg, err := readProjectConfig(path)
+	require.NoError(t, err)
+	assert.Equal(t, "g/p", cfg.ProjectID)
+	assert.Equal(t, "work", cfg.Server, "tokenName should auto-promote to server")
+}
+
+func TestReadProjectConfig_KeepsServerWhenBothSet(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".gmcprc")
+	body := `{"projectId":"g/p","server":"work","tokenName":"other"}`
+	require.NoError(t, os.WriteFile(path, []byte(body), 0600))
+
+	cfg, err := readProjectConfig(path)
+	require.NoError(t, err)
+	assert.Equal(t, "work", cfg.Server, "explicit server wins over deprecated tokenName")
+}
+
 func TestProjectConfig_LastUpdated(t *testing.T) {
 	tmpDir := t.TempDir()
 

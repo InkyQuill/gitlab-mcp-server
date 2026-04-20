@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
@@ -57,6 +58,8 @@ func FindProjectConfig() (*ProjectConfig, string, error) {
 	}
 }
 
+var gmcprcWarnedPaths sync.Map // path → struct{}
+
 // readProjectConfig reads and parses a .gmcprc file
 func readProjectConfig(path string) (*ProjectConfig, error) {
 	data, err := os.ReadFile(path)
@@ -67,6 +70,26 @@ func readProjectConfig(path string) (*ProjectConfig, error) {
 	var config ProjectConfig
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	// Promote deprecated TokenName if Server is empty.
+	deprecated := []string{}
+	if config.Server == "" && config.TokenName != "" {
+		config.Server = config.TokenName
+		deprecated = append(deprecated, "tokenName")
+	} else if config.TokenName != "" {
+		deprecated = append(deprecated, "tokenName (ignored; 'server' already set)")
+	}
+	if config.GitLabHost != "" {
+		deprecated = append(deprecated, "gitlabHost")
+	}
+	if len(deprecated) > 0 {
+		if _, already := gmcprcWarnedPaths.LoadOrStore(path, struct{}{}); !already {
+			fmt.Fprintf(os.Stderr,
+				"DEPRECATION: %s contains legacy .gmcprc fields: %s. "+
+					"Re-run 'gitlab-mcp-server project init' to migrate. These fields are removed in v3.0.\n",
+				path, strings.Join(deprecated, ", "))
+		}
 	}
 
 	return &config, nil
