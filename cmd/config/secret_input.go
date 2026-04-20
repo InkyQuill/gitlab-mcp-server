@@ -1,10 +1,8 @@
 package config
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -20,7 +18,7 @@ func promptSecret(prompt string) (string, error) {
 		return "", errors.New("no TTY available — use --token-ref <ref> in non-interactive contexts")
 	}
 	defer f.Close()
-	fmt.Fprint(f, prompt)
+	_, _ = fmt.Fprint(f, prompt)
 	fd := int(f.Fd())
 	bytes, err := term.ReadPassword(fd)
 	fmt.Fprintln(f)
@@ -28,21 +26,4 @@ func promptSecret(prompt string) (string, error) {
 		return "", fmt.Errorf("read secret: %w", err)
 	}
 	return strings.TrimSpace(string(bytes)), nil
-}
-
-// promptLine reads a line from the given reader (used for backend-choice prompts).
-func promptLine(r io.Reader, prompt string, dflt string) (string, error) {
-	fmt.Print(prompt)
-	sc := bufio.NewScanner(r)
-	if sc.Scan() {
-		s := strings.TrimSpace(sc.Text())
-		if s == "" {
-			return dflt, nil
-		}
-		return s, nil
-	}
-	if err := sc.Err(); err != nil {
-		return "", err
-	}
-	return dflt, nil
 }

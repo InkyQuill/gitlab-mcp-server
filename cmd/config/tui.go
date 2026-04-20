@@ -21,6 +21,7 @@ var (
 			Background(lipgloss.Color("::25")). // background
 			Padding(0, 2)
 
+	//nolint:unused // part of the style palette; reserved for future screens
 	subtitleStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("::FA")). // rose
 			Padding(0, 1)
@@ -30,6 +31,7 @@ var (
 				Background(lipgloss.Color("::25")). // background
 				Padding(0, 1)
 
+	//nolint:unused // part of the style palette; reserved for future screens
 	normalItemStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("::DA")). // text
 			Padding(0, 1)

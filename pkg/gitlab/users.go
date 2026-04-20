@@ -391,7 +391,7 @@ func ManageUserState(getClient GetClientFn, t map[string]string) (tool mcp.Tool,
 					case 401, 403:
 						return mcp.NewToolResultError(fmt.Sprintf("Failed to %s user: %s (status: %d)", action, execErr.Error(), resp.Response.StatusCode)), nil
 					case 404:
-						return mcp.NewToolResultError(fmt.Sprintf("User not found or access denied (404)")), nil
+						return mcp.NewToolResultError("User not found or access denied (404)"), nil
 					}
 				}
 				return nil, fmt.Errorf("failed to %s user: %w", action, execErr)

@@ -172,7 +172,7 @@ func ListProjects(getClient GetClientFn, t map[string]string) (tool mcp.Tool, ha
 					code = resp.StatusCode
 				}
 				if code == http.StatusUnauthorized {
-					msg := fmt.Sprintf("Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.")
+					msg := "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool."
 					return mcp.NewToolResultError(msg), nil
 				}
 				return nil, fmt.Errorf("failed to list projects: %w (status: %d)", err, code)

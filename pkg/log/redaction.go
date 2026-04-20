@@ -25,11 +25,15 @@ var (
 	apiKeyInURL = regexp.MustCompile(`([?&])(api[_-]?key|token|auth|access[_-]?token|private[_-]?token|secret|apikey)[=][^&\s]+`)
 	// Generic token pattern - matches long alphanumeric strings that look like tokens
 	// Only applies in non-JSON contexts (after JSON parsing is attempted)
+	//
+	//nolint:unused // kept for future use; opt-in redaction pass will wire it up
 	genericTokenPattern = regexp.MustCompile(`\b[a-zA-Z0-9_-]{32,}\b`)
 	// Basic auth in URLs - matches //user:password@ where password can contain anything but @
 	// Uses a non-greedy match to handle passwords with special characters
 	basicAuthPattern = regexp.MustCompile(`//[^:@]+:(?:[^@]+?)?@`)
 	// Email addresses (often sensitive in logs)
+	//
+	//nolint:unused // kept for future use; opt-in redaction pass will wire it up
 	emailPattern = regexp.MustCompile(`\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b`)
 )
 

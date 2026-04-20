@@ -83,7 +83,14 @@ func (x *ExternalCmdBackend) Resolve(ctx context.Context, ref string) (string, e
 		ctx, cancel = context.WithTimeout(ctx, defaultExternalCmdTimeout)
 		defer cancel()
 	}
-	cmd := exec.CommandContext(ctx, name, args...)
+	// G204 (subprocess via variable) is the intentional contract of this
+	// backend: user-configured command templates resolve secrets from
+	// external password managers. Command paths come from the admin-owned
+	// global config, not from LLM input or the ref itself, and argv is
+	// assembled via exec.Command so shell metacharacters in the ref cannot
+	// reinterpret the command (covered by
+	// TestExternalCmdBackend_ShellMetacharsArePassedLiterally).
+	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec
 	out, err := cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError

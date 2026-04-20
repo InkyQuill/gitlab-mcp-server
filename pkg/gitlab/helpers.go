@@ -26,7 +26,7 @@ func HandleAPIError(err error, resp *gl.Response, resourceDescription string) (*
 
 	// Handle 401 Unauthorized - token expired or invalid
 	if code == http.StatusUnauthorized {
-		msg := fmt.Sprintf("Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.")
+		msg := "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool."
 		return mcp.NewToolResultError(msg), nil
 	}
 
@@ -64,7 +64,7 @@ func HandleListAPIError(err error, resp *gl.Response, resourceDescription string
 
 	// Handle 401 Unauthorized - token expired or invalid
 	if code == http.StatusUnauthorized {
-		msg := fmt.Sprintf("Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.")
+		msg := "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool."
 		return mcp.NewToolResultError(msg), nil
 	}
 
@@ -91,7 +91,7 @@ func HandleCreateUpdateAPIError(err error, resp *gl.Response, resourceDescriptio
 
 	// Handle 401 Unauthorized - token expired or invalid
 	if code == http.StatusUnauthorized {
-		msg := fmt.Sprintf("Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.")
+		msg := "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool."
 		return mcp.NewToolResultError(msg), nil
 	}
 
@@ -124,7 +124,7 @@ func HandleGraphQLError(err error, resp *gl.Response, resourceDescription string
 
 		// Handle 401 Unauthorized - token expired or invalid
 		if code == http.StatusUnauthorized {
-			msg := fmt.Sprintf("Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.")
+			msg := "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool."
 			return mcp.NewToolResultError(msg), nil
 		}
 

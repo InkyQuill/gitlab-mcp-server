@@ -438,7 +438,9 @@ func mergeClaudeConfig(existing map[string]interface{}, installConfig *InstallCo
 		"args":    installConfig.Args,
 	}
 	if len(installConfig.Env) > 0 {
-		mcpServers["gitlab"].(map[string]interface{})["env"] = installConfig.Env
+		if entry, ok := mcpServers["gitlab"].(map[string]interface{}); ok {
+			entry["env"] = installConfig.Env
+		}
 	}
 
 	existing["mcpServers"] = mcpServers

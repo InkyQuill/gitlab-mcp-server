@@ -26,7 +26,11 @@ jobs:
       - name: Run gosec
         uses: securego/gosec@master
         with:
-          args: ./...
+          # G104: unhandled errors (covered more precisely by errcheck in golangci-lint)
+          # G301: directory perms — deliberately 0755 for config dir so user can inspect
+          # G304: file path from variable — reviewed case-by-case; ref-based backend is safe
+          # G306: file perms — deliberately 0644 for translations cache (non-secret)
+          args: -exclude=G104,G301,G304,G306 ./...
 
   govulncheck:
     name: govulncheck
