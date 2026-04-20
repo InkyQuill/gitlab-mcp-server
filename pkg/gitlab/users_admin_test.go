@@ -25,7 +25,7 @@ func TestBlockUserHandler_AdminCheck(t *testing.T) {
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
-		mockUsers.EXPECT().BlockUser(1, gomock.Any()).Return(nil)
+		mockUsers.EXPECT().BlockUser(int64(1), gomock.Any()).Return(nil)
 
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
@@ -67,7 +67,7 @@ func TestUnblockUserHandler_AdminCheck(t *testing.T) {
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
-		mockUsers.EXPECT().UnblockUser(1, gomock.Any()).Return(nil)
+		mockUsers.EXPECT().UnblockUser(int64(1), gomock.Any()).Return(nil)
 
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
@@ -109,7 +109,7 @@ func TestBanUserHandler_AdminCheck(t *testing.T) {
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
-		mockUsers.EXPECT().BanUser(1, gomock.Any()).Return(nil)
+		mockUsers.EXPECT().BanUser(int64(1), gomock.Any()).Return(nil)
 
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
@@ -151,7 +151,7 @@ func TestUnbanUserHandler_AdminCheck(t *testing.T) {
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
-		mockUsers.EXPECT().UnbanUser(1, gomock.Any()).Return(nil)
+		mockUsers.EXPECT().UnbanUser(int64(1), gomock.Any()).Return(nil)
 
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
@@ -193,7 +193,7 @@ func TestActivateUserHandler_AdminCheck(t *testing.T) {
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
-		mockUsers.EXPECT().ActivateUser(1, gomock.Any()).Return(nil)
+		mockUsers.EXPECT().ActivateUser(int64(1), gomock.Any()).Return(nil)
 
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
@@ -235,7 +235,7 @@ func TestDeactivateUserHandler_AdminCheck(t *testing.T) {
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
-		mockUsers.EXPECT().DeactivateUser(1, gomock.Any()).Return(nil)
+		mockUsers.EXPECT().DeactivateUser(int64(1), gomock.Any()).Return(nil)
 
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`
@@ -277,7 +277,7 @@ func TestApproveUserHandler_AdminCheck(t *testing.T) {
 	t.Run("Success - Admin", func(t *testing.T) {
 		mockUsers.EXPECT().CurrentUser(gomock.Any()).
 			Return(&gl.User{ID: 1, IsAdmin: true}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
-		mockUsers.EXPECT().ApproveUser(1, gomock.Any()).Return(nil)
+		mockUsers.EXPECT().ApproveUser(int64(1), gomock.Any()).Return(nil)
 
 		request := mcp.CallToolRequest{Params: struct {
 			Name      string                 `json:"name"`

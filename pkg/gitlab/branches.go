@@ -49,8 +49,8 @@ func GetProjectBranches(getClient GetClientFn, t map[string]string) (tool mcp.To
 			// --- Construct GitLab API options
 			opts := &gl.ListBranchesOptions{
 				ListOptions: gl.ListOptions{
-					Page:    page,
-					PerPage: perPage,
+					Page:    int64(page),
+					PerPage: int64(perPage),
 				},
 			}
 			if search != "" {

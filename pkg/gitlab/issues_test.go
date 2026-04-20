@@ -67,7 +67,7 @@ func TestGetIssueHandler(t *testing.T) {
 					Description: "This is a test issue.",
 				}
 				mockIssues.EXPECT().
-					GetIssue("group/project", 1, gomock.Any(), gomock.Any()).
+					GetIssue("group/project", int64(1), gomock.Any(), gomock.Any()).
 					Return(expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 			expectedResult: &gl.Issue{ // Store expected struct for success
@@ -87,7 +87,7 @@ func TestGetIssueHandler(t *testing.T) {
 			issueIid:  999.0,
 			mockSetup: func() {
 				mockIssues.EXPECT().
-					GetIssue("group/project", 999, gomock.Any(), gomock.Any()).
+					GetIssue("group/project", int64(999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Issue Not Found"))
 			},
 			expectedResult:      "issue 999 in project \"group/project\" not found or access denied (404)", // Expect error message string
@@ -119,7 +119,7 @@ func TestGetIssueHandler(t *testing.T) {
 			issueIid:  2.0,
 			mockSetup: func() {
 				mockIssues.EXPECT().
-					GetIssue("group/project", 2, gomock.Any(), gomock.Any()).
+					GetIssue("group/project", int64(2), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectedResult:      nil,                                                                                         // No result content expected when handler errors
@@ -347,8 +347,8 @@ func TestListIssuesHandler(t *testing.T) {
 					ListProjectIssues("group/project", gomock.Any(), gomock.Any()).
 					DoAndReturn(func(_ interface{}, opts *gl.ListProjectIssuesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Issue, *gl.Response, error) {
 						// Verify the expected filters are set
-						assert.Equal(t, 2, opts.Page)
-						assert.Equal(t, 5, opts.PerPage)
+						assert.Equal(t, int64(2), opts.Page)
+						assert.Equal(t, int64(5), opts.PerPage)
 						assert.Equal(t, "opened", *opts.State)
 						assert.Equal(t, 2, len(*opts.Labels))
 						assert.Contains(t, *opts.Labels, "bug")
@@ -508,7 +508,7 @@ func TestListIssuesHandler(t *testing.T) {
 					ListProjectIssues("group/project", gomock.Any(), gomock.Any()).
 					DoAndReturn(func(_ interface{}, opts *gl.ListProjectIssuesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Issue, *gl.Response, error) {
 						require.NotNil(t, opts.AuthorID)
-						assert.Equal(t, 123, *opts.AuthorID)
+						assert.Equal(t, int64(123), *opts.AuthorID)
 						return expectedIssues, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},
@@ -532,7 +532,7 @@ func TestListIssuesHandler(t *testing.T) {
 					ListProjectIssues("group/project", gomock.Any(), gomock.Any()).
 					DoAndReturn(func(_ interface{}, opts *gl.ListProjectIssuesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Issue, *gl.Response, error) {
 						require.NotNil(t, opts.AssigneeID)
-						assert.Equal(t, 456, *opts.AssigneeID)
+						assert.Equal(t, gl.AssigneeID(int64(456)), opts.AssigneeID)
 						return expectedIssues, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},
@@ -621,7 +621,7 @@ func TestListIssuesHandler(t *testing.T) {
 						require.NotNil(t, opts.Labels)
 						assert.Equal(t, labelOpts, *opts.Labels)
 						require.NotNil(t, opts.AuthorID)
-						assert.Equal(t, 123, *opts.AuthorID)
+						assert.Equal(t, int64(123), *opts.AuthorID)
 						require.NotNil(t, opts.Search)
 						assert.Equal(t, "critical", *opts.Search)
 						require.NotNil(t, opts.OrderBy)
@@ -761,8 +761,8 @@ func TestListIssuesHandler(t *testing.T) {
 								actualIssue, ok := actualItemsSlice[i].(map[string]interface{})
 								require.True(t, ok, "Item should be map[string]interface{}")
 
-								assert.Equal(t, expectedIssue.ID, int(actualIssue["id"].(float64)), "ID should match")
-								assert.Equal(t, expectedIssue.IID, int(actualIssue["iid"].(float64)), "IID should match")
+								assert.Equal(t, expectedIssue.ID, int64(actualIssue["id"].(float64)), "ID should match")
+								assert.Equal(t, expectedIssue.IID, int64(actualIssue["iid"].(float64)), "IID should match")
 								assert.Equal(t, expectedIssue.Title, actualIssue["title"], "Title should match")
 
 								// Verify that unwanted fields are removed
@@ -848,11 +848,11 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 				}
 
 				mockNotes.EXPECT().
-					ListIssueNotes(projectID, int(issueIid), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.ListIssueNotesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Note, *gl.Response, error) {
+					ListIssueNotes(projectID, int64(issueIid), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.ListIssueNotesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Note, *gl.Response, error) {
 						// Verify pagination settings
-						assert.Equal(t, 1, opts.Page)
-						assert.Equal(t, DefaultPerPage, opts.PerPage)
+						assert.Equal(t, int64(1), opts.Page)
+						assert.Equal(t, int64(DefaultPerPage), opts.PerPage)
 
 						return expectedNotes, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -901,11 +901,11 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 				}
 
 				mockNotes.EXPECT().
-					ListIssueNotes(projectID, int(issueIid), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.ListIssueNotesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Note, *gl.Response, error) {
+					ListIssueNotes(projectID, int64(issueIid), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.ListIssueNotesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Note, *gl.Response, error) {
 						// Verify pagination settings
-						assert.Equal(t, 2, opts.Page)
-						assert.Equal(t, 5, opts.PerPage)
+						assert.Equal(t, int64(2), opts.Page)
+						assert.Equal(t, int64(5), opts.PerPage)
 
 						return expectedNotes, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -932,7 +932,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					ListIssueNotes(projectID, 2, gomock.Any(), gomock.Any()).
+					ListIssueNotes(projectID, int64(2), gomock.Any(), gomock.Any()).
 					Return([]*gl.Note{}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 			expectedResult:      "[]", // Empty JSON array string
@@ -949,7 +949,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					ListIssueNotes(projectID, 999, gomock.Any(), gomock.Any()).
+					ListIssueNotes(projectID, int64(999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Issue Not Found"))
 			},
 			expectedResult:      "comments for issue 999 in project \"group/project\" not found or access denied (404)",
@@ -965,7 +965,7 @@ func TestGetIssueCommentsHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					ListIssueNotes(projectID, int(issueIid), gomock.Any(), gomock.Any()).
+					ListIssueNotes(projectID, int64(issueIid), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectedResult:      nil,
@@ -1151,7 +1151,7 @@ func TestGetIssueLabelsHandler(t *testing.T) {
 				}
 
 				mockIssues.EXPECT().
-					GetIssue(projectID, int(issueIid), gomock.Any(), gomock.Any()).
+					GetIssue(projectID, int64(issueIid), gomock.Any(), gomock.Any()).
 					Return(expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 			expectedResult:      []string{"bug", "critical", "needs-review"},
@@ -1176,7 +1176,7 @@ func TestGetIssueLabelsHandler(t *testing.T) {
 				}
 
 				mockIssues.EXPECT().
-					GetIssue(projectID, 2, gomock.Any(), gomock.Any()).
+					GetIssue(projectID, int64(2), gomock.Any(), gomock.Any()).
 					Return(expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 			expectedResult:      "[]", // Empty JSON array string
@@ -1201,7 +1201,7 @@ func TestGetIssueLabelsHandler(t *testing.T) {
 				}
 
 				mockIssues.EXPECT().
-					GetIssue(projectID, 3, gomock.Any(), gomock.Any()).
+					GetIssue(projectID, int64(3), gomock.Any(), gomock.Any()).
 					Return(expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 			expectedResult:      "[]", // Empty JSON array string
@@ -1217,7 +1217,7 @@ func TestGetIssueLabelsHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockIssues.EXPECT().
-					GetIssue(projectID, 999, gomock.Any(), gomock.Any()).
+					GetIssue(projectID, int64(999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Issue Not Found"))
 			},
 			expectedResult:      "labels for issue 999 in project \"group/project\" not found or access denied (404)",
@@ -1232,7 +1232,7 @@ func TestGetIssueLabelsHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockIssues.EXPECT().
-					GetIssue(projectID, int(issueIid), gomock.Any(), gomock.Any()).
+					GetIssue(projectID, int64(issueIid), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectedResult:      nil,
@@ -1444,7 +1444,7 @@ func TestCreateIssueHandler(t *testing.T) {
 						assert.NotNil(t, opts.Labels)
 						assert.NotNil(t, opts.AssigneeIDs)
 						assert.Equal(t, 2, len(*opts.AssigneeIDs))
-						assert.Equal(t, 5, *opts.MilestoneID)
+						assert.Equal(t, int64(5), *opts.MilestoneID)
 						assert.NotNil(t, opts.DueDate)
 						return expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil
 					})
@@ -1653,8 +1653,8 @@ func TestUpdateIssueHandler(t *testing.T) {
 					UpdatedAt:   &timeNow,
 				}
 				mockIssues.EXPECT().
-					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
+					UpdateIssue(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
 						assert.Equal(t, "Updated Title", *opts.Title)
 						return expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -1688,8 +1688,8 @@ func TestUpdateIssueHandler(t *testing.T) {
 					UpdatedAt: &timeNow,
 				}
 				mockIssues.EXPECT().
-					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
+					UpdateIssue(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
 						assert.Equal(t, "close", *opts.StateEvent)
 						return expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -1733,7 +1733,7 @@ func TestUpdateIssueHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockIssues.EXPECT().
-					UpdateIssue(projectID, 999, gomock.Any(), gomock.Any()).
+					UpdateIssue(projectID, int64(999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Issue Not Found"))
 			},
 			expectedResult:      "issue 999 in project \"group/project\" not found or access denied (404)",
@@ -1748,7 +1748,7 @@ func TestUpdateIssueHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockIssues.EXPECT().
-					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
+					UpdateIssue(projectID, int64(1), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectedResult:      nil,
@@ -1776,8 +1776,8 @@ func TestUpdateIssueHandler(t *testing.T) {
 					UpdatedAt:   &timeNow,
 				}
 				mockIssues.EXPECT().
-					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
+					UpdateIssue(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
 						assert.Equal(t, "Updated Title", *opts.Title)
 						assert.Equal(t, "Updated description", *opts.Description)
 						require.NotNil(t, opts.Labels)
@@ -1814,8 +1814,8 @@ func TestUpdateIssueHandler(t *testing.T) {
 					UpdatedAt: &timeNow,
 				}
 				mockIssues.EXPECT().
-					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
+					UpdateIssue(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
 						assert.Equal(t, "reopen", *opts.StateEvent)
 						return expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -1848,10 +1848,10 @@ func TestUpdateIssueHandler(t *testing.T) {
 					UpdatedAt: &timeNow,
 				}
 				mockIssues.EXPECT().
-					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
+					UpdateIssue(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
 						require.NotNil(t, opts.MilestoneID)
-						assert.Equal(t, 10, *opts.MilestoneID)
+						assert.Equal(t, int64(10), *opts.MilestoneID)
 						return expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},
@@ -1883,10 +1883,10 @@ func TestUpdateIssueHandler(t *testing.T) {
 					UpdatedAt: &timeNow,
 				}
 				mockIssues.EXPECT().
-					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
+					UpdateIssue(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.UpdateIssueOptions, _ ...gl.RequestOptionFunc) (*gl.Issue, *gl.Response, error) {
 						require.NotNil(t, opts.AssigneeIDs)
-						assert.Equal(t, []int{123, 456}, *opts.AssigneeIDs)
+						assert.Equal(t, []int64{123, 456}, *opts.AssigneeIDs)
 						return expectedIssue, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},
@@ -1910,7 +1910,7 @@ func TestUpdateIssueHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockIssues.EXPECT().
-					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
+					UpdateIssue(projectID, int64(1), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 403}}, errors.New("gitlab: 403 Forbidden"))
 			},
 			expectedResult:      nil,
@@ -1927,7 +1927,7 @@ func TestUpdateIssueHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockIssues.EXPECT().
-					UpdateIssue(projectID, 1, gomock.Any(), gomock.Any()).
+					UpdateIssue(projectID, int64(1), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("gitlab: 401 Unauthorized"))
 			},
 			expectedResult:      "Authentication failed (401)",
@@ -2025,8 +2025,8 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 					CreatedAt: &timeNow,
 				}
 				mockNotes.EXPECT().
-					CreateIssueNote(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.CreateIssueNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
+					CreateIssueNote(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.CreateIssueNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
 						assert.Equal(t, "This is a comment", *opts.Body)
 						return expectedNote, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil
 					})
@@ -2075,7 +2075,7 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					CreateIssueNote(projectID, 999, gomock.Any(), gomock.Any()).
+					CreateIssueNote(projectID, int64(999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Issue Not Found"))
 			},
 			expectedResult:      "issue 999 in project \"group/project\" not found or access denied (404)",
@@ -2092,7 +2092,7 @@ func TestCreateIssueCommentHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					CreateIssueNote(projectID, 1, gomock.Any(), gomock.Any()).
+					CreateIssueNote(projectID, int64(1), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectedResult:      nil,
@@ -2193,8 +2193,8 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 					UpdatedAt: &timeNow,
 				}
 				mockNotes.EXPECT().
-					UpdateIssueNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, _ int, opts *gl.UpdateIssueNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
+					UpdateIssueNote(projectID, int64(1), int64(123), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, _ int64, opts *gl.UpdateIssueNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
 						assert.Equal(t, "Updated comment", *opts.Body)
 						return expectedNote, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -2234,7 +2234,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					UpdateIssueNote(projectID, 999, 999, gomock.Any(), gomock.Any()).
+					UpdateIssueNote(projectID, int64(999), int64(999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Not Found"))
 			},
 			expectedResult:      "issue 999 or note 999 in project \"group/project\" not found or access denied (404)",
@@ -2252,7 +2252,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					UpdateIssueNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					UpdateIssueNote(projectID, int64(1), int64(123), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectedResult:      nil,
@@ -2279,8 +2279,8 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 					UpdatedAt: &timeNow,
 				}
 				mockNotes.EXPECT().
-					UpdateIssueNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, _ int, opts *gl.UpdateIssueNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
+					UpdateIssueNote(projectID, int64(1), int64(123), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, _ int64, opts *gl.UpdateIssueNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
 						assert.Equal(t, "Updated comment with <html> & \"quotes\" and 'apostrophes'", *opts.Body)
 						return expectedNote, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -2321,7 +2321,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					UpdateIssueNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					UpdateIssueNote(projectID, int64(1), int64(123), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 403}}, errors.New("gitlab: 403 Forbidden"))
 			},
 			expectedResult:      nil,
@@ -2340,7 +2340,7 @@ func TestUpdateIssueCommentHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					UpdateIssueNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					UpdateIssueNote(projectID, int64(1), int64(123), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 401}}, errors.New("gitlab: 401 Unauthorized"))
 			},
 			expectedResult:      "Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.",
@@ -2573,7 +2573,7 @@ func TestUpdateIssueHandler_RealAPI_Integration(t *testing.T) {
 			t.Fatalf("Failed to fetch updated issue: %v", err)
 		}
 
-		if fetchIssue.Milestone == nil || fetchIssue.Milestone.ID != milestoneIDInt {
+		if fetchIssue.Milestone == nil || fetchIssue.Milestone.ID != int64(milestoneIDInt) {
 			t.Errorf("Expected milestone ID to be %d, got %v", milestoneIDInt, fetchIssue.Milestone)
 		}
 

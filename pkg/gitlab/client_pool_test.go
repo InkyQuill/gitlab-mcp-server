@@ -503,13 +503,13 @@ func TestClientPool_ValidateAllClients(t *testing.T) {
 		client1Result := findResult(results, "client1")
 		require.NotNil(t, client1Result)
 		assert.True(t, client1Result.Success)
-		assert.Equal(t, 111, client1Result.UserID)
+		assert.Equal(t, int64(111), client1Result.UserID)
 		assert.Equal(t, "user1", client1Result.Username)
 
 		client2Result := findResult(results, "client2")
 		require.NotNil(t, client2Result)
 		assert.True(t, client2Result.Success)
-		assert.Equal(t, 222, client2Result.UserID)
+		assert.Equal(t, int64(222), client2Result.UserID)
 		assert.Equal(t, "user2", client2Result.Username)
 	})
 
@@ -572,7 +572,7 @@ func TestClientPool_ValidateAllClients(t *testing.T) {
 		validResult := findResult(results, "valid-client")
 		require.NotNil(t, validResult)
 		assert.True(t, validResult.Success)
-		assert.Equal(t, 333, validResult.UserID)
+		assert.Equal(t, int64(333), validResult.UserID)
 
 		// Second should fail
 		invalidResult := findResult(results, "invalid-client")

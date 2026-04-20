@@ -77,8 +77,8 @@ func GetProjectCommits(getClient GetClientFn, t map[string]string) (tool mcp.Too
 			// --- Construct GitLab API options
 			opts := &gl.ListCommitsOptions{
 				ListOptions: gl.ListOptions{
-					Page:    page,
-					PerPage: perPage,
+					Page:    int64(page),
+					PerPage: int64(perPage),
 				},
 				Since:     since,     // Assign *time.Time pointer directly
 				Until:     until,     // Assign *time.Time pointer directly

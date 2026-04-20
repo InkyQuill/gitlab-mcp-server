@@ -64,9 +64,9 @@ func TestGetProjectCommitsHandler(t *testing.T) {
 	createCommitWithStats := func(id, shortID, title string, additions, deletions, total int) *gl.Commit {
 		c := createCommit(id, shortID, title)
 		c.Stats = &gl.CommitStats{
-			Additions: additions,
-			Deletions: deletions,
-			Total:     total,
+			Additions: int64(additions),
+			Deletions: int64(deletions),
+			Total:     int64(total),
 		}
 		return c
 	}
@@ -96,8 +96,8 @@ func TestGetProjectCommitsHandler(t *testing.T) {
 						assert.Nil(t, opts.Since)
 						assert.Nil(t, opts.Until)
 						assert.Nil(t, opts.WithStats)
-						assert.Equal(t, 1, opts.Page)
-						assert.Equal(t, DefaultPerPage, opts.PerPage)
+						assert.Equal(t, int64(1), opts.Page)
+						assert.Equal(t, int64(DefaultPerPage), opts.PerPage)
 						return []*gl.Commit{
 							createCommit("sha1", "sha1abc", "Initial commit"),
 							createCommit("sha2", "sha2def", "Add feature X"),
@@ -136,8 +136,8 @@ func TestGetProjectCommitsHandler(t *testing.T) {
 						assert.True(t, untilTime.Equal(*opts.Until))
 						require.NotNil(t, opts.WithStats)
 						assert.True(t, *opts.WithStats)
-						assert.Equal(t, 1, opts.Page)
-						assert.Equal(t, 5, opts.PerPage)
+						assert.Equal(t, int64(1), opts.Page)
+						assert.Equal(t, int64(5), opts.PerPage)
 						return []*gl.Commit{createCommitWithStats("sha3", "sha3ghi", "Refactor module", 10, 5, 15)}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},

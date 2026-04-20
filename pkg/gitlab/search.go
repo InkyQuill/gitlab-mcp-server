@@ -98,8 +98,8 @@ func Search(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler 
 
 			opts := &gl.SearchOptions{
 				ListOptions: gl.ListOptions{
-					Page:    page,
-					PerPage: perPage,
+					Page:    int64(page),
+					PerPage: int64(perPage),
 				},
 			}
 
@@ -176,10 +176,7 @@ func Search(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler 
 				results, resp, apiErr = client.Search.SnippetTitles(searchQuery, opts, gl.WithContext(ctx))
 
 			case "snippet_blobs":
-				if scope != "global" {
-					return mcp.NewToolResultError("Validation Error: snippet_blobs search only supports global scope"), nil
-				}
-				results, resp, apiErr = client.Search.SnippetBlobs(searchQuery, opts, gl.WithContext(ctx))
+				return mcp.NewToolResultError("Validation Error: snippet_blobs search is no longer supported by the GitLab API"), nil
 
 			case "wiki_blobs":
 				if scope != "global" {

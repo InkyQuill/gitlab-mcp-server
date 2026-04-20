@@ -10,10 +10,10 @@ import (
 
 // PaginationMetadata contains pagination information for list responses
 type PaginationMetadata struct {
-	TotalItems   int `json:"total_items"`
-	TotalPages   int `json:"total_pages"`
-	CurrentPage  int `json:"current_page"`
-	ItemsPerPage int `json:"items_per_page"`
+	TotalItems   int64 `json:"total_items"`
+	TotalPages   int64 `json:"total_pages"`
+	CurrentPage  int64 `json:"current_page"`
+	ItemsPerPage int64 `json:"items_per_page"`
 }
 
 // PaginatedResponse wraps list results with pagination metadata

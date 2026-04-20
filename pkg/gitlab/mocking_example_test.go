@@ -36,7 +36,7 @@ func TestGitLabOfficialTesting_Example(t *testing.T) {
 		// Use the client
 		user, resp, err := client.Users.CurrentUser()
 		require.NoError(t, err)
-		assert.Equal(t, 123, user.ID)
+		assert.Equal(t, int64(123), user.ID)
 		assert.Equal(t, "testuser", user.Username)
 		assert.Equal(t, 200, resp.Response.StatusCode)
 	})
@@ -60,7 +60,7 @@ func TestGitLabOfficialTesting_Example(t *testing.T) {
 
 		project, resp, err := client.Projects.GetProject(projectID, nil)
 		require.NoError(t, err)
-		assert.Equal(t, 456, project.ID)
+		assert.Equal(t, int64(456), project.ID)
 		assert.Equal(t, "myproject", project.Name)
 		assert.Equal(t, 200, resp.Response.StatusCode)
 	})
@@ -86,7 +86,7 @@ func TestGitLabOfficialTesting_Example(t *testing.T) {
 			Title: gl.Ptr("Test Issue"),
 		})
 		require.NoError(t, err)
-		assert.Equal(t, 1, issue.IID)
+		assert.Equal(t, int64(1), issue.IID)
 		assert.Equal(t, "Test Issue", issue.Title)
 		assert.Equal(t, 201, resp.Response.StatusCode)
 	})

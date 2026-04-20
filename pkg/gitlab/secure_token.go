@@ -89,7 +89,7 @@ type SecureTokenMetadata struct {
 	Name          string
 	Token         *SecureToken
 	GitLabHost    string
-	UserID        int
+	UserID        int64
 	Username      string
 	LastValidated time.Time
 	IsExpiredFlag bool

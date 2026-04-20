@@ -241,8 +241,8 @@ func TestListProjectFilesHandler(t *testing.T) {
 						assert.Nil(t, opts.Path, "Path should be nil for root")
 						assert.Nil(t, opts.Ref, "Ref should be nil for default")
 						assert.Nil(t, opts.Recursive, "Recursive should be nil by default")
-						assert.Equal(t, 1, opts.Page, "Default page")
-						assert.Equal(t, DefaultPerPage, opts.PerPage, "Default perPage")
+						assert.Equal(t, int64(1), opts.Page, "Default page")
+						assert.Equal(t, int64(DefaultPerPage), opts.PerPage, "Default perPage")
 						return []*gl.TreeNode{
 							createTreeNode("abc", "README.md", "blob", "README.md", "100644"),
 							createTreeNode("def", "src", "tree", "src", "040000"),
@@ -290,8 +290,8 @@ func TestListProjectFilesHandler(t *testing.T) {
 					DoAndReturn(func(_ interface{}, opts *gl.ListTreeOptions, _ ...gl.RequestOptionFunc) ([]*gl.TreeNode, *gl.Response, error) {
 						require.NotNil(t, opts.Recursive)
 						assert.True(t, *opts.Recursive)
-						assert.Equal(t, 1, opts.Page)
-						assert.Equal(t, 10, opts.PerPage)
+						assert.Equal(t, int64(1), opts.Page)
+						assert.Equal(t, int64(10), opts.PerPage)
 						return []*gl.TreeNode{
 							createTreeNode("f1", "file1.txt", "blob", "file1.txt", "100644"),
 							createTreeNode("f2", "file2.txt", "blob", "subdir/file2.txt", "100644"),

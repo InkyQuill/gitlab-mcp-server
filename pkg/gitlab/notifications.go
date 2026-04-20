@@ -126,7 +126,7 @@ func notifyTokenExpiringSoon(logger *log.Logger, tokenName string, daysUntilExpi
 }
 
 // notifyTokenValidated sends a success message about token validation
-func notifyTokenValidated(logger *log.Logger, tokenName string, userID int, username string) {
+func notifyTokenValidated(logger *log.Logger, tokenName string, userID int64, username string) {
 	SendNotification(logger, Notification{
 		Level:     NotificationInfo,
 		Title:     "Token Validated",

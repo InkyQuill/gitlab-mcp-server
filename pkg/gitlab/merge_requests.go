@@ -43,7 +43,7 @@ func GetMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.Tool,
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			mrIid := int(mrIidFloat) // Convert float64 to int for API call
+			mrIid := int64(mrIidFloat) // Convert float64 to int for API call
 			// Check if conversion lost precision
 			if float64(mrIid) != mrIidFloat {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: mergeRequestIid %v is not a valid integer", mrIidFloat)), nil
@@ -117,7 +117,7 @@ func MergeRequestComment(getClient GetClientFn, t map[string]string) (tool mcp.T
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			mrIid := int(mrIidFloat)
+			mrIid := int64(mrIidFloat)
 			if float64(mrIid) != mrIidFloat {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: mergeRequestIid %v is not a valid integer", mrIidFloat)), nil
 			}
@@ -143,8 +143,8 @@ func MergeRequestComment(getClient GetClientFn, t map[string]string) (tool mcp.T
 
 				opts := &gl.ListMergeRequestNotesOptions{
 					ListOptions: gl.ListOptions{
-						Page:    page,
-						PerPage: perPage,
+						Page:    int64(page),
+						PerPage: int64(perPage),
 					},
 				}
 
@@ -197,7 +197,7 @@ func MergeRequestComment(getClient GetClientFn, t map[string]string) (tool mcp.T
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				noteID := int(noteIDFloat)
+				noteID := int64(noteIDFloat)
 				if float64(noteID) != noteIDFloat {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: noteId %v is not a valid integer", noteIDFloat)), nil
 				}
@@ -315,8 +315,8 @@ func ListMergeRequests(getClient GetClientFn, t map[string]string) (tool mcp.Too
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			opts.Page = page
-			opts.PerPage = perPage
+			opts.Page = int64(page)
+			opts.PerPage = int64(perPage)
 
 			// String parameters
 			if state, err := OptionalParam[string](&request, "state"); err == nil && state != "" {
@@ -333,7 +333,8 @@ func ListMergeRequests(getClient GetClientFn, t map[string]string) (tool mcp.Too
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: author_id must be a valid integer: %v", err)), nil
 				}
-				opts.AuthorID = &id
+				id64 := int64(id)
+				opts.AuthorID = &id64
 			}
 
 			if assigneeID, err := OptionalParam[string](&request, "assignee_id"); err == nil && assigneeID != "" {
@@ -578,7 +579,7 @@ func CreateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.To
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				opts.MilestoneID = gl.Ptr(milestoneID)
+				opts.MilestoneID = gl.Ptr(int64(milestoneID))
 			}
 
 			if removeSourceBranch != nil {
@@ -669,7 +670,7 @@ func UpdateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.To
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			mrIid := int(mrIidFloat)
+			mrIid := int64(mrIidFloat)
 			if float64(mrIid) != mrIidFloat {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: mergeRequestIid %v is not a valid integer", mrIidFloat)), nil
 			}
@@ -760,7 +761,7 @@ func UpdateMergeRequest(getClient GetClientFn, t map[string]string) (tool mcp.To
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				opts.MilestoneID = gl.Ptr(milestoneID)
+				opts.MilestoneID = gl.Ptr(int64(milestoneID))
 			}
 
 			if stateEvent != "" {

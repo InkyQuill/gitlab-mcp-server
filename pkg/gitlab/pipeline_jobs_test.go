@@ -35,11 +35,11 @@ func TestPipelineJobHandler_List(t *testing.T) {
 	listPipelineJobsTool, listPipelineJobsHandler := PipelineJob(mockGetClient, nil)
 
 	projectID := "group/project"
-	pipelineID := 12345
+	pipelineID := int64(12345)
 
 	createJob := func(id int, name string, status string) *gl.Job {
 		return &gl.Job{
-			ID:     id,
+			ID:     int64(id),
 			Name:   name,
 			Status: status,
 		}
@@ -64,8 +64,8 @@ func TestPipelineJobHandler_List(t *testing.T) {
 			mockSetup: func() {
 				mockJobs.EXPECT().
 					ListPipelineJobs(projectID, pipelineID, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ interface{}, pipelineID int, opts *gl.ListJobsOptions, reqOpts ...gl.RequestOptionFunc) ([]*gl.Job, *gl.Response, error) {
-						assert.Equal(t, 1, opts.Page)
+					DoAndReturn(func(_ interface{}, pipelineID int64, opts *gl.ListJobsOptions, reqOpts ...gl.RequestOptionFunc) ([]*gl.Job, *gl.Response, error) {
+						assert.Equal(t, int64(1), opts.Page)
 						return []*gl.Job{
 							createJob(1, "build", "success"),
 							createJob(2, "test", "running"),
@@ -89,9 +89,9 @@ func TestPipelineJobHandler_List(t *testing.T) {
 			mockSetup: func() {
 				mockJobs.EXPECT().
 					ListPipelineJobs(projectID, pipelineID, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ interface{}, pipelineID int, opts *gl.ListJobsOptions, reqOpts ...gl.RequestOptionFunc) ([]*gl.Job, *gl.Response, error) {
-						assert.Equal(t, 2, opts.Page)
-						assert.Equal(t, 1, opts.PerPage)
+					DoAndReturn(func(_ interface{}, pipelineID int64, opts *gl.ListJobsOptions, reqOpts ...gl.RequestOptionFunc) ([]*gl.Job, *gl.Response, error) {
+						assert.Equal(t, int64(2), opts.Page)
+						assert.Equal(t, int64(1), opts.PerPage)
 						return []*gl.Job{createJob(2, "test", "running")}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},
@@ -120,7 +120,7 @@ func TestPipelineJobHandler_List(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockJobs.EXPECT().
-					ListPipelineJobs("nonexistent/project", 99999, gomock.Any(), gomock.Any()).
+					ListPipelineJobs("nonexistent/project", int64(99999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("404 Not Found"))
 			},
 			expectHandlerError: true,
@@ -251,7 +251,7 @@ func TestPipelineJobHandler_Get(t *testing.T) {
 	getPipelineJobTool, getPipelineJobHandler := PipelineJob(mockGetClient, nil)
 
 	projectID := "group/project"
-	jobID := 123
+	jobID := int64(123)
 
 	tests := []struct {
 		name               string
@@ -272,7 +272,7 @@ func TestPipelineJobHandler_Get(t *testing.T) {
 				mockJobs.EXPECT().
 					GetJob(projectID, jobID, gomock.Any()).
 					Return(&gl.Job{
-						ID:     jobID,
+						ID:     int64(jobID),
 						Name:   "build",
 						Status: "success",
 					}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
@@ -287,7 +287,7 @@ func TestPipelineJobHandler_Get(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockJobs.EXPECT().
-					GetJob(projectID, 99999, gomock.Any()).
+					GetJob(projectID, int64(99999), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("404 Not Found"))
 			},
 			expectResultError: true,
@@ -381,7 +381,7 @@ func TestPipelineJobHandler_Trace(t *testing.T) {
 	getPipelineJobTraceTool, getPipelineJobTraceHandler := PipelineJob(mockGetClient, nil)
 
 	projectID := "group/project"
-	jobID := 123
+	jobID := int64(123)
 	traceContent := "Running build...\nBuild successful!\n"
 
 	tests := []struct {
@@ -416,7 +416,7 @@ func TestPipelineJobHandler_Trace(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockJobs.EXPECT().
-					GetTraceFile(projectID, 99999, gomock.Any()).
+					GetTraceFile(projectID, int64(99999), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("404 Not Found"))
 			},
 			expectResultError: true,
@@ -529,7 +529,7 @@ func TestRetryPipelineJobHandler(t *testing.T) {
 	retryPipelineJobTool, retryPipelineJobHandler := RetryPipelineJob(mockGetClient, nil)
 
 	projectID := "group/project"
-	jobID := 123
+	jobID := int64(123)
 
 	tests := []struct {
 		name               string
@@ -549,7 +549,7 @@ func TestRetryPipelineJobHandler(t *testing.T) {
 				mockJobs.EXPECT().
 					RetryJob(projectID, jobID, gomock.Any()).
 					Return(&gl.Job{
-						ID:     jobID,
+						ID:     int64(jobID),
 						Name:   "build",
 						Status: "pending",
 					}, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil)
@@ -563,7 +563,7 @@ func TestRetryPipelineJobHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockJobs.EXPECT().
-					RetryJob(projectID, 99999, gomock.Any()).
+					RetryJob(projectID, int64(99999), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("404 Not Found"))
 			},
 			expectResultError: true,
@@ -670,7 +670,7 @@ func TestPlayPipelineJobHandler(t *testing.T) {
 	playPipelineJobTool, playPipelineJobHandler := PlayPipelineJob(mockGetClient, nil)
 
 	projectID := "group/project"
-	jobID := 123
+	jobID := int64(123)
 
 	tests := []struct {
 		name               string
@@ -690,7 +690,7 @@ func TestPlayPipelineJobHandler(t *testing.T) {
 				mockJobs.EXPECT().
 					PlayJob(projectID, jobID, gomock.Any(), gomock.Any()).
 					Return(&gl.Job{
-						ID:     jobID,
+						ID:     int64(jobID),
 						Name:   "deploy",
 						Status: "pending",
 					}, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil)
@@ -704,7 +704,7 @@ func TestPlayPipelineJobHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockJobs.EXPECT().
-					PlayJob(projectID, 99999, gomock.Any(), gomock.Any()).
+					PlayJob(projectID, int64(99999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("404 Not Found"))
 			},
 			expectResultError: true,
@@ -797,7 +797,7 @@ func TestPipelineHandler_Cancel(t *testing.T) {
 	cancelPipelineTool, cancelPipelineHandler := Pipeline(mockGetClient, nil)
 
 	projectID := "group/project"
-	pipelineID := 12345
+	pipelineID := int64(12345)
 
 	tests := []struct {
 		name               string
@@ -818,7 +818,7 @@ func TestPipelineHandler_Cancel(t *testing.T) {
 				mockPipelines.EXPECT().
 					CancelPipelineBuild(projectID, pipelineID, gomock.Any()).
 					Return(&gl.Pipeline{
-						ID:     pipelineID,
+						ID:     int64(pipelineID),
 						Status: "canceled",
 					}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
@@ -832,7 +832,7 @@ func TestPipelineHandler_Cancel(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockPipelines.EXPECT().
-					CancelPipelineBuild(projectID, 99999, gomock.Any()).
+					CancelPipelineBuild(projectID, int64(99999), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("404 Not Found"))
 			},
 			expectResultError: true,
@@ -941,7 +941,7 @@ func TestPipelineHandler_Retry(t *testing.T) {
 	retryPipelineTool, retryPipelineHandler := Pipeline(mockGetClient, nil)
 
 	projectID := "group/project"
-	pipelineID := 12345
+	pipelineID := int64(12345)
 
 	tests := []struct {
 		name               string
@@ -962,7 +962,7 @@ func TestPipelineHandler_Retry(t *testing.T) {
 				mockPipelines.EXPECT().
 					RetryPipelineBuild(projectID, pipelineID, gomock.Any()).
 					Return(&gl.Pipeline{
-						ID:     pipelineID,
+						ID:     int64(pipelineID),
 						Status: "pending",
 					}, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil)
 			},
@@ -976,7 +976,7 @@ func TestPipelineHandler_Retry(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockPipelines.EXPECT().
-					RetryPipelineBuild(projectID, 99999, gomock.Any()).
+					RetryPipelineBuild(projectID, int64(99999), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("404 Not Found"))
 			},
 			expectResultError: true,

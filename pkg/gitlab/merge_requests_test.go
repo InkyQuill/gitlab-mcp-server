@@ -46,7 +46,7 @@ func TestGetMergeRequestHandler(t *testing.T) {
 	sampleMR := &gl.MergeRequest{
 		BasicMergeRequest: gl.BasicMergeRequest{
 			ID:           123,
-			IID:          int(mrIID),
+			IID:          int64(mrIID),
 			ProjectID:    456,
 			Title:        "Implement feature X",
 			Description:  "This adds feature X which does Y",
@@ -76,7 +76,7 @@ func TestGetMergeRequestHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockMRs.EXPECT().
-					GetMergeRequest(projectID, int(mrIID), nil, gomock.Any()).
+					GetMergeRequest(projectID, int64(mrIID), nil, gomock.Any()).
 					Return(sampleMR, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 			expectedResult: sampleMR,
@@ -89,7 +89,7 @@ func TestGetMergeRequestHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockMRs.EXPECT().
-					GetMergeRequest(projectID, 999, nil, gomock.Any()).
+					GetMergeRequest(projectID, int64(999), nil, gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Not Found"))
 			},
 			expectResultError: true,
@@ -103,7 +103,7 @@ func TestGetMergeRequestHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockMRs.EXPECT().
-					GetMergeRequest(projectID, int(mrIID), nil, gomock.Any()).
+					GetMergeRequest(projectID, int64(mrIID), nil, gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectHandlerError: true,
@@ -289,11 +289,11 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 				}
 
 				mockNotes.EXPECT().
-					ListMergeRequestNotes(projectID, int(mrIid), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.ListMergeRequestNotesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Note, *gl.Response, error) {
+					ListMergeRequestNotes(projectID, int64(mrIid), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.ListMergeRequestNotesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Note, *gl.Response, error) {
 						// Verify pagination settings
-						assert.Equal(t, 1, opts.Page)
-						assert.Equal(t, DefaultPerPage, opts.PerPage)
+						assert.Equal(t, int64(1), opts.Page)
+						assert.Equal(t, int64(DefaultPerPage), opts.PerPage)
 
 						return expectedNotes, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -340,11 +340,11 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 				}
 
 				mockNotes.EXPECT().
-					ListMergeRequestNotes(projectID, int(mrIid), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.ListMergeRequestNotesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Note, *gl.Response, error) {
+					ListMergeRequestNotes(projectID, int64(mrIid), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.ListMergeRequestNotesOptions, _ ...gl.RequestOptionFunc) ([]*gl.Note, *gl.Response, error) {
 						// Verify pagination settings
-						assert.Equal(t, 2, opts.Page)
-						assert.Equal(t, 5, opts.PerPage)
+						assert.Equal(t, int64(2), opts.Page)
+						assert.Equal(t, int64(5), opts.PerPage)
 
 						return expectedNotes, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -369,7 +369,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					ListMergeRequestNotes(projectID, 2, gomock.Any(), gomock.Any()).
+					ListMergeRequestNotes(projectID, int64(2), gomock.Any(), gomock.Any()).
 					Return([]*gl.Note{}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 			expectedResult: []*gl.Note{}, // Empty array
@@ -384,7 +384,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					ListMergeRequestNotes(projectID, 999, gomock.Any(), gomock.Any()).
+					ListMergeRequestNotes(projectID, int64(999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Merge Request Not Found"))
 			},
 			expectResultError: true,
@@ -399,7 +399,7 @@ func TestGetMergeRequestCommentsHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					ListMergeRequestNotes(projectID, int(mrIid), gomock.Any(), gomock.Any()).
+					ListMergeRequestNotes(projectID, int64(mrIid), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectHandlerError: true,
@@ -600,8 +600,8 @@ func TestListMergeRequestsHandler(t *testing.T) {
 					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
 						// Verify default pagination
 						assert.Equal(t, projectID, proj)
-						assert.Equal(t, 1, opts.Page)
-						assert.Equal(t, DefaultPerPage, opts.PerPage)
+						assert.Equal(t, int64(1), opts.Page)
+						assert.Equal(t, int64(DefaultPerPage), opts.PerPage)
 
 						return convertToBasicMRs(sampleMRs), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -646,8 +646,8 @@ func TestListMergeRequestsHandler(t *testing.T) {
 					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
 						// Verify pagination
 						assert.Equal(t, projectID, proj)
-						assert.Equal(t, 2, opts.Page)
-						assert.Equal(t, 5, opts.PerPage)
+						assert.Equal(t, int64(2), opts.Page)
+						assert.Equal(t, int64(5), opts.PerPage)
 
 						return convertToBasicMRs([]*gl.MergeRequest{sampleMRs[1]}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -756,7 +756,7 @@ func TestListMergeRequestsHandler(t *testing.T) {
 					ListProjectMergeRequests(gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(proj any, opts *gl.ListProjectMergeRequestsOptions, _ ...gl.RequestOptionFunc) ([]*gl.BasicMergeRequest, *gl.Response, error) {
 						require.NotNil(t, opts.AuthorID)
-						assert.Equal(t, 123, *opts.AuthorID)
+						assert.Equal(t, int64(123), *opts.AuthorID)
 						return convertToBasicMRs([]*gl.MergeRequest{sampleMRs[0]}), &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},
@@ -889,7 +889,7 @@ func TestListMergeRequestsHandler(t *testing.T) {
 						require.NotNil(t, opts.Search)
 						assert.Equal(t, "fix", *opts.Search)
 						require.NotNil(t, opts.AuthorID)
-						assert.Equal(t, 123, *opts.AuthorID)
+						assert.Equal(t, int64(123), *opts.AuthorID)
 						require.NotNil(t, opts.AssigneeID)
 						// AssigneeIDValue is a custom type, just verify it's set
 						require.NotNil(t, opts.CreatedAfter)
@@ -1005,8 +1005,8 @@ func TestListMergeRequestsHandler(t *testing.T) {
 								actualMR, ok := actualItemsSlice[i].(map[string]interface{})
 								require.True(t, ok, "Item should be map[string]interface{}")
 
-								assert.Equal(t, expectedMR.ID, int(actualMR["id"].(float64)), "ID should match")
-								assert.Equal(t, expectedMR.IID, int(actualMR["iid"].(float64)), "IID should match")
+								assert.Equal(t, expectedMR.ID, int64(actualMR["id"].(float64)), "ID should match")
+								assert.Equal(t, expectedMR.IID, int64(actualMR["iid"].(float64)), "IID should match")
 								assert.Equal(t, expectedMR.Title, actualMR["title"], "Title should match")
 
 								// Verify that unwanted fields are removed
@@ -1179,7 +1179,7 @@ func TestCreateMergeRequestHandler(t *testing.T) {
 						assert.NotNil(t, opts.Labels)
 						assert.NotNil(t, opts.AssigneeIDs)
 						assert.Equal(t, 2, len(*opts.AssigneeIDs))
-						assert.Equal(t, 5, *opts.MilestoneID)
+						assert.Equal(t, int64(5), *opts.MilestoneID)
 						assert.NotNil(t, opts.RemoveSourceBranch)
 						assert.True(t, *opts.RemoveSourceBranch)
 						assert.NotNil(t, opts.Squash)
@@ -1358,8 +1358,8 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 					},
 				}
 				mockMRs.EXPECT().
-					UpdateMergeRequest(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.UpdateMergeRequestOptions, _ ...gl.RequestOptionFunc) (*gl.MergeRequest, *gl.Response, error) {
+					UpdateMergeRequest(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.UpdateMergeRequestOptions, _ ...gl.RequestOptionFunc) (*gl.MergeRequest, *gl.Response, error) {
 						assert.Equal(t, "Updated MR Title", *opts.Title)
 						return expectedMR, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -1396,8 +1396,8 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 					},
 				}
 				mockMRs.EXPECT().
-					UpdateMergeRequest(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.UpdateMergeRequestOptions, _ ...gl.RequestOptionFunc) (*gl.MergeRequest, *gl.Response, error) {
+					UpdateMergeRequest(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.UpdateMergeRequestOptions, _ ...gl.RequestOptionFunc) (*gl.MergeRequest, *gl.Response, error) {
 						assert.Equal(t, "close", *opts.StateEvent)
 						return expectedMR, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -1433,7 +1433,7 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockMRs.EXPECT().
-					UpdateMergeRequest(projectID, 999, gomock.Any(), gomock.Any()).
+					UpdateMergeRequest(projectID, int64(999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 MR Not Found"))
 			},
 			expectedResult:      "merge request 999 in project \"group/project\" not found or access denied (404)",
@@ -1448,7 +1448,7 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockMRs.EXPECT().
-					UpdateMergeRequest(projectID, 1, gomock.Any(), gomock.Any()).
+					UpdateMergeRequest(projectID, int64(1), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectedResult:      nil,
@@ -1513,13 +1513,13 @@ func TestUpdateMergeRequestHandler(t *testing.T) {
 					},
 				}
 				mockMRs.EXPECT().
-					UpdateMergeRequest(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.UpdateMergeRequestOptions, _ ...gl.RequestOptionFunc) (*gl.MergeRequest, *gl.Response, error) {
+					UpdateMergeRequest(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.UpdateMergeRequestOptions, _ ...gl.RequestOptionFunc) (*gl.MergeRequest, *gl.Response, error) {
 						assert.Equal(t, "Updated MR Title", *opts.Title)
 						assert.Equal(t, "Updated description", *opts.Description)
 						assert.NotNil(t, opts.Labels)
 						assert.NotNil(t, opts.AssigneeIDs)
-						assert.Equal(t, 5, *opts.MilestoneID)
+						assert.Equal(t, int64(5), *opts.MilestoneID)
 						return expectedMR, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
 			},
@@ -1630,8 +1630,8 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 					CreatedAt: &timeNow,
 				}
 				mockNotes.EXPECT().
-					CreateMergeRequestNote(projectID, 1, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, opts *gl.CreateMergeRequestNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
+					CreateMergeRequestNote(projectID, int64(1), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, opts *gl.CreateMergeRequestNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
 						assert.Equal(t, "This is a comment on MR", *opts.Body)
 						return expectedNote, &gl.Response{Response: &http.Response{StatusCode: 201}}, nil
 					})
@@ -1668,7 +1668,7 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					CreateMergeRequestNote(projectID, 999, gomock.Any(), gomock.Any()).
+					CreateMergeRequestNote(projectID, int64(999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 MR Not Found"))
 			},
 			expectedResult:      "merge request 999 in project \"group/project\" not found or access denied (404)",
@@ -1685,7 +1685,7 @@ func TestCreateMergeRequestCommentHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					CreateMergeRequestNote(projectID, 1, gomock.Any(), gomock.Any()).
+					CreateMergeRequestNote(projectID, int64(1), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectedResult:      nil,
@@ -1790,8 +1790,8 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 					UpdatedAt: &timeNow,
 				}
 				mockNotes.EXPECT().
-					UpdateMergeRequestNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, _ int, opts *gl.UpdateMergeRequestNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
+					UpdateMergeRequestNote(projectID, int64(1), int64(123), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, _ int64, opts *gl.UpdateMergeRequestNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
 						assert.Equal(t, "Updated comment on MR", *opts.Body)
 						return expectedNote, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -1831,7 +1831,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					UpdateMergeRequestNote(projectID, 999, 999, gomock.Any(), gomock.Any()).
+					UpdateMergeRequestNote(projectID, int64(999), int64(999), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 404}}, errors.New("gitlab: 404 Not Found"))
 			},
 			expectedResult:      "merge request 999 or note 999 in project \"group/project\" not found or access denied (404)",
@@ -1849,7 +1849,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					UpdateMergeRequestNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					UpdateMergeRequestNote(projectID, int64(1), int64(123), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 500}}, errors.New("gitlab: 500 Internal Server Error"))
 			},
 			expectedResult:      nil,
@@ -1917,8 +1917,8 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 					UpdatedAt: &timeNow,
 				}
 				mockNotes.EXPECT().
-					UpdateMergeRequestNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(_ any, _ int, _ int, opts *gl.UpdateMergeRequestNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
+					UpdateMergeRequestNote(projectID, int64(1), int64(123), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ any, _ int64, _ int64, opts *gl.UpdateMergeRequestNoteOptions, _ ...gl.RequestOptionFunc) (*gl.Note, *gl.Response, error) {
 						assert.Equal(t, "Comment with <html> & \"quotes\" and 'apostrophes'", *opts.Body)
 						return expectedNote, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil
 					})
@@ -1953,7 +1953,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 					UpdatedAt: &timeNow,
 				}
 				mockNotes.EXPECT().
-					UpdateMergeRequestNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					UpdateMergeRequestNote(projectID, int64(1), int64(123), gomock.Any(), gomock.Any()).
 					Return(expectedNote, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
 			},
 			expectedResult: &gl.Note{
@@ -1978,7 +1978,7 @@ func TestUpdateMergeRequestCommentHandler(t *testing.T) {
 			},
 			mockSetup: func() {
 				mockNotes.EXPECT().
-					UpdateMergeRequestNote(projectID, 1, 123, gomock.Any(), gomock.Any()).
+					UpdateMergeRequestNote(projectID, int64(1), int64(123), gomock.Any(), gomock.Any()).
 					Return(nil, &gl.Response{Response: &http.Response{StatusCode: 403}}, errors.New("gitlab: 403 Forbidden"))
 			},
 			expectedResult:      nil,

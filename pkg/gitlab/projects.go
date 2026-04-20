@@ -131,8 +131,8 @@ func ListProjects(getClient GetClientFn, t map[string]string) (tool mcp.Tool, ha
 			// --- Construct GitLab API options
 			opts := &gl.ListProjectsOptions{
 				ListOptions: gl.ListOptions{
-					Page:    page,
-					PerPage: perPage,
+					Page:    int64(page),
+					PerPage: int64(perPage),
 				},
 				// Assign pointers only if the value was actually provided
 				Membership: membershipVal,

@@ -42,20 +42,20 @@ func ParseLabelString(labels string) (*gl.LabelOptions, error) {
 // ParseAssigneeIDsString parses a comma-separated string of user IDs
 // Input: "1,2,3"
 // Output: []int{1, 2, 3} wrapped as pointer
-func ParseAssigneeIDsString(assigneeIdsStr string) (*[]int, error) {
+func ParseAssigneeIDsString(assigneeIdsStr string) (*[]int64, error) {
 	if assigneeIdsStr == "" {
 		return nil, nil
 	}
 
 	assigneeIdsList := strings.Split(assigneeIdsStr, ",")
-	assigneeIds := make([]int, 0, len(assigneeIdsList))
+	assigneeIds := make([]int64, 0, len(assigneeIdsList))
 
 	for _, idStr := range assigneeIdsList {
 		idStr = strings.TrimSpace(idStr)
 		if idStr == "" {
 			continue
 		}
-		id, err := strconv.Atoi(idStr)
+		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("invalid assignee ID %q: %w", idStr, err)
 		}

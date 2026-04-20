@@ -64,7 +64,7 @@ func PipelineJob(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				pipelineId := int(pipelineIdFloat)
+				pipelineId := int64(pipelineIdFloat)
 
 				page, perPage, err := OptionalPaginationParams(&request)
 				if err != nil {
@@ -73,8 +73,8 @@ func PipelineJob(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 
 				opts := &gl.ListJobsOptions{
 					ListOptions: gl.ListOptions{
-						Page:    page,
-						PerPage: perPage,
+						Page:    int64(page),
+						PerPage: int64(perPage),
 					},
 				}
 
@@ -102,7 +102,7 @@ func PipelineJob(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				jobId := int(jobIdFloat)
+				jobId := int64(jobIdFloat)
 
 				job, resp, err := glClient.Jobs.GetJob(projectID, jobId, gl.WithContext(ctx))
 				if err != nil {
@@ -124,7 +124,7 @@ func PipelineJob(getClient GetClientFn, t map[string]string) (tool mcp.Tool, han
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 				}
-				jobId := int(jobIdFloat)
+				jobId := int64(jobIdFloat)
 
 				traceReader, resp, err := glClient.Jobs.GetTraceFile(projectID, jobId, gl.WithContext(ctx))
 				if err != nil {
@@ -186,7 +186,7 @@ func Pipeline(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handle
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			pipelineId := int(pipelineIdFloat)
+			pipelineId := int64(pipelineIdFloat)
 
 			// --- Obtain GitLab client
 			glClient, err := getClient(ctx)
@@ -262,7 +262,7 @@ func RetryPipelineJob(getClient GetClientFn, t map[string]string) (tool mcp.Tool
 			}
 
 			// Convert jobId to integer
-			jobId := int(jobIdFloat)
+			jobId := int64(jobIdFloat)
 
 			// Obtain GitLab client
 			glClient, err := getClient(ctx)
@@ -321,7 +321,7 @@ func PlayPipelineJob(getClient GetClientFn, t map[string]string) (tool mcp.Tool,
 			}
 
 			// Convert jobId to integer
-			jobId := int(jobIdFloat)
+			jobId := int64(jobIdFloat)
 
 			// Obtain GitLab client
 			glClient, err := getClient(ctx)

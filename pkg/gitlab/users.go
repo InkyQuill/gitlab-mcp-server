@@ -67,7 +67,7 @@ func GetUser(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handler
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			userId := int(userIdFloat)
+			userId := int64(userIdFloat)
 			if float64(userId) != userIdFloat {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: userId %v is not a valid integer", userIdFloat)), nil
 			}
@@ -113,7 +113,7 @@ func GetUserStatus(getClient GetClientFn, t map[string]string) (tool mcp.Tool, h
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			userId := int(userIdFloat)
+			userId := int64(userIdFloat)
 			if float64(userId) != userIdFloat {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: userId %v is not a valid integer", userIdFloat)), nil
 			}
@@ -167,8 +167,8 @@ func ListUsers(getClient GetClientFn, t map[string]string) (tool mcp.Tool, handl
 
 			opts := &gl.ListUsersOptions{
 				ListOptions: gl.ListOptions{
-					Page:    page,
-					PerPage: perPage,
+					Page:    int64(page),
+					PerPage: int64(perPage),
 				},
 			}
 
@@ -256,8 +256,8 @@ func ListProjectUsers(getClient GetClientFn, t map[string]string) (tool mcp.Tool
 			// Get project members as a proxy for project users
 			members, resp, err := client.ProjectMembers.ListProjectMembers(pid, &gl.ListProjectMembersOptions{
 				ListOptions: gl.ListOptions{
-					Page:    page,
-					PerPage: perPage,
+					Page:    int64(page),
+					PerPage: int64(perPage),
 				},
 			}, gl.WithContext(ctx))
 			if err != nil {
@@ -343,7 +343,7 @@ func ManageUserState(getClient GetClientFn, t map[string]string) (tool mcp.Tool,
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: %v", err)), nil
 			}
-			userId := int(userIdFloat)
+			userId := int64(userIdFloat)
 			if float64(userId) != userIdFloat {
 				return mcp.NewToolResultError(fmt.Sprintf("Validation Error: userId %v is not a valid integer", userIdFloat)), nil
 			}
