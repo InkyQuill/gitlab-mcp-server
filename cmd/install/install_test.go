@@ -780,3 +780,23 @@ func TestFormatIDEName(t *testing.T) {
 		})
 	}
 }
+
+// TestCreateInstallConfig_DoesNotEmitTokenEnv is a regression test pinning
+// that the installer never emits GITLAB_TOKEN/GITLAB_HOST env vars in
+// generated IDE entries (v2.1 single-MCP-entry model).
+func TestCreateInstallConfig_DoesNotEmitTokenEnv(t *testing.T) {
+	cfg := createInstallConfig("/usr/local/bin/gitlab-mcp-server", "")
+	if cfg.Env != nil {
+		_, hasTok := cfg.Env["GITLAB_TOKEN"]
+		_, hasHost := cfg.Env["GITLAB_HOST"]
+		assert.Falsef(t, hasTok, "GITLAB_TOKEN must not be emitted: %v", cfg.Env)
+		assert.Falsef(t, hasHost, "GITLAB_HOST must not be emitted: %v", cfg.Env)
+	}
+}
+
+// TestCreateInstallConfig_EmitsConfigPathWhenGiven verifies that a custom
+// GITLAB_CONFIG_PATH is properly emitted when provided.
+func TestCreateInstallConfig_EmitsConfigPathWhenGiven(t *testing.T) {
+	cfg := createInstallConfig("/usr/local/bin/gitlab-mcp-server", "/tmp/x.json")
+	assert.Equal(t, "/tmp/x.json", cfg.Env["GITLAB_CONFIG_PATH"])
+}
