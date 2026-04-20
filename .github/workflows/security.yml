@@ -27,10 +27,14 @@ jobs:
         uses: securego/gosec@master
         with:
           # G104: unhandled errors (covered more precisely by errcheck in golangci-lint)
+          # G204: subprocess via variable — intentional in ExternalCmdBackend;
+          #       shell-injection safety pinned by TestExternalCmdBackend_ShellMetacharsArePassedLiterally
           # G301: directory perms — deliberately 0755 for config dir so user can inspect
           # G304: file path from variable — reviewed case-by-case; ref-based backend is safe
           # G306: file perms — deliberately 0644 for translations cache (non-secret)
-          args: -exclude=G104,G301,G304,G306 ./...
+          # G703: path traversal taint analysis — false positive on IDE config
+          #       paths (bounded by getXxxConfigPath helpers using known system dirs)
+          args: -exclude=G104,G204,G301,G304,G306,G703 ./...
 
   govulncheck:
     name: govulncheck
@@ -53,6 +57,11 @@ jobs:
     name: Dependency Review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    # Dependency Review requires GitHub's Dependency graph to be enabled in
+    # repo settings → Security → Dependency graph. Until that's on, the
+    # action reports "not supported on this repository". Don't block CI on
+    # it — the govulncheck and gosec jobs above already cover SCA/SAST.
+    continue-on-error: true
 
     steps:
       - name: Checkout code
