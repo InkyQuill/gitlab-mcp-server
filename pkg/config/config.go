@@ -22,7 +22,8 @@ const (
 type ServerConfig struct {
 	Name      string `json:"name"`
 	Host      string `json:"host"`
-	Token     string `json:"token"`     // Stored securely in the future
+	Token     string `json:"token,omitempty"`    // legacy; present until v3.0 clean break
+	TokenRef  string `json:"tokenRef,omitempty"` // new in v2.1; takes precedence when set
 	ReadOnly  bool   `json:"readOnly,omitempty"`
 	IsDefault bool   `json:"isDefault,omitempty"`
 	// Metadata fields populated from API
@@ -31,10 +32,16 @@ type ServerConfig struct {
 	LastValidated string `json:"lastValidated,omitempty"` // ISO 8601 format
 }
 
+// BackendsConfig holds configuration for pluggable secret backends.
+type BackendsConfig struct {
+	External map[string]string `json:"external,omitempty"`
+}
+
 // Config holds the global configuration
 type Config struct {
-	Version string                  `json:"version"`
-	Servers map[string]*ServerConfig `json:"servers,omitempty"`
+	Version  string                   `json:"version"`
+	Servers  map[string]*ServerConfig `json:"servers,omitempty"`
+	Backends *BackendsConfig          `json:"backends,omitempty"`
 }
 
 // Manager manages the global configuration
@@ -43,6 +50,7 @@ type Manager struct {
 	config   *Config
 	FilePath string
 	crypto   *CryptoManager
+	registry *BackendRegistry // nil-safe; optional
 }
 
 // NewManager creates a new config manager with encryption disabled by default.
@@ -442,4 +450,31 @@ func (m *Manager) ValidateAllServers(ctx context.Context) map[string]error {
 	}
 
 	return results
+}
+
+// NewManagerWithRegistry creates a Manager wired to a BackendRegistry.
+// If registry is nil, ResolveServerToken falls back to the legacy Token field.
+func NewManagerWithRegistry(configPath string, registry *BackendRegistry) (*Manager, error) {
+	m, err := NewManager(configPath)
+	if err != nil {
+		return nil, err
+	}
+	m.registry = registry
+	return m, nil
+}
+
+// ResolveServerToken returns the plaintext token for the given server, preferring
+// TokenRef (via the registry) over the legacy Token field.
+func (m *Manager) ResolveServerToken(ctx context.Context, name string) (string, error) {
+	m.mu.RLock()
+	srv, ok := m.config.Servers[name]
+	registry := m.registry
+	m.mu.RUnlock()
+	if !ok {
+		return "", fmt.Errorf("server %q not found", name)
+	}
+	if srv.TokenRef != "" && registry != nil {
+		return registry.Resolve(ctx, srv.TokenRef)
+	}
+	return m.crypto.Decrypt(srv.Token)
 }

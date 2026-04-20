@@ -5,6 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewManager(t *testing.T) {
@@ -540,4 +543,81 @@ func TestUpdateServerWithDefaultFlag(t *testing.T) {
 	if !s2.IsDefault {
 		t.Error("s2 should be default")
 	}
+}
+
+func TestManager_WithRegistry_ResolvesTokenRef(t *testing.T) {
+	reg := NewBackendRegistry()
+	fake := NewFakeSecretBackend("keyring")
+	fake.SetEntry("work", "glpat-resolved")
+	require.NoError(t, reg.Register(fake))
+
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.json")
+	m, err := NewManagerWithRegistry(path, reg)
+	require.NoError(t, err)
+
+	require.NoError(t, m.AddServer(&ServerConfig{
+		Name:     "work",
+		Host:     "https://gitlab.example.com",
+		TokenRef: "keyring://work",
+	}))
+
+	got, err := m.ResolveServerToken(context.Background(), "work")
+	require.NoError(t, err)
+	assert.Equal(t, "glpat-resolved", got)
+}
+
+func TestManager_WithRegistry_PrefersTokenRefOverToken(t *testing.T) {
+	reg := NewBackendRegistry()
+	fake := NewFakeSecretBackend("keyring")
+	fake.SetEntry("work", "FROM-REF")
+	require.NoError(t, reg.Register(fake))
+
+	tmp := t.TempDir()
+	m, err := NewManagerWithRegistry(filepath.Join(tmp, "config.json"), reg)
+	require.NoError(t, err)
+
+	require.NoError(t, m.AddServer(&ServerConfig{
+		Name:     "work",
+		Host:     "https://gitlab.example.com",
+		Token:    "FROM-TOKEN",
+		TokenRef: "keyring://work",
+	}))
+
+	got, err := m.ResolveServerToken(context.Background(), "work")
+	require.NoError(t, err)
+	assert.Equal(t, "FROM-REF", got)
+}
+
+func TestManager_WithRegistry_FallsBackToLegacyToken(t *testing.T) {
+	reg := NewBackendRegistry()
+	tmp := t.TempDir()
+	m, err := NewManagerWithRegistry(filepath.Join(tmp, "config.json"), reg)
+	require.NoError(t, err)
+
+	require.NoError(t, m.AddServer(&ServerConfig{
+		Name:  "work",
+		Host:  "https://gitlab.example.com",
+		Token: "FROM-TOKEN",
+	}))
+
+	got, err := m.ResolveServerToken(context.Background(), "work")
+	require.NoError(t, err)
+	assert.Equal(t, "FROM-TOKEN", got)
+}
+
+func TestConfig_BackendsSection_Roundtrips(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.json")
+	m, err := NewManager(path)
+	require.NoError(t, err)
+	m.Config().Backends = &BackendsConfig{
+		External: map[string]string{"op": "op read %s"},
+	}
+	require.NoError(t, m.Save())
+
+	m2, err := NewManager(path)
+	require.NoError(t, err)
+	require.NotNil(t, m2.Config().Backends)
+	assert.Equal(t, "op read %s", m2.Config().Backends.External["op"])
 }
