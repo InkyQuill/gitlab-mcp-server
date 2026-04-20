@@ -3,7 +3,9 @@ package project
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	pkgConfig "github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/gitlab"
 	"github.com/spf13/cobra"
 )
@@ -36,11 +38,9 @@ func runInit(cmd *cobra.Command, args []string) error {
 	var projectID string
 	var gitlabHost string
 
-	// Get projectId from argument or detect from Git
 	if len(args) > 0 {
 		projectID = args[0]
 	} else {
-		// Auto-detect from Git remote
 		var err error
 		projectID, gitlabHost, err = detectFromGit()
 		if err != nil {
@@ -49,41 +49,54 @@ func runInit(cmd *cobra.Command, args []string) error {
 				"  gitlab-mcp-server project init <projectId>", err)
 		}
 	}
-
-	// Use provided host flag if set
 	if initHost != "" {
 		gitlabHost = initHost
 	}
 
-	// Get current directory
+	// Server is effectively required in v2.1 for clean forward-compat with v3.0.
+	// If not provided, try to match exactly one configured server by host.
+	serverName := initServer
+	if serverName == "" {
+		mgr, err := pkgConfig.NewManager("")
+		if err == nil && mgr.ServerCount() > 0 && gitlabHost != "" {
+			matches := []string{}
+			for _, s := range mgr.ListServers() {
+				if strings.EqualFold(strings.TrimSuffix(s.Host, "/"),
+					strings.TrimSuffix(gitlabHost, "/")) {
+					matches = append(matches, s.Name)
+				}
+			}
+			if len(matches) == 1 {
+				serverName = matches[0]
+				fmt.Fprintf(cmd.OutOrStdout(), "Matched server %q from configured host %s.\n", serverName, gitlabHost)
+			} else if len(matches) > 1 {
+				return fmt.Errorf("multiple configured servers match host %s: %v — re-run with --server <name>",
+					gitlabHost, matches)
+			}
+		}
+	}
+	if serverName == "" {
+		return fmt.Errorf("no --server specified and could not infer one. " +
+			"Run 'gitlab-mcp-server config list' to see configured servers and pass --server <name>")
+	}
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	// Create config
-	config := &gitlab.ProjectConfig{
-		ProjectID:  projectID,
-		GitLabHost: gitlabHost,
-		TokenName:  initServer,
+	// v3 .gmcprc shape: no gitlabHost, no tokenName.
+	cfg := &gitlab.ProjectConfig{
+		ProjectID: projectID,
+		Server:    serverName,
 	}
-
-	// Write config
-	configPath, err := writeConfig(cwd, config)
+	configPath, err := writeConfig(cwd, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to write .gmcprc: %w", err)
 	}
-
-	// Success output
-	fmt.Fprintf(cmd.OutOrStdout(), "Project configuration created successfully!\n\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "  Project ID:  %s\n", config.ProjectID)
-	if config.GitLabHost != "" {
-		fmt.Fprintf(cmd.OutOrStdout(), "  GitLab Host: %s\n", config.GitLabHost)
-	}
-	if config.TokenName != "" {
-		fmt.Fprintf(cmd.OutOrStdout(), "  Token Name:  %s\n", config.TokenName)
-	}
+	fmt.Fprintf(cmd.OutOrStdout(), "Project configuration created.\n\n")
+	fmt.Fprintf(cmd.OutOrStdout(), "  Project ID: %s\n", cfg.ProjectID)
+	fmt.Fprintf(cmd.OutOrStdout(), "  Server:     %s\n", cfg.Server)
 	fmt.Fprintf(cmd.OutOrStdout(), "\n  Config file: %s\n", configPath)
-
 	return nil
 }
