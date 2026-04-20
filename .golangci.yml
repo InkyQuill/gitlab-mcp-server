@@ -44,14 +44,17 @@ linters:
         - diagnostic
     gosec:
       excludes:
-        - G104
-        - G301
-        - G302
-        - G304
-        - G306
-        - G101
-        - G401
+        - G101  # false positive on TOOL_*_DESCRIPTION constant names
+        - G104  # unhandled errors — covered by errcheck where it matters
+        - G115  # int overflow uintptr→int from os.File.Fd() — safe in practice
+        - G204  # subprocess via variable — intentional in ExternalCmdBackend
+        - G301  # directory perms — 0755 deliberate for config dir
+        - G302  # file perms
+        - G304  # file path from variable — reviewed case-by-case
+        - G306  # 0644 deliberate for non-secret files
+        - G401  # SHA1 — not in our code, pulled by deps
         - G501
+        - G703  # path traversal taint — false positive on user-provided config paths
     govet:
       enable:
         - assign
