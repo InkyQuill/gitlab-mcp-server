@@ -28,7 +28,11 @@ jobs:
         run: go mod verify
 
       - name: Run tests with coverage
-        run: go test -v -race -coverprofile=coverage.out ./...
+        # -coverpkg restricts the coverage report to library packages.
+        # cmd/* packages are startup wiring covered by integration tests
+        # and smoke runs, not unit tests — they're excluded from the
+        # coverage threshold but their tests still run via ./...
+        run: go test -v -race -coverpkg=./pkg/...,./internal/... -coverprofile=coverage.out ./...
 
       - name: Generate coverage report
         run: go tool cover -html=coverage.out -o coverage.html
