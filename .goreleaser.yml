@@ -1,3 +1,5 @@
+version: 2
+
 project_name: gitlab-mcp-server
 
 before:
@@ -27,7 +29,7 @@ builds:
     binary: gitlab-mcp-server
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -37,7 +39,7 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
     files:
       - LICENSE
       - README.md
@@ -65,20 +67,6 @@ release:
   draft: false
   prerelease: auto
   mode: replace
-
-brews:
-  - name: gitlab-mcp-server
-    homepage: https://github.com/InkyQuill/gitlab-mcp-server
-    tap:
-      owner: InkyQuill
-      name: homebrew-tap
-      branch: main
-    folder: Formula
-    caveats: |
-      GitLab MCP Server requires a GitLab Personal Access Token.
-      See https://github.com/InkyQuill/gitlab-mcp-server for setup instructions.
-    test: |
-      system "#{bin}/gitlab-mcp-server version"
 
 nfpms:
   - name: gitlab-mcp-server
