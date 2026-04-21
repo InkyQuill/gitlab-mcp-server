@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] — Unreleased
+## [2.1.0] — 2026-04-20
 
 ### Added
 - `SecretBackend` abstraction with three implementations: `KeyringBackend`
@@ -78,6 +78,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added direct dependency `golang.org/x/term` for no-echo TTY secret
   input. Pulled in `x/sys v0.43+`, which bumps the `go` directive to
   1.25.
+- Bumped `gitlab.com/gitlab-org/api/client-go` from `v0.128.0` to
+  `v1.46.0`. Adapted to breaking API changes where numeric IDs and
+  pagination fields changed from `int` to `int64`.
+- Bumped `github.com/mark3labs/mcp-go` from `v0.23.1` to `v0.48.0`.
 
 ## [2.0.0] - 2025-12-29
 
