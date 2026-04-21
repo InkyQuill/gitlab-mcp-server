@@ -69,7 +69,7 @@ release:
   mode: replace
 
 nfpms:
-  - name: gitlab-mcp-server
+  - package_name: gitlab-mcp-server
     homepage: https://github.com/InkyQuill/gitlab-mcp-server
     description: Model Context Protocol (MCP) server for GitLab integration
     maintainer: InkyQuill
