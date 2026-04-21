@@ -1,280 +1,83 @@
-# Project Configuration Feature
+# Project configuration (`.gmcprc`)
 
-The GitLab MCP server now supports automatic project detection and local project configuration, making it easier to work with multiple GitLab instances and projects without repeatedly specifying the project ID.
+A `.gmcprc` file in your repository tells the server which GitLab project the current directory maps to, and (optionally) which configured server it belongs to. Once present, tools can omit `projectId` and the server resolves it from the file.
 
-## Overview
+## Location and lookup
 
-The server can now:
-- **Auto-detect** your GitLab project from Git remote configuration
-- **Save** project settings locally in a `.gmcprc` file
-- **Automatically use** the saved project ID in all tools
+The server searches upward from the current working directory for `.gmcprc`, stopping at the filesystem root — the same algorithm `git` uses for `.git/`. So `.gmcprc` at the repo root covers every subdirectory.
 
-## How It Works
-
-### 1. Local Configuration File (`.gmcprc`)
-
-When you set a project, the server creates a `.gmcprc` file in your current directory:
+## Schema
 
 ```json
 {
-  "projectId": "owner/repo",
-  "gitlabHost": "https://gitlab.com",
-  "lastUpdated": "2025-12-27T17:30:00Z"
+  "projectId":   "mygroup/myproject",
+  "server":      "work",
+  "lastUpdated": "2026-04-20T09:12:44Z"
 }
 ```
 
-This file:
-- Is searched for in the current directory and all parent directories (like `.git`)
-- Can be committed to your repository or added to `.gitignore`
-- Contains only the project ID and optionally the GitLab host URL
+| Field | Required | Description |
+|---|---|---|
+| `projectId` | yes | GitLab project ID (numeric) or full path (`group/subgroup/project`). |
+| `server` | no | Name of a configured server (e.g. `work`, `personal`). Omit to use the default server. |
+| `lastUpdated` | auto | ISO 8601 timestamp; written by the CLI / `setCurrentProject`. |
 
-### 2. Git Remote Auto-Detection
+### Deprecated fields
 
-The server can automatically detect your GitLab project from:
-- **HTTPS URLs**: `https://gitlab.com/owner/repo.git`
-- **SSH URLs**: `git@gitlab.com:owner/repo.git`
-- **Self-hosted instances**: `https://git.example.com/owner/repo.git`
+Old `.gmcprc` files may contain these; they still work in v2.x but print a stderr warning on first load and will be removed in v3.0.
 
-It searches for:
-1. `.git` directory in current or parent folders
-2. GitLab remotes in `.git/config`
-3. Extracts project ID and host from the remote URL
+- `tokenName` — promoted to `server` automatically.
+- `gitlabHost` — no longer needed; each configured server already carries its host.
 
-## Available Tools
-
-### `setCurrentProject`
-
-Manually sets the current project for this directory.
-
-**Parameters:**
-- `projectId` (required): The GitLab project ID (e.g., `"owner/repo"` or numeric ID)
-- `gitlabHost` (optional): GitLab host URL (e.g., `"https://gitlab.example.com"`)
-
-**Example:**
-```json
-{
-  "name": "setCurrentProject",
-  "arguments": {
-    "projectId": "mygroup/myproject",
-    "gitlabHost": "https://gitlab.example.com"
-  }
-}
-```
-
-**Result:**
-```json
-{
-  "success": true,
-  "configPath": "/path/to/.gmcprc",
-  "projectId": "mygroup/myproject",
-  "gitlabHost": "https://gitlab.example.com"
-}
-```
-
-### `getCurrentProject`
-
-Retrieves the current project configuration from `.gmcprc`.
-
-**Parameters:** None
-
-**Example:**
-```json
-{
-  "name": "getCurrentProject",
-  "arguments": {}
-}
-```
-
-**Result:**
-```json
-{
-  "found": true,
-  "configPath": "/path/to/.gmcprc",
-  "projectId": "mygroup/myproject",
-  "gitlabHost": "https://gitlab.example.com"
-}
-```
-
-### `detectProject`
-
-Auto-detects the GitLab project from Git remote and verifies it exists.
-
-**Parameters:** None
-
-**Example:**
-```json
-{
-  "name": "detectProject",
-  "arguments": {}
-}
-```
-
-**Result:**
-```json
-{
-  "success": true,
-  "projectId": "mygroup/myproject",
-  "gitlabHost": "https://gitlab.com",
-  "projectName": "My Project",
-  "projectPath": "mygroup/myproject",
-  "message": "Project detected successfully. Use 'setCurrentProject' with projectId='mygroup/myproject' to save it."
-}
-```
-
-### `autoDetectAndSetProject`
-
-Convenience command that combines detection and setting in one step.
-
-**Parameters:** None
-
-**Example:**
-```json
-{
-  "name": "autoDetectAndSetProject",
-  "arguments": {}
-}
-```
-
-**Result:**
-```json
-{
-  "success": true,
-  "configPath": "/path/to/.gmcprc",
-  "projectId": "mygroup/myproject",
-  "gitlabHost": "https://gitlab.com",
-  "projectName": "My Project",
-  "projectPath": "mygroup/myproject",
-  "message": "Project detected and configured successfully!"
-}
-```
-
-## Use Cases
-
-### 1. Quick Setup for a New Project
+## CLI
 
 ```bash
-# In your project directory
-autoDetectAndSetProject
+gitlab-mcp-server project init     # auto-detect from .git/config and write .gmcprc
+gitlab-mcp-server project detect   # detect without writing
+gitlab-mcp-server project status   # show the effective .gmcprc for the current directory
 ```
 
-Now all tools will automatically use this project!
+`project init` looks at `.git/config` remote URLs, matches them against known GitLab hosts, and extracts `group/project`. If the remote host matches a configured server's host, that server is recorded as well.
 
-### 2. Working with Multiple GitLab Instances
+## Tools
 
-```bash
-# Company GitLab
-cd ~/work/company-project
-setCurrentProject projectId="company/team-project" gitlabHost="https://gitlab.company.com"
+When the project_config toolset is enabled, the MCP server exposes:
 
-# Public GitLab
-cd ~/oss/open-source-project
-autoDetectAndSetProject
-```
+- **`getCurrentProject`** — returns the effective `.gmcprc` (or `{found: false}`).
+- **`setCurrentProject`** — writes `.gmcprc` in the current working directory. Parameters: `projectId` (required), `server` (optional).
+- **`detectProject`** — detect without writing.
+- **`autoDetectAndSetProject`** — detect and write in one call.
 
-### 3. Forked Projects
+## Resolution order for `projectId`
 
-For forks or projects without Git remotes:
+Tools that accept a `projectId` argument resolve it in this order:
 
-```bash
-setCurrentProject projectId="original-owner/repo"
-```
-
-## Fallback Behavior
-
-When using tools that require a `projectId` parameter:
-
-1. **Explicit parameter** takes precedence
-2. **`.gmcprc` file** is checked second
-3. **Git remote detection** is attempted last
-4. **Error** if none of the above work
-
-## Migration from Manual Project ID
-
-**Before:**
-```json
-{
-  "name": "getProject",
-  "arguments": {
-    "projectId": "mygroup/myproject"
-  }
-}
-```
-
-**After** (with `.gmcprc`):
-```json
-{
-  "name": "getProject",
-  "arguments": {}
-}
-```
-
-## Security Considerations
-
-- `.gmcprc` stores project IDs (not tokens)
-- Tokens are stored in your MCP configuration file only
-- `.gmcprc` is safe to commit to version control
-- `.gmcprc` is already in `.gitignore` by default
-
-## Troubleshooting
-
-### "No .gmcprc file found"
-
-Run `autoDetectAndSetProject` or `setCurrentProject` first.
-
-### "Failed to detect project"
-
-Ensure:
-- You're in a Git repository
-- The repository has a GitLab remote
-- The remote URL is in a supported format
-
-### "Project not found or access denied"
-
-Check:
-- Your GitLab token has access to the project
-- The project ID is correct
-- The `gitlabHost` matches your GitLab instance
+1. Explicit `projectId` in the tool arguments.
+2. `.gmcprc` (nearest ancestor of the server's working directory).
+3. Error if neither is available.
 
 ## Examples
 
-### Example 1: First-Time Setup
+Single GitLab.com project:
 
-```bash
-# Clone a repository
-git clone https://gitlab.com/mygroup/myproject.git
-cd myproject
-
-# Auto-detect and save project
-autoDetectAndSetProject
-
-# Now use any tool without specifying projectId
-listIssues
+```json
+{ "projectId": "mygroup/myproject" }
 ```
 
-### Example 2: Self-Hosted GitLab
+Self-hosted project pinned to a specific configured server:
 
-```bash
-cd ~/work/internal-project
-setCurrentProject projectId="company/internal-project" gitlabHost="https://gitlab.company.com"
+```json
+{ "projectId": "engineering/backend", "server": "work" }
 ```
 
-### Example 3: Multiple Projects
+## Security notes
 
-```bash
-# Project 1
-cd ~/project1
-autoDetectAndSetProject
+`.gmcprc` contains no secrets — only IDs and a server name. It's safe to commit. Tokens live in the global config or a secret backend; see [CONFIGURATION.md](CONFIGURATION.md#secret-backends).
 
-# Project 2 (different GitLab instance)
-cd ~/project2
-setCurrentProject projectId="team/project2" gitlabHost="https://gitlab.company.com"
+## Troubleshooting
 
-# Each directory now remembers its own project
-```
+**`project init` says "no GitLab remote found".** The remote URL must point at a known GitLab host. For private instances, make sure you've run `config add … --host <your-host>` first; `project init` will match against your configured servers.
 
-## Future Enhancements
+**Tool still asks for `projectId` even though `.gmcprc` exists.** The server only reads `.gmcprc` from its own working directory. Make sure the MCP client launches the server in the repo directory (most clients do). You can also call `setCurrentProject` once to write the file from inside a session.
 
-- [ ] Make `projectId` optional in all existing tools
-- [ ] Support for multiple project configurations in one directory
-- [ ] Project aliases for frequently used projects
-- [ ] Integration with GitLab forking workflows
+**GitHub URL detected.** The server intentionally rejects GitHub remotes with a friendly error. See [GITHUB_DETECTION.md](GITHUB_DETECTION.md).

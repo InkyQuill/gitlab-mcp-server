@@ -1,247 +1,167 @@
-# Installation Guide
+# Installation
 
-This guide covers installation and setup of the GitLab MCP Server.
+This guide walks through installing the GitLab MCP server, registering it with your IDE, and verifying the setup.
 
-## Prerequisites
+Expected time: **5 minutes**.
 
-Before installing, ensure you have:
+## 1. Prerequisites
 
-1. **GitLab Access Token**: Create one of the following:
-   - [Personal Access Token (PAT)](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
-   - [Project Access Token](https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html)
-   - [Group Access Token](https://docs.gitlab.com/ee/user/group/settings/group_access_tokens.html)
+- **A GitLab access token.** A [Personal](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html), [Project](https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html), or [Group](https://docs.gitlab.com/ee/user/group/settings/group_access_tokens.html) access token works. Required scopes: **`api`** (covers everything the tools can do) or the narrower pair `read_api` + `read_repository` for read-only use. If you intend to push commits via tools, add `write_repository`.
+- **An MCP-capable client.** Tested: Claude Desktop, Claude Code, Cursor, VS Code (with an MCP extension). Any client that speaks stdio MCP will work.
+- **One of:**
+  - Go **1.25 or newer** (for `go install`), **or**
+  - A pre-built binary from the [Releases](https://github.com/InkyQuill/gitlab-mcp-server/releases) page, **or**
+  - Docker (for containerized use).
 
-   Required scopes depend on the tools you'll use:
-   - `api` - Broad access (recommended for full functionality)
-   - `read_repository`, `write_repository` - Repository operations
-   - `read_api`, `write_api` - API access
+## 2. Install the binary
 
-2. **Node.js**: Required for running the installer (usually already installed with Cursor, Claude Code, or MCP CLI)
-3. **Docker (optional)**: For containerized deployment
-4. **Go 1.23+ (optional)**: For building from source
-
-## Installation Methods
-
-### Method 1: Go Install (Recommended)
-
-The quickest way to install the latest release:
+### Option A — `go install` (recommended)
 
 ```bash
 go install github.com/InkyQuill/gitlab-mcp-server@latest
 ```
 
-This installs the binary to `~/go/bin/gitlab-mcp-server` (or `%USERPROFILE%\go\bin` on Windows).
-
-**After installation:**
+The binary lands in `$(go env GOBIN)` (typically `~/go/bin`). Make sure that directory is on your `PATH`:
 
 ```bash
-# Verify installation
+export PATH="$HOME/go/bin:$PATH"   # add to ~/.bashrc, ~/.zshrc, etc.
+```
+
+Verify:
+
+```bash
 gitlab-mcp-server version
-
-# Configure GitLab servers
-gitlab-mcp-server config init
-
-# Register with your IDE
-gitlab-mcp-server install claude  # For Claude Desktop
-# or
-gitlab-mcp-server install vscode  # For VS Code
-# or
-gitlab-mcp-server install cursor  # For Cursor
-
-# Set up your project
-cd your-project
-gitlab-mcp-server project init
 ```
 
-**Ensure `~/go/bin` is in your PATH:**
+### Option B — download a release
+
+Grab the archive for your platform from [Releases](https://github.com/InkyQuill/gitlab-mcp-server/releases), extract it, and move `gitlab-mcp-server` somewhere on your `PATH` (e.g. `/usr/local/bin`).
+
+`.deb`, `.rpm`, and Arch Linux packages are published alongside each release.
+
+### Option C — build from source
 
 ```bash
-# Add to ~/.bashrc, ~/.zshrc, or equivalent
-export PATH="$HOME/go/bin:$PATH"
-```
-
-### Method 2: Automated Installer
-
-The easiest way to install with automatic IDE configuration:
-
-The easiest way to install is using the automated installer:
-
-**Linux:**
-```bash
-git clone <repository-url>
+git clone https://github.com/InkyQuill/gitlab-mcp-server.git
 cd gitlab-mcp-server
-make setup
-make install-mcp
+make build                  # produces bin/gitlab-mcp-server
+sudo install bin/gitlab-mcp-server /usr/local/bin/
 ```
 
-**macOS/Linux (using setup script):**
-```bash
-git clone <repository-url>
-cd gitlab-mcp-server
-./setup.sh
-```
-
-**Windows:**
-```cmd
-git clone <repository-url>
-cd gitlab-mcp-server
-setup.bat
-```
-
-The installer will:
-- Check prerequisites (Go version, dependencies)
-- Build the server binary
-- Prompt for configuration:
-  - Deployment mode: local binary (default) or Docker
-  - GitLab host URL (defaults to `https://gitlab.com`)
-  - GitLab access token (entered securely, not displayed)
-  - Read-only mode preference
-  - Development environments to configure (VS Code, Claude Desktop, Claude Code, Cursor)
-- Automatically configure your selected development environments
-- Create backup copies (`.bak` files) of existing configuration files
-
-The server will be registered as `gitlab-go-mcp` in your MCP configurations.
-
-**Note:** The installer intelligently merges with existing configurations, preserving your other MCP server settings.
-
-### Method 3: Building from Source
-
-### Building from Source
-
-#### Using Makefile
-
-The project includes a Makefile with the following targets:
-
-- `make setup` - Install prerequisites and dependencies
-- `make build` - Build the binary to `bin/gitlab-mcp-server`
-- `make clean` - Clean build artifacts
-- `make test` - Run tests
-- `make docker-build` - Build Docker image
-- `make install-mcp` - Build installer and run MCP configuration
-- `make help` - Show all available targets
-
-**Example:**
-```bash
-make setup        # Install prerequisites
-make build        # Build the server
-make install-mcp  # Configure MCP servers
-```
-
-#### Standalone Build
-
-To build the binary from source:
-
-```bash
-git clone <repository-url>
-cd gitlab-mcp-server
-go build -o bin/gitlab-mcp-server ./cmd/gitlab-mcp-server
-```
-
-The binary will be created as `bin/gitlab-mcp-server`.
-
-### Docker Build
-
-To build the Docker image:
+### Option D — Docker
 
 ```bash
 docker build -t gitlab-mcp-server:latest .
+# or pull a published image when available
 ```
 
-Or using Makefile:
+Running under Docker requires passing the token and mounting any config you want the server to read. See [docs/SELF_HOSTED.md](SELF_HOSTED.md) and [docs/CONFIGURATION.md](CONFIGURATION.md) for the env-var fallback path.
+
+## 3. Register with your IDE
+
+Let the `install` command write the MCP entry for you. It detects installed clients, updates their config JSON in place, and writes a `.backup` next to the original.
+
 ```bash
-make docker-build
+gitlab-mcp-server install claude     # Claude Desktop
+gitlab-mcp-server install vscode     # VS Code
+gitlab-mcp-server install cursor     # Cursor
+gitlab-mcp-server install all        # every detected client
+
+gitlab-mcp-server install status     # which clients are installed
+gitlab-mcp-server install --dry-run  # preview the change without writing
 ```
 
-## Configuration
+Config file locations (managed for you):
 
-After installation, configure your development environment. See [Editor Setup](EDITOR_SETUP.md) for detailed instructions for:
+| Client | Linux | macOS | Windows |
+|---|---|---|---|
+| Claude Desktop | `~/.config/Claude/claude_desktop_config.json` | `~/Library/Application Support/Claude/claude_desktop_config.json` | `%APPDATA%\Claude\claude_desktop_config.json` |
+| VS Code | `~/.config/Code/User/settings.json` | `~/Library/Application Support/Code/User/settings.json` | `%APPDATA%\Code\User\settings.json` |
+| Cursor | `~/.cursor/mcp.json` (Linux/macOS) | same | `%APPDATA%\Cursor\mcp.json` |
 
-- VS Code / VS Code Agent Mode
-- Claude Desktop
-- Claude Code
-- Cursor
+Prefer to edit configs by hand (or configure Claude Code, which is not yet auto-installed)? See [docs/EDITOR_SETUP.md](EDITOR_SETUP.md) for copy-paste snippets.
 
-## Verification
+## 4. Configure a GitLab server
 
-To verify the installation:
+The server authenticates against one or more named GitLab instances recorded in `~/.gitlab-mcp-server/gitlab-mcp-server-config.json`.
 
-1. Check that the binary exists:
-   ```bash
-   # If installed via go install
-   gitlab-mcp-server version
+### Interactive (recommended)
 
-   # If built from source
-   ./bin/gitlab-mcp-server version
-   ```
+```bash
+gitlab-mcp-server config init
+```
 
-2. Check configured servers:
-   ```bash
-   gitlab-mcp-server config list
-   ```
+Walks you through host, token, and backend selection. The token is entered with no echo and is never written to the config file in plaintext by default — it goes to the OS keyring (or another backend you choose).
 
-3. Test the server (replace `<YOUR_TOKEN>` with your actual token):
-   ```bash
-   GITLAB_TOKEN=<YOUR_TOKEN> gitlab-mcp-server stdio
-   ```
+### Non-interactive
 
-4. In your development environment, verify the MCP server is available by checking the MCP server list.
+```bash
+# Token prompted (no echo), stored in OS keyring:
+gitlab-mcp-server config add work --host https://gitlab.com
+
+# Token already lives in a backend (1Password, pass, Vault, …):
+gitlab-mcp-server config add work --host https://gitlab.com --token-ref op://Work/gitlab/token
+
+# Multiple servers — the first one added is default; change with:
+gitlab-mcp-server config default personal
+```
+
+List, validate, or remove later:
+
+```bash
+gitlab-mcp-server config list
+gitlab-mcp-server config validate
+gitlab-mcp-server config remove old-server
+```
+
+Secret backend setup (keyring, encrypted file, external command like `op`/`pass`/`vault`) is covered in [docs/CONFIGURATION.md](CONFIGURATION.md#secret-backends).
+
+## 5. (Optional) Pin the current project
+
+In a project directory, create `.gmcprc` so tools know which GitLab project `cwd` maps to:
+
+```bash
+cd your-project
+gitlab-mcp-server project init       # detects from .git/config
+gitlab-mcp-server project status     # shows the effective config
+```
+
+Details: [docs/PROJECT_CONFIG.md](PROJECT_CONFIG.md).
+
+## 6. Restart the IDE and verify
+
+Most clients only load MCP config at startup. After restarting:
+
+1. Check that the GitLab MCP server appears in the client's tool list (method varies per client).
+2. Ask the assistant to run `getCurrentUser` — it should return your GitLab username.
+
+From the shell, a quick sanity check:
+
+```bash
+gitlab-mcp-server config validate   # contacts each server's /user endpoint
+```
 
 ## Troubleshooting
 
-### Binary Not Found
+**`gitlab-mcp-server: command not found`**
+Ensure `~/go/bin` (or wherever the binary went) is on `PATH`. In IDE configs, prefer an absolute path (`which gitlab-mcp-server`) so the IDE's shell environment doesn't matter.
 
-**Problem:** `gitlab-mcp-server: command not found`
+**Permission denied**
+`chmod +x ~/go/bin/gitlab-mcp-server` (Linux/macOS).
 
-**Solutions:**
-- Ensure `~/go/bin` is in your PATH:
-  ```bash
-  export PATH="$HOME/go/bin:$PATH"
-  ```
-- Use the full path to the binary in your MCP configuration:
-  ```bash
-  /home/user/go/bin/gitlab-mcp-server stdio
-  ```
+**Token validation fails on startup**
+Re-run `gitlab-mcp-server config validate`. Common causes: expired token, wrong host, scopes missing (`api` is the safe default), or a corporate proxy stripping TLS. For self-managed GitLab with a private CA, see [docs/SELF_HOSTED.md](SELF_HOSTED.md).
 
-### Permission Denied
+**Tool appears but errors "server not found"**
+You have multiple servers configured and no default. Set one with `gitlab-mcp-server config default <name>`, or pass `server` explicitly on tool calls. Strict mode (`GITLAB_MCP_STRICT_RESOLVER=1`) requires explicit `server` on every call.
 
-**Problem:** `Permission denied` when running the binary
+**IDE doesn't pick up the server**
+Confirm the IDE restarted, the config file is valid JSON (the installer creates a `.backup` you can diff against), and the path to the binary is correct. `gitlab-mcp-server install status` reports whether each client's config file exists.
 
-**Solution:**
-```bash
-# If built from source
-chmod +x bin/gitlab-mcp-server
+## Next steps
 
-# If installed via go install
-chmod +x ~/go/bin/gitlab-mcp-server
-```
-
-### Token Validation Fails
-
-**Problem:** Token validation fails on startup
-
-**Solution:**
-- Verify your token is valid in GitLab
-- Check token has required scopes
-- Ensure `GITLAB_HOST` matches your GitLab instance
-- See [Token Management](TOKEN_MANAGEMENT.md) for details
-
-### Docker Issues
-
-**Problem:** Docker build or run fails
-
-**Solution:**
-- Ensure Docker is installed and running
-- Check Docker has sufficient resources
-- Verify network connectivity for pulling base images
-
-## Next Steps
-
-After installation:
-
-1. **Configure your editor**: See [Editor Setup](EDITOR_SETUP.md)
-2. **Configure servers**: See [Configuration Guide](CONFIGURATION.md)
-3. **Set up your project**: See [Project Configuration](PROJECT_CONFIG.md)
-4. **Explore CLI commands**: See [CLI Reference](CLI_REFERENCE.md)
-5. **Explore available tools**: See [Tools Reference](TOOLS.md)
-6. **Configure multiple servers**: See [Multi-Server Setup](MULTI_SERVER_SETUP.md)
-
+- [docs/CONFIGURATION.md](CONFIGURATION.md) — config schema, backends, environment variables.
+- [docs/CLI_REFERENCE.md](CLI_REFERENCE.md) — every command and flag.
+- [docs/TOOLS.md](TOOLS.md) — what each tool does and how to call it.
+- [docs/MULTI_SERVER_SETUP.md](MULTI_SERVER_SETUP.md) — work + personal + self-hosted.
+- [docs/TOKEN_MANAGEMENT.md](TOKEN_MANAGEMENT.md) — rotation and expiry handling.

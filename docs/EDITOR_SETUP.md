@@ -1,330 +1,132 @@
-# Editor Setup Guide
+# Editor Setup
 
-This guide covers configuring the GitLab MCP Server for different development environments.
+The fastest way to wire the MCP server into an IDE is `gitlab-mcp-server install <claude|vscode|cursor|all>`. This page covers manual setup for clients the installer doesn't yet handle (Claude Code) and for environments where you'd rather edit JSON by hand.
 
-## VS Code / VS Code Agent Mode
+> **Auth reminder.** The snippets below set `GITLAB_TOKEN`/`GITLAB_HOST` env vars, which use the **deprecated fallback path** (single-server, plaintext token in config). Prefer the global config file — see [CONFIGURATION.md](CONFIGURATION.md). Once `~/.gitlab-mcp-server/gitlab-mcp-server-config.json` exists, the IDE entry only needs `command` + `args`.
 
-### Using Docker
+## Config file locations
 
-Add the following JSON block to your User Settings (JSON) file (`Preferences: Open User Settings (JSON)` or `Ctrl+Shift+P` / `Cmd+Shift+P`):
+| Client | Linux | macOS | Windows |
+|---|---|---|---|
+| Claude Desktop | `~/.config/Claude/claude_desktop_config.json` | `~/Library/Application Support/Claude/claude_desktop_config.json` | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Claude Code | `~/.claude.json` | `~/.claude.json` | `%USERPROFILE%\.claude.json` |
+| VS Code | `~/.config/Code/User/settings.json` | `~/Library/Application Support/Code/User/settings.json` | `%APPDATA%\Code\User\settings.json` |
+| Cursor | `~/.cursor/mcp.json` | `~/.cursor/mcp.json` | `%APPDATA%\Cursor\mcp.json` |
 
-```json
-{
-  "mcp": {
-    "inputs": [
-      {
-        "type": "promptString",
-        "id": "gitlab_token",
-        "description": "GitLab Access Token (PAT, Project, or Group)",
-        "password": true
-      },
-      {
-        "type": "promptString",
-        "id": "gitlab_host",
-        "description": "GitLab Host (e.g., gitlab.com or self-managed URL, leave empty for gitlab.com)",
-        "password": false
-      }
-    ],
-    "servers": {
-      "gitlab-go-mcp": {
-        "command": "docker",
-        "args": [
-          "run",
-          "-i",
-          "--rm",
-          "-e", "GITLAB_TOKEN",
-          "-e", "GITLAB_HOST",
-          "gitlab-mcp-server:latest"
-        ],
-        "env": {
-          "GITLAB_TOKEN": "${input:gitlab_token}",
-          "GITLAB_HOST": "${input:gitlab_host}"
-        }
-      }
-    }
-  }
-}
-```
-
-You can also add a similar configuration (without the top-level `mcp` key) to a `.vscode/mcp.json` file in your workspace to share the setup with your team.
-
-### Using Standalone Binary
-
-For the standalone binary, update your VS Code User Settings (JSON):
-
-```json
-{
-  "mcp": {
-    "servers": {
-      "gitlab-go-mcp": {
-        "command": "/path/to/gitlab-mcp-server",
-        "args": ["stdio"],
-        "env": {
-          "GITLAB_TOKEN": "<YOUR_TOKEN>",
-          "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-        }
-      }
-    }
-  }
-}
-```
-
-Or use `.vscode/mcp.json` in your workspace:
-
-```json
-{
-  "servers": {
-    "gitlab-go-mcp": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
-    }
-  }
-}
-```
-
-More about using MCP server tools in VS Code's [agent mode documentation](https://code.visualstudio.com/docs/copilot/chat/mcp-servers).
+Restart the client after editing any of these.
 
 ## Claude Desktop
 
-The configuration file location varies by operating system:
-
-- **Linux:** `~/.config/Claude/claude_desktop_config.json`
-- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-
-If the file doesn't exist, create it with the following structure.
-
-### Using Docker
-
 ```json
 {
   "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e", "GITLAB_TOKEN",
-        "-e", "GITLAB_HOST",
-        "gitlab-mcp-server:latest"
-      ],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
+    "gitlab": {
+      "command": "/absolute/path/to/gitlab-mcp-server",
+      "args": ["stdio"]
     }
   }
 }
 ```
 
-### Using Standalone Binary
-
-```json
-{
-  "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
-    }
-  }
-}
-```
-
-**Note:** After editing the configuration file, restart Claude Desktop for the changes to take effect.
+The `install claude` command writes this entry for you. Add `"env": {"GITLAB_TOKEN": "…"}` only if you want the env-var fallback.
 
 ## Claude Code
 
-Claude Code uses a command-line interface to manage MCP servers. The configuration file location varies by operating system:
-
-- **macOS/Linux:** `~/.claude.json`
-- **Windows:** `%USERPROFILE%\.claude.json`
-
-### Using Command Line (Recommended)
-
-**Using Docker:**
+Claude Code manages MCP servers via `claude mcp …`:
 
 ```bash
-claude mcp add gitlab-go-mcp -s user -e GITLAB_TOKEN=<YOUR_TOKEN> -e GITLAB_HOST=<YOUR_GITLAB_URL_OR_EMPTY> -- docker run -i --rm -e GITLAB_TOKEN -e GITLAB_HOST gitlab-mcp-server:latest
-```
-
-**Using Standalone Binary:**
-
-```bash
-claude mcp add gitlab-go-mcp -s user -e GITLAB_TOKEN=<YOUR_TOKEN> -e GITLAB_HOST=<YOUR_GITLAB_URL_OR_EMPTY> -- /path/to/gitlab-mcp-server stdio
-```
-
-**Verify the installation:**
-
-```bash
+claude mcp add gitlab -s user -- /absolute/path/to/gitlab-mcp-server stdio
 claude mcp list
 ```
 
-### Using Direct Configuration File Editing
+Scopes: `-s user` (all projects), `-s project` (writes `.mcp.json` in the repo root), or omit for the current directory.
 
-Alternatively, you can directly edit the configuration file:
-
-**Using Docker:**
+Manual edit of `~/.claude.json`:
 
 ```json
 {
   "mcpServers": {
-    "gitlab-go-mcp": {
+    "gitlab": {
       "type": "stdio",
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e", "GITLAB_TOKEN",
-        "-e", "GITLAB_HOST",
-        "gitlab-mcp-server:latest"
-      ],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
+      "command": "/absolute/path/to/gitlab-mcp-server",
+      "args": ["stdio"]
     }
   }
 }
 ```
 
-**Using Standalone Binary:**
+## VS Code
+
+Add to user `settings.json` (`Preferences: Open User Settings (JSON)`):
 
 ```json
 {
-  "mcpServers": {
-    "gitlab-go-mcp": {
-      "type": "stdio",
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
+  "mcp.servers": {
+    "gitlab": {
+      "command": "/absolute/path/to/gitlab-mcp-server",
+      "args": ["stdio"]
     }
   }
 }
 ```
 
-**Scope Options:**
+For workspace-shared config, write the same `servers` object (without the `mcp.` prefix) to `.vscode/mcp.json`.
 
-- `-s user` (or omit for default): User-level scope, available in all projects
-- `-s project`: Project-level scope, creates `.mcp.json` in the project root for team sharing
-- No flag: Local scope, available only in the current directory
-
-**Note:** After editing the configuration file or using the command line, restart Claude Code for the changes to take effect.
+See the [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for prompts and input bindings.
 
 ## Cursor
 
-Create or edit the file `~/.cursor/mcp.json` with the following configuration.
-
-### Using Docker
+Edit `~/.cursor/mcp.json` (Linux/macOS) or `%APPDATA%\Cursor\mcp.json` (Windows):
 
 ```json
 {
   "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e", "GITLAB_TOKEN",
-        "-e", "GITLAB_HOST",
-        "gitlab-mcp-server:latest"
-      ],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
+    "gitlab": {
+      "command": "/absolute/path/to/gitlab-mcp-server",
+      "args": ["stdio"]
     }
   }
 }
 ```
 
-### Using Standalone Binary
+## Docker
+
+Replace `command` and `args` with a Docker invocation:
 
 ```json
 {
-  "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "<YOUR_GITLAB_URL_OR_EMPTY>"
-      }
-    }
+  "command": "docker",
+  "args": [
+    "run", "-i", "--rm",
+    "-e", "GITLAB_TOKEN",
+    "-e", "GITLAB_HOST",
+    "gitlab-mcp-server:latest"
+  ],
+  "env": {
+    "GITLAB_TOKEN": "glpat-…",
+    "GITLAB_HOST": "https://gitlab.com"
   }
 }
 ```
 
-Replace `/path/to/gitlab-mcp-server` with the actual path to your binary (typically `bin/gitlab-mcp-server` relative to the project root).
+Notes:
+- Docker can't read your OS keyring, so the token must come through env vars (or a mounted secrets file).
+- For self-managed GitLab with a private CA, see [SELF_HOSTED.md](SELF_HOSTED.md).
 
-**Note:** The automated installer (`make install-mcp` or `./setup.sh`) will automatically configure all supported environments with the correct paths and settings.
+## Passing options to the server
 
-## Additional Configuration Options
+Any CLI flag has an env-var equivalent (`GITLAB_READ_ONLY`, `GITLAB_TOOLSETS`, `GITLAB_DYNAMIC_TOOLSETS`, etc.). Put them in the `env` block of the IDE entry. Full list: [CONFIGURATION.md](CONFIGURATION.md#environment-variables).
 
-### Read-Only Mode
-
-Enable read-only mode to prevent accidental modifications:
-
-```json
-{
-  "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_READ_ONLY": "true"
-      }
-    }
-  }
-}
-```
-
-### Custom Toolsets
-
-Enable only specific toolsets:
+Example — read-only, only issues and MRs:
 
 ```json
 {
   "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
+    "gitlab": {
+      "command": "/absolute/path/to/gitlab-mcp-server",
+      "args": ["stdio", "--read-only"],
       "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_TOOLSETS": "issues,merge_requests,projects"
-      }
-    }
-  }
-}
-```
-
-### Dynamic Tool Discovery
-
-Enable dynamic toolset loading:
-
-```json
-{
-  "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_DYNAMIC_TOOLSETS": "true"
+        "GITLAB_TOOLSETS": "issues,merge_requests"
       }
     }
   }
@@ -333,33 +135,8 @@ Enable dynamic toolset loading:
 
 ## Troubleshooting
 
-### Server Not Appearing
+**Tool doesn't show up.** Restart the IDE. Confirm the JSON parses (`jq . <file>`). Confirm the binary path is absolute — IDEs often don't share your shell's `PATH`.
 
-**Problem:** MCP server doesn't appear in the tool list
+**Works from CLI, fails in IDE.** Usually a missing token in the IDE's environment. Either put it in `env` (fallback path) or rely on the global config file which the binary reads regardless of how it was started.
 
-**Solution:**
-- Verify the configuration file syntax (valid JSON)
-- Check file location matches your editor
-- Restart the editor/application
-- Check logs for errors
-
-### Connection Errors
-
-**Problem:** Cannot connect to GitLab MCP server
-
-**Solution:**
-- Verify binary path is correct
-- Check binary has execute permissions
-- Ensure Docker is running (if using Docker)
-- Verify environment variables are set correctly
-
-### Token Issues
-
-**Problem:** Authentication errors
-
-**Solution:**
-- Verify token is valid in GitLab
-- Check token has required scopes
-- Ensure `GITLAB_HOST` matches your instance
-- See [Token Management](TOKEN_MANAGEMENT.md) for details
-
+**Private CA / self-managed.** See [SELF_HOSTED.md](SELF_HOSTED.md). If using Docker, you may need `-v /path/to/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro` or a custom image.

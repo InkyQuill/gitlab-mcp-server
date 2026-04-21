@@ -4,7 +4,7 @@
 BINARY_NAME=gitlab-mcp-server
 BINARY_PATH=bin/$(BINARY_NAME)
 INSTALLER_SCRIPT=scripts/install.js
-GO_VERSION_MIN=1.23
+GO_VERSION_MIN=1.25
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'

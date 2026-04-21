@@ -1,252 +1,123 @@
-# Token Management
+# Token management
 
-This document describes how GitLab MCP Server manages access tokens and tracks their expiration.
+How `gitlab-mcp-server` handles tokens: validation on startup, expiry warnings, the `token_management` MCP tools, and rotation flows.
 
-## Overview
+## Where tokens live
 
-GitLab Personal Access Tokens (PATs) have a maximum lifetime of 1 year. The GitLab MCP Server provides automatic token validation and expiration tracking to prevent unexpected authentication failures.
+- **Primary:** the global config (`~/.gitlab-mcp-server/gitlab-mcp-server-config.json`), with the actual secret resolved through a backend (`keyring://`, `file://`, external command). See [CONFIGURATION.md](CONFIGURATION.md#secret-backends).
+- **Fallback:** the `GITLAB_TOKEN` env var (deprecated, single-server only).
+- **Ephemeral:** runtime-only updates made via `updateToken` (MCP tool) — live for the current process only.
 
-## Features
+## Startup validation
 
-### 1. Automatic Token Validation
+On every start, the default client makes a `GET /user` call:
 
-The server validates your token on startup by calling the GitLab API:
+```
+INFO Token validated successfully for user inky (ID: 42) on server 'work'
+WARN Token will expire in 14 days. Please create a new token and update it.
+```
+
+If validation fails, the server logs a warning and continues running — individual tool calls still fail with a 401, but the process stays up so you can fix it without an IDE restart.
+
+Re-validate every server on demand:
 
 ```bash
-INFO  Token validated successfully for user john_doe (ID: 12345) on server 'default'
+gitlab-mcp-server config validate
 ```
 
-If validation fails, a warning is logged but the server continues to run:
+## Expiry warnings
 
-```
-WARN  Token validation warning: token is invalid or expired (401)
-```
+When the GitLab API returns an expiry timestamp for the token, the server surfaces a warning if fewer than 30 days remain. GitLab's maximum PAT lifetime is 1 year. No warning is shown when GitLab reports no expiry.
 
-### 2. Expiration Tracking
+## Runtime MCP tools (`token_management` toolset)
 
-The server tracks token expiration and warns you 30 days before expiry:
+The toolset is enabled by default. It exposes these tools:
 
-```
-WARN  Token will expire in 28 days. Please create a new token and update it.
-```
+| Tool | Mode | Purpose |
+|---|---|---|
+| `listTokens` | read | List tokens tracked in the runtime store, with user/host/expiry metadata. |
+| `validateToken` | read | Re-validate a named token (or all of them) against `/user`. |
+| `getNotifications` | read | Fetch accumulated notifications (validation warnings, expiry warnings, 401s). |
+| `updateToken` | write | Replace the token for an existing server in the runtime store. Persists in memory only. |
+| `removeToken` | write | Drop a token from the runtime store. Doesn't touch the config file. |
+| `clearNotifications` | write | Clear the notification buffer. |
 
-### 3. Runtime Token Management
+> `addToken` exists in the code as a **deprecated** path (accepting tokens from an LLM is unsafe). It is not registered in the MCP toolset in current builds; use the CLI (`gitlab-mcp-server config add`) instead.
 
-The server provides MCP tools for managing tokens during runtime:
+### Example: `listTokens`
 
-#### `addToken`
-Add a new GitLab token configuration to the runtime store.
-
-**Parameters:**
-- `name` (required): Token/server name (e.g., 'work', 'personal')
-- `token` (required): GitLab Personal Access Token
-- `gitlabHost` (optional): GitLab host URL (default: https://gitlab.com)
-
-**Example:**
-```json
-{
-  "name": "work",
-  "token": "glpat-xxxxxxxxxxxxxxxxxxxx",
-  "gitlabHost": "https://gitlab.example.com"
-}
-```
-
-**Note:** Tokens added via `addToken` are only stored in runtime memory and will be lost when the server restarts. For permanent configuration, use the installer.
-
-#### `listTokens`
-List all configured tokens with their validation status and metadata.
-
-**Example response:**
 ```json
 {
   "tokens": [
     {
-      "name": "default",
-      "gitlabHost": "https://gitlab.com",
-      "userId": 12345,
-      "username": "john_doe",
-      "createdAt": "2025-01-15T10:30:00Z",
-      "lastValidated": "2025-12-27T15:45:00Z",
+      "name": "work",
+      "gitlabHost": "https://gitlab.company.com",
+      "userId": 42,
+      "username": "inky",
+      "createdAt": "2026-01-10T10:30:00Z",
+      "lastValidated": "2026-04-20T09:12:44Z",
+      "expiresAt": "2027-01-10T00:00:00Z",
       "isExpired": false,
-      "daysUntilExpiry": 180
-    }
-  ],
-  "count": 1,
-  "message": "Found 1 configured token(s)"
-}
-```
-
-#### `updateToken`
-Update an existing token or revalidate it.
-
-**Parameters:**
-- `name` (required): Token name to update
-- `token` (optional): New token value (if not provided, only revalidates existing token)
-
-**Example:**
-```json
-{
-  "name": "work",
-  "token": "glpat-newtoken123"
-}
-```
-
-#### `validateToken`
-Manually validate a token (or all tokens).
-
-**Parameters:**
-- `name` (optional): Token name to validate. If not provided, validates all tokens.
-
-**Example response:**
-```json
-{
-  "success": true,
-  "tokenName": "work",
-  "userId": 12345,
-  "username": "john_doe",
-  "message": "Token 'work' is valid"
-}
-```
-
-#### `removeToken`
-Remove a token from the runtime store.
-
-**Parameters:**
-- `name` (required): Token name to remove
-
-**Note:** This only removes the token from runtime memory. It does not update your MCP configuration files.
-
-#### `getNotifications`
-Get recent notifications about token issues, validation results, and other important messages.
-
-**Example response:**
-```json
-{
-  "notifications": [
-    {
-      "level": "WARNING",
-      "title": "Token Expiring Soon",
-      "message": "Token 'work' will expire in 15 days. Please create a new token and update it.",
-      "tokenName": "work",
-      "timestamp": "2025-12-27T10:00:00Z"
+      "daysUntilExpiry": 265
     }
   ],
   "count": 1
 }
 ```
 
-#### `clearNotifications`
-Clear all stored notifications.
+### Example: `updateToken`
 
-### 4. 401 Error Handling
+Rotate the token in-place for the current process:
 
-When a GitLab API call returns a 401 Unauthorized error, the server provides a user-friendly message:
-
-```
-Authentication failed (401). Your GitLab token may be expired. Please update it using the updateToken tool.
-```
-
-This happens automatically for all tools that interact with the GitLab API (projects, issues, merge requests, etc.).
-
-## Configuration
-
-### Environment Variables
-
-Tokens are configured via environment variables in your MCP configuration:
-
-**Single server:**
 ```json
-{
-  "mcpServers": {
-    "gitlab": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "glpat-yourtokenhere",
-        "GITLAB_HOST": "https://gitlab.com"
-      }
-    }
-  }
-}
+{ "name": "updateToken", "arguments": { "name": "work", "token": "glpat-new-token-value" } }
 ```
 
-**Multiple servers:**
-```json
-{
-  "mcpServers": {
-    "work": {
-      "command": "/path/to/gitlab-mcp-server",
-      "env": {
-        "GITLAB_TOKEN": "glpat-worktoken",
-        "GITLAB_HOST": "https://gitlab.example.com"
-      }
-    },
-    "personal": {
-      "command": "/path/to/gitlab-mcp-server",
-      "env": {
-        "GITLAB_TOKEN": "glpat-personaltoken",
-        "GITLAB_HOST": "https://gitlab.com"
-      }
-    }
-  }
-}
-```
+For persistent rotation, see below.
 
-### Using the Installer
+## Rotation
 
-The installer (`node scripts/install.js`) helps you configure MCP servers:
+Preferred, persistent flow:
 
 ```bash
-node scripts/install.js
+# 1. Generate a new token in GitLab (with the same scopes)
+# 2. Update the secret in its backend
+#    - keyring-backed:
+gitlab-mcp-server config remove work
+gitlab-mcp-server config add work --host https://gitlab.company.com
+#    - backend-ref-backed (e.g. 1Password):
+op item edit "gitlab" password=glpat-new-token-value   # or whatever your workflow is
+gitlab-mcp-server config validate
+# 3. Restart any running MCP client to pick up the new token
 ```
 
-For multiple GitLab servers, select "Configure multiple GitLab servers? (y/n): y" when prompted.
+Hot rotation in a long-running session:
 
-## Security Best Practices
+```
+call updateToken { name: "work", token: "glpat-new-token-value" }
+```
 
-1. **Token Scope**: Only grant the permissions you need (read-only for most use cases)
-2. **Token Expiration**: Set tokens to expire in 1 year (GitLab maximum)
-3. **Token Storage**: Tokens are stored in your MCP configuration files (`~/.claude.json`, VS Code settings, etc.)
-4. **Runtime Tokens**: Tokens added via `addToken` are only in memory and lost on restart
-5. **Token Rotation**: When a token expires, use `updateToken` to update it, or re-run the installer
+The new value is used for subsequent calls until the process exits; the on-disk config is unchanged.
 
-## Troubleshooting
+## 401 handling
 
-### Token validation fails on startup
+When a tool call returns `401 Unauthorized`, the server rewrites the error with a hint:
 
-**Error:** `Token validation warning: token is invalid or expired (401)`
+```
+Authentication failed (401). Your GitLab token may be expired. Use listTokens / validateToken to inspect, and updateToken (or the config CLI) to rotate.
+```
 
-**Solution:**
-1. Generate a new token in GitLab (User Settings → Access Tokens)
-2. Update the token using the `updateToken` tool, or
-3. Re-run the installer with the new token
+A notification is also recorded so you can retrieve it later with `getNotifications`.
 
-### 401 errors during tool usage
+## Security notes
 
-**Error:** `Authentication failed (401). Your GitLab token may be expired.`
+- Prefer `--token-ref` over plaintext `--token` when adding servers; `--token` exposes the secret in shell history.
+- Scope tokens minimally: `read_api` + `read_repository` for read-only, `api` for full control.
+- When running under `--use-secure-memory`, tokens live in memguard-protected memory and are never swapped to disk.
+- Config file permissions are `0600`; the containing directory is `0700`. Don't override these.
 
-**Solution:**
-1. Check token status: `listTokens` tool
-2. Update the token: `updateToken` tool
-3. Verify token has required permissions (api, read_repository, etc.)
+## See also
 
-### Multiple servers with same token
-
-If you use the same token for multiple GitLab servers, you can configure them with different names but the same token value. The server will track each server independently.
-
-## Token Metadata
-
-The server tracks the following metadata for each token:
-
-| Field | Description |
-|-------|-------------|
-| `name` | Token/server name |
-| `gitlabHost` | GitLab instance URL |
-| `userId` | GitLab user ID |
-| `username` | GitLab username |
-| `createdAt` | When token was added to the store |
-| `lastValidated` | Last successful validation |
-| `expiresAt` | Token expiration date (if available) |
-| `isExpired` | Whether token is expired |
-
-Note: GitLab API doesn't directly provide token expiration date, so we estimate based on creation time and GitLab's 1-year maximum.
+- [CONFIGURATION.md](CONFIGURATION.md)
+- [CLI_REFERENCE.md](CLI_REFERENCE.md)
+- [MULTI_SERVER_SETUP.md](MULTI_SERVER_SETUP.md)

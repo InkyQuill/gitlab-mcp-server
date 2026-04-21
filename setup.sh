@@ -5,7 +5,7 @@
 
 set -e
 
-GO_VERSION_MIN="1.23"
+GO_VERSION_MIN="1.25"
 BINARY_NAME="gitlab-mcp-server"
 INSTALLER_SCRIPT="scripts/install.js"
 

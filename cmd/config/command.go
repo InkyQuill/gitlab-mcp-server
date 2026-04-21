@@ -16,7 +16,7 @@ var Cmd = &cobra.Command{
 	Short: "Manage GitLab MCP server configuration",
 	Long: `Manage the GitLab MCP server global configuration file.
 
-This configuration file is stored at ~/.config/gitlab-mcp-server/gitlab-mcp-server-config.json
+This configuration file is stored at ~/.gitlab-mcp-server/gitlab-mcp-server-config.json
 and allows you to configure multiple GitLab servers with their access tokens.
 
 Run 'config -i' or 'config --interactive' for an interactive TUI experience.`,

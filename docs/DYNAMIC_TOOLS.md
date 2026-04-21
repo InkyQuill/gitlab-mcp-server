@@ -37,7 +37,7 @@ docker run -i --rm \
 ```json
 {
   "mcpServers": {
-    "gitlab-go-mcp": {
+    "gitlab": {
       "command": "/path/to/gitlab-mcp-server",
       "args": ["stdio"],
       "env": {
@@ -59,15 +59,17 @@ Lists all available GitLab MCP toolsets that can be enabled.
 
 **Example Output:**
 ```
-Available Toolsets (8):
-- token_management: Tools for managing GitLab tokens and authentication. [6 tools] (enabled)
-- project_config: Tools for managing GitLab project configuration and auto-detection. [4 tools] (disabled)
-- projects: Tools for interacting with GitLab projects, repositories, branches, commits, tags. [6 tools] (disabled)
-- issues: Tools for CRUD operations on GitLab issues, comments, labels. [10 tools] (disabled)
-- merge_requests: Tools for CRUD operations on GitLab merge requests, comments, approvals, diffs. [7 tools] (disabled)
-- security: Tools for accessing GitLab security scan results (SAST, DAST, etc.). [6 tools] (disabled)
-- users: Tools for looking up GitLab user information. [12 tools] (disabled)
-- search: Tools for utilizing GitLab's scoped search capabilities. [14 tools] (disabled)
+Available Toolsets (10):
+- token_management: Tools for managing GitLab tokens and authentication. [6 tools]
+- project_config: Tools for managing GitLab project configuration and auto-detection. [2 tools]
+- projects: Tools for interacting with GitLab projects, repositories, branches, commits, tags. [6 tools]
+- issues: Tools for CRUD operations on GitLab issues, comments, labels. [8 tools]
+- merge_requests: Tools for CRUD operations on GitLab merge requests, comments, approvals, diffs. [5 tools]
+- security: Tools for accessing GitLab security scan results (SAST, DAST, etc.). [6 tools]
+- users: Tools for looking up GitLab user information. [6 tools]
+- search: Tools for utilizing GitLab's scoped search capabilities. [1 tool]
+- tags: Tools for managing GitLab repository tags and releases. [2 tools]
+- pipeline_jobs: Tools for monitoring and controlling GitLab CI/CD pipeline jobs. [4 tools]
 ```
 
 ### enable_toolset

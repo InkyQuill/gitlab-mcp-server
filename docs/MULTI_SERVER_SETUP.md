@@ -1,460 +1,128 @@
-# Multi-Server Setup Guide
+# Multi-server setup
 
-This guide explains how to configure GitLab MCP Server to work with multiple GitLab instances (e.g., work and personal GitLab).
+Most real-world setups need more than one GitLab instance — a work instance, a personal account on GitLab.com, maybe an archived mirror. The server supports this with a single MCP entry in your IDE and multiple named servers in the global config.
 
-## v2.1 and later: single MCP entry
+## Model
 
-As of v2.1 the recommended setup is a single MCP server entry. Multiple
-GitLab instances are configured in the global config file via
-`gitlab-mcp-server config add <name>`, and the active instance per project
-is selected by the `server` field in that project's `.gmcprc`.
+- One binary, one IDE entry.
+- The global config (`~/.gitlab-mcp-server/gitlab-mcp-server-config.json`) lists every server you have access to.
+- Each configured server has a name, a host, a token (via backend ref), and an optional `readOnly` flag.
+- At tool-call time the server is chosen by: the tool's `server` argument, then `.gmcprc`'s `server` field, then the default server.
 
-Per-instance entries with `GITLAB_TOKEN`/`GITLAB_HOST` env vars still work
-in v2.1 but are deprecated and will be removed in v3.0.
+> Pre-v2.1 setups registered one MCP entry per instance and passed `GITLAB_TOKEN`/`GITLAB_HOST` env vars. That still works but is deprecated and will be removed in v3.0. Migrate with a few `config add` calls.
 
-## Overview
-
-The GitLab MCP Server supports connecting to multiple GitLab instances simultaneously. Each server configuration has:
-- A unique name (e.g., "work", "personal")
-- Its own access token
-- Its own GitLab host URL
-- Optional read-only mode
-
-## Installation
-
-### Single Server (Default)
-
-For a single GitLab server, run the installer:
+## Setup
 
 ```bash
-node scripts/install.js
+# Work (self-managed) — token from 1Password
+gitlab-mcp-server config add work \
+    --host https://gitlab.company.com \
+    --token-ref op://Work/gitlab/token
+
+# Personal (GitLab.com) — token prompted, stored in OS keyring
+gitlab-mcp-server config add personal --host https://gitlab.com
+
+# Archived mirror — read-only guardrail
+gitlab-mcp-server config add mirror \
+    --host https://gitlab.internal \
+    --read-only
+
+# Pick the default for tool calls that don't specify a server
+gitlab-mcp-server config default work
 ```
 
-When prompted:
-```
-Configure multiple GitLab servers? (y/n, default: n): [press Enter]
-```
-
-This creates a single MCP server named `gitlab`.
-
-### (legacy) Multiple Servers
-
-> **Deprecated in v2.1** — prefer a single MCP entry plus
-> `gitlab-mcp-server config add <name>` as described above. The flow below
-> remains functional in v2.1 but will be removed in v3.0.
-
-For multiple GitLab servers:
+Verify:
 
 ```bash
-node scripts/install.js
+gitlab-mcp-server config list
+gitlab-mcp-server config validate
 ```
 
-When prompted:
-```
-Configure multiple GitLab servers? (y/n, default: n): y
-```
+## Choosing a server at call time
 
-Then configure each server:
+**Per-project pinning (recommended).** In each repo:
 
-```
-=== Configuring Server 1 ===
-Server name (e.g., 'work', 'personal', 'gitlab'): work
-Select mode [local/docker] (default: local): [press Enter]
-GitLab host URL for 'work' (default: https://gitlab.com, press Enter to use default): https://gitlab.example.com
-GitLab access token for 'work': [paste token]
-Enable read-only mode? (y/n, default: n): [press Enter]
-
-Add another server? (y/n, default: n): y
-
-=== Configuring Server 2 ===
-Server name (e.g., 'work', 'personal', 'gitlab'): personal
-Select mode [local/docker] (default: local): [press Enter]
-GitLab host URL for 'personal' (default: https://gitlab.com, press Enter to use default): [press Enter]
-GitLab access token for 'personal': [paste token]
-Enable read-only mode? (y/n, default: n): y
-
-Add another server? (y/n, default: n): [press Enter]
-```
-
-## (legacy) Configuration Files
-
-> **Deprecated in v2.1** — these per-instance entries embed
-> `GITLAB_TOKEN`/`GITLAB_HOST` directly in the IDE's MCP config. New
-> installs should use a single MCP entry and declare instances via
-> `gitlab-mcp-server config add <name>`.
-
-After installation, your MCP configuration will contain multiple servers:
-
-### Claude Desktop / Cursor (`~/.claude.json`)
-
-```json
-{
-  "mcpServers": {
-    "work": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "glpat-worktoken",
-        "GITLAB_HOST": "https://gitlab.example.com"
-      }
-    },
-    "personal": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "glpat-personaltoken",
-        "GITLAB_HOST": "https://gitlab.com",
-        "GITLAB_READ_ONLY": "true"
-      }
-    }
-  }
-}
-```
-
-### VS Code (`~/.config/Code/User/settings.json` or workspace `.vscode/settings.json`)
-
-```json
-{
-  "mcp.servers": {
-    "work": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "glpat-worktoken",
-        "GITLAB_HOST": "https://gitlab.example.com"
-      }
-    },
-    "personal": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "glpat-personaltoken",
-        "GITLAB_HOST": "https://gitlab.com",
-        "GITLAB_READ_ONLY": "true"
-      }
-    }
-  }
-}
-```
-
-## Project Configuration
-
-To specify which GitLab server to use for a project, create a `.gmcprc` file in your project directory:
-
-### Automatic Server Selection
-
-Create `.gmcprc` in your project root:
-
-```json
-{
-  "projectId": "123",
-  "gitlabHost": "https://gitlab.example.com",
-  "tokenName": "work"
-}
-```
-
-The MCP server will automatically use the "work" server when working in this project.
-
-### Alternative: Host-Based Matching
-
-If you don't specify `tokenName`, the server will match by `gitlabHost`:
-
-```json
-{
-  "projectId": "456",
-  "gitlabHost": "https://gitlab.example.com"
-}
-```
-
-The server will find the client configured with that host.
-
-### Project Auto-Detection
-
-Use the `detectProject` tool to auto-detect from Git remotes:
-
-```
-> detectProject
-```
-
-This analyzes your `.git/config` and creates/updates `.gmcprc` automatically.
-
-## How It Works
-
-### Client Pool
-
-On startup, the server initializes a **Client Pool** with all configured servers:
-
-```
-INFO  Added client 'work' to pool
-INFO  Added client 'personal' to pool
-INFO  Client resolver initialized with default server 'work'
-```
-
-### Client Resolver
-
-When an MCP tool is called, the **Client Resolver** determines which GitLab client to use:
-
-1. Read `.gmcprc` → get `tokenName`
-2. If `tokenName` exists → use that client
-3. Else, check `gitlabHost` → find matching client by host
-4. Fall back to default server
-
-### Example Flow
-
-```
-User calls: getProject {projectId: "123"}
-
-Resolver:
-  1. Read .gmcprc → {"tokenName": "work", ...}
-  2. Get client "work" from pool
-  3. Call GitLab API with "work" client's token
-  4. Return results
-```
-
-## Usage Examples
-
-### Working with Multiple Projects
-
-**Project A** (work GitLab):
 ```bash
-cd /path/to/project-a
-echo '{"projectId":"123","tokenName":"work"}' > .gmcprc
-# All MCP tools now use the 'work' GitLab server
+cd ~/projects/company-service    # uses `work`
+gitlab-mcp-server project init
+
+cd ~/projects/my-oss             # uses `personal`
+gitlab-mcp-server project init
 ```
 
-**Project B** (personal GitLab):
-```bash
-cd /path/to/project-b
-echo '{"projectId":"456","tokenName":"personal"}' > .gmcprc
-# All MCP tools now use the 'personal' GitLab server
-```
+`project init` detects the remote host and records the matching server in `.gmcprc`.
 
-### Manual Server Selection
-
-Use `setCurrentProject` to configure manually:
-
-```
-> setCurrentProject {
-  "projectId": "789",
-  "gitlabHost": "https://gitlab.example.com",
-  "tokenName": "work"
-}
-```
-
-### List All Configured Tokens
-
-```
-> listTokens
-```
-
-Response:
-```json
-{
-  "tokens": [
-    {
-      "name": "work",
-      "gitlabHost": "https://gitlab.example.com",
-      "userId": 12345,
-      "username": "john_doe",
-      "isExpired": false
-    },
-    {
-      "name": "personal",
-      "gitlabHost": "https://gitlab.com",
-      "userId": 67890,
-      "username": "johndoe",
-      "isExpired": false
-    }
-  ],
-  "count": 2
-}
-```
-
-## Runtime Token Management
-
-You can add, update, or remove servers at runtime using MCP tools:
-
-### Add a New Server
-
-```
-> addToken {
-  "name": "sideproject",
-  "token": "glpat-newtoken",
-  "gitlabHost": "https://gitlab.sideproject.com"
-}
-```
-
-**Note:** Runtime additions are lost when the server restarts. For permanent configuration, re-run the installer.
-
-### Update a Server Token
-
-```
-> updateToken {
-  "name": "work",
-  "token": "glpat-newworktoken"
-}
-```
-
-### Remove a Server
-
-```
-> removeToken {
-  "name": "sideproject"
-}
-```
-
-## Migration from Single-Server
-
-If you're currently using a single-server setup and want to add more servers:
-
-1. **Backup your current configuration:**
-   ```bash
-   cp ~/.claude.json ~/.claude.json.backup
-   ```
-
-2. **Re-run the installer:**
-   ```bash
-   node scripts/install.js
-   ```
-
-3. **Select multi-server mode:**
-   ```
-   Configure multiple GitLab servers? (y/n): y
-   ```
-
-4. **Configure your existing server first** (use your current name or "default")
-
-5. **Add additional servers** as needed
-
-6. **Restart your development environment** (VS Code, Claude Desktop, etc.)
-
-Your existing `.gmcprc` files will continue to work without modification.
-
-## Troubleshooting
-
-### Wrong server being used
-
-**Problem:** Tools are using the wrong GitLab server.
-
-**Solution:** Check your `.gmcprc`:
-```bash
-cat .gmcprc
-```
-
-Ensure `tokenName` or `gitlabHost` matches your intended server.
-
-### Server not found
-
-**Problem:** `Client 'work' not found in pool`
-
-**Solution:**
-1. Check MCP configuration has the server defined
-2. Restart the MCP server
-3. Check logs: `listTokens` tool
-
-### All projects using same server
-
-**Problem:** Multiple projects use the same server despite different `.gmcprc` files.
-
-**Solution:** Ensure each `.gmcprc` has a unique `tokenName`:
-```json
-{
-  "projectId": "123",
-  "tokenName": "work"
-}
-```
-
-## Advanced Configuration
-
-### Custom Default Server
-
-By default, the first configured server is the default. To change this, set the `GITLAB_SERVER_NAME` environment variable:
+**Explicit argument on the tool call.** Any tool accepts a `server` argument that takes precedence:
 
 ```json
-{
-  "mcpServers": {
-    "work": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "glpat-work",
-        "GITLAB_HOST": "https://gitlab.example.com",
-        "GITLAB_SERVER_NAME": "work"
-      }
-    }
-  }
-}
+{ "name": "listIssues", "arguments": { "server": "personal", "projectId": "user/oss" } }
 ```
 
-### Read-Only Mode
+**Default.** If neither above is set, the resolver uses the default server.
 
-Enable read-only mode per server to prevent accidental modifications:
+## Strict mode
 
-```json
-{
-  "mcpServers": {
-    "personal": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "glpat-personal",
-        "GITLAB_HOST": "https://gitlab.com",
-        "GITLAB_READ_ONLY": "true"
-      }
-    }
-  }
-}
-```
+Set `GITLAB_MCP_STRICT_RESOLVER=1` to disable implicit defaults:
 
-When read-only mode is enabled, write operations (createIssue, updateMergeRequest, etc.) will be blocked.
+- Every tool call must include a valid `server`.
+- The server's host is verified against the config on every session.
+- Typos surface as clear errors instead of silently hitting the default server.
 
-## Best Practices
+Recommended once you have more than one configured server.
 
-1. **Server Naming**: Use descriptive names (work, personal, client-name, etc.)
-2. **Token Scope**: Give each token only the permissions it needs
-3. **Read-Only**: Enable read-only for personal/review accounts
-4. **Documentation**: Document which server to use for each project in `.gmcprc`
-5. **Token Rotation**: Update tokens before expiry using `updateToken`
-6. **Configuration Backup**: Keep backups of your MCP configuration files
+## Switching defaults
 
-## Example Workflow
-
-### Setup
 ```bash
-# Install with multiple servers
-node scripts/install.js
-# Configure: work, personal, client1
-
-# Configure project for work server
-cd ~/projects/work-project
-echo '{"projectId":"123","tokenName":"work"}' > .gmcprc
-detectProject
-
-# Configure project for personal server
-cd ~/projects/side-project
-echo '{"projectId":"456","tokenName":"personal"}' > .gmcprc
-detectProject
+gitlab-mcp-server config default personal
 ```
 
-### Daily Use
+Only one server is default at any time. `config list` marks the current default.
+
+## Read-only per server
+
+Setting `--read-only` on a server blocks every write tool when that server is the target, regardless of the process-wide `--read-only` flag. Useful for mirrors or production instances you only want to read.
+
+## Removing a server
+
 ```bash
-# Work on work project
-cd ~/projects/work-project
-# All tools use 'work' server automatically
-
-# Work on personal project
-cd ~/projects/side-project
-# All tools use 'personal' server automatically
+gitlab-mcp-server config remove old-server
 ```
 
-### Maintenance
+You can't remove the default server while others exist — switch the default first. Removing a server leaves the backend secret in place (the server never auto-deletes credentials it didn't create).
+
+## Common patterns
+
+### Work + personal, prompt-style workflow
+
 ```bash
-# Check all tokens
-listTokens
-
-# Update expired token
-updateToken {"name":"work","token":"glpat-newtoken"}
-
-# Check notifications
-getNotifications
+gitlab-mcp-server config add work     --host https://gitlab.company.com --backend keyring
+gitlab-mcp-server config add personal --host https://gitlab.com         --backend keyring
+gitlab-mcp-server config default work
+cd ~/repos/company-service && gitlab-mcp-server project init
+cd ~/repos/my-oss          && gitlab-mcp-server project init
 ```
+
+### CI / headless machine
+
+Keyring access is often unavailable on a CI runner. Store the token in an encrypted file and decrypt with a key in CI secrets:
+
+```bash
+gitlab-mcp-server config add ci --host https://gitlab.company.com --backend file
+```
+
+### Ops accounts with escalated privileges
+
+Record the admin account under its own name and pin it explicitly via `server` only when needed:
+
+```bash
+gitlab-mcp-server config add admin --host https://gitlab.company.com --token-ref op://Admin/gitlab/token
+```
+
+Tools default to your regular account; admin-only calls pass `"server": "admin"`.
+
+## See also
+
+- [CONFIGURATION.md](CONFIGURATION.md)
+- [PROJECT_CONFIG.md](PROJECT_CONFIG.md)
+- [TOKEN_MANAGEMENT.md](TOKEN_MANAGEMENT.md)
+- [SELF_HOSTED.md](SELF_HOSTED.md)

@@ -1,205 +1,96 @@
-# Self-Hosted GitLab
+# Self-hosted GitLab
 
-This guide covers connecting the GitLab MCP Server to self-managed GitLab instances.
+The server works with any GitLab.com or self-managed instance that speaks API v4. Most self-hosted setups need nothing beyond pointing at the right host; the notes below cover the handful of cases that do.
 
-## Overview
+## Pointing at your instance
 
-The GitLab MCP Server supports both GitLab.com and self-managed GitLab instances. You can connect to any GitLab instance by specifying the host URL.
-
-## Configuration
-
-### Using Environment Variable
-
-Set the `GITLAB_HOST` environment variable to your GitLab instance URL:
+Preferred: add it to the global config as a named server.
 
 ```bash
-export GITLAB_HOST="https://gitlab.example.com"
-./gitlab-mcp-server stdio
+gitlab-mcp-server config add company --host https://gitlab.company.com
+gitlab-mcp-server config validate
 ```
 
-### Using Command Line Flag
-
-Use the `--gitlab-host` flag:
+Legacy (env-var fallback, single server, plaintext token):
 
 ```bash
-./gitlab-mcp-server stdio --gitlab-host https://gitlab.example.com
+GITLAB_HOST=https://gitlab.company.com GITLAB_TOKEN=glpat-… gitlab-mcp-server stdio
 ```
 
-### Using MCP Configuration
-
-Configure in your MCP server configuration:
-
-```json
-{
-  "mcpServers": {
-    "gitlab-go-mcp": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<YOUR_TOKEN>",
-        "GITLAB_HOST": "https://gitlab.example.com"
-      }
-    }
-  }
-}
-```
-
-### Using Docker
+Docker:
 
 ```bash
 docker run -i --rm \
-  -e GITLAB_TOKEN=<your-token> \
-  -e GITLAB_HOST="https://gitlab.example.com" \
+  -e GITLAB_TOKEN=glpat-… \
+  -e GITLAB_HOST=https://gitlab.company.com \
   gitlab-mcp-server:latest
 ```
 
-## Access Token
+## Tokens
 
-Create an access token on your self-hosted GitLab instance:
+Any of Personal, Project, or Group Access Token works. Required scopes: **`api`** for full functionality, or `read_api` + `read_repository` for read-only. Create them in User / Project / Group → **Settings → Access Tokens**.
 
-1. Go to User Settings → Access Tokens (or Project/Group Settings for project/group tokens)
-2. Create a token with appropriate scopes
-3. Use this token in your MCP configuration
+## TLS and private CAs
 
-**Note:** The token must have access to the GitLab API endpoints you plan to use.
+The server uses Go's default TLS stack and trusts the system root store.
 
-## SSL/TLS Certificates
+- **Self-signed or private-CA certificates:** add the CA to the OS trust store, or point Go at a bundle:
 
-If your self-hosted GitLab uses a self-signed certificate, you may need to configure certificate validation:
+  ```bash
+  export SSL_CERT_FILE=/path/to/ca-bundle.pem
+  gitlab-mcp-server stdio
+  ```
 
-### Skip Certificate Verification (Not Recommended for Production)
+- **Docker:** either bake your CA into a custom image, or mount it:
+
+  ```bash
+  docker run -i --rm \
+    -v /etc/ssl/certs/company-ca.crt:/etc/ssl/certs/company-ca.crt:ro \
+    -e SSL_CERT_FILE=/etc/ssl/certs/company-ca.crt \
+    -e GITLAB_TOKEN=glpat-… \
+    -e GITLAB_HOST=https://gitlab.company.com \
+    gitlab-mcp-server:latest
+  ```
+
+There is no flag to skip TLS verification. Fix the trust chain instead.
+
+## Multiple instances side by side
+
+Add as many servers as you need; tool calls can target a specific one via the `server` argument.
 
 ```bash
-export GITLAB_SKIP_TLS_VERIFY=true
-./gitlab-mcp-server stdio
+gitlab-mcp-server config add work     --host https://gitlab.company.com --token-ref op://Work/gitlab/token
+gitlab-mcp-server config add personal --host https://gitlab.com
+gitlab-mcp-server config add mirror   --host https://gitlab.internal --read-only
 ```
 
-**Warning:** Only use this in development environments. Skipping TLS verification exposes you to man-in-the-middle attacks.
+Details: [MULTI_SERVER_SETUP.md](MULTI_SERVER_SETUP.md). For stricter per-call routing, set `GITLAB_MCP_STRICT_RESOLVER=1` (see [CONFIGURATION.md](CONFIGURATION.md)).
 
-### Custom CA Certificate
+## Per-project pinning
 
-For production, add your CA certificate to the system trust store or configure Go to use it:
+In a repository managed on your self-hosted instance:
 
 ```bash
-export SSL_CERT_FILE=/path/to/ca-cert.pem
-./gitlab-mcp-server stdio
+cd your-project
+gitlab-mcp-server project init
 ```
 
-## API Version
-
-The server uses GitLab API v4 by default. Most self-hosted instances support v4, but if you're using an older version, you may need to check compatibility.
-
-## Multi-Server Setup
-
-You can configure multiple GitLab instances (both GitLab.com and self-hosted):
-
-```json
-{
-  "mcpServers": {
-    "work": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<work-token>",
-        "GITLAB_HOST": "https://gitlab.company.com"
-      }
-    },
-    "personal": {
-      "command": "/path/to/gitlab-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITLAB_TOKEN": "<personal-token>",
-        "GITLAB_HOST": "https://gitlab.com"
-      }
-    }
-  }
-}
-```
-
-See [Multi-Server Setup](MULTI_SERVER_SETUP.md) for detailed instructions.
-
-## Project Configuration
-
-When working with self-hosted instances, specify the host in your `.gmcprc` file:
-
-```json
-{
-  "projectId": "group/project",
-  "gitlabHost": "https://gitlab.example.com"
-}
-```
-
-Or use the `setCurrentProject` tool:
-
-```
-> setCurrentProject {
-  "projectId": "group/project",
-  "gitlabHost": "https://gitlab.example.com"
-}
-```
+This auto-detects from `.git/config` and writes `.gmcprc`. When multiple servers are configured, set `"server": "work"` in `.gmcprc` (or run `project init` after making the matching server the default). Schema details: [PROJECT_CONFIG.md](PROJECT_CONFIG.md).
 
 ## Troubleshooting
 
-### Connection Errors
+**`x509: certificate signed by unknown authority`** — install the CA or set `SSL_CERT_FILE` as above.
 
-**Problem:** Cannot connect to self-hosted GitLab
+**`401 Unauthorized` on a self-hosted instance that worked on GitLab.com** — tokens are per-instance; create a new one on the self-hosted side. Confirm the token still has the right scopes.
 
-**Solution:**
-- Verify the URL is correct (include `https://` or `http://`)
-- Check network connectivity
-- Verify the GitLab instance is accessible
-- Check firewall rules
+**Wrong host after `config add`** — Use `config validate`; the command rewrites `userId`/`username` against the current host so a mismatched host fails fast.
 
-### Authentication Errors
+**`server "X" not found` in tool calls** — names are case-sensitive and must match the global config exactly. List them with `config list`.
 
-**Problem:** 401 Unauthorized errors
+## See also
 
-**Solution:**
-- Verify token is valid for your self-hosted instance
-- Check token has required scopes
-- Ensure `GITLAB_HOST` matches your instance URL exactly
-- Verify token hasn't expired
-
-### SSL Certificate Errors
-
-**Problem:** Certificate verification errors
-
-**Solution:**
-- For development: Set `GITLAB_SKIP_TLS_VERIFY=true` (not recommended for production)
-- For production: Add CA certificate to system trust store
-- Verify certificate is valid and not expired
-
-### API Version Issues
-
-**Problem:** API calls fail with version errors
-
-**Solution:**
-- Verify your GitLab instance supports API v4
-- Check GitLab version compatibility
-- Review GitLab API documentation for your version
-
-### Project Not Found
-
-**Problem:** Projects not found on self-hosted instance
-
-**Solution:**
-- Verify project ID format (may differ from GitLab.com)
-- Check you have access to the project
-- Ensure `GITLAB_HOST` is set correctly
-- Verify project exists on the instance
-
-## Best Practices
-
-1. **Use HTTPS**: Always use HTTPS for self-hosted instances in production
-2. **Validate Certificates**: Don't skip certificate verification in production
-3. **Token Security**: Store tokens securely, never commit them to version control
-4. **Network Security**: Ensure network connections are secure
-5. **Token Scopes**: Grant only necessary permissions to tokens
-
-## Related Documentation
-
-- [Installation Guide](INSTALLATION.md) - Server installation
-- [Token Management](TOKEN_MANAGEMENT.md) - Managing access tokens
-- [Multi-Server Setup](MULTI_SERVER_SETUP.md) - Configuring multiple instances
-- [Project Configuration](PROJECT_CONFIG.md) - Project-specific settings
-
+- [INSTALLATION.md](INSTALLATION.md)
+- [CONFIGURATION.md](CONFIGURATION.md)
+- [TOKEN_MANAGEMENT.md](TOKEN_MANAGEMENT.md)
+- [MULTI_SERVER_SETUP.md](MULTI_SERVER_SETUP.md)
+- [PROJECT_CONFIG.md](PROJECT_CONFIG.md)

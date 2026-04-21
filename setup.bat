@@ -4,7 +4,7 @@ REM Installs prerequisites and optionally runs the MCP installer
 
 setlocal enabledelayedexpansion
 
-set GO_VERSION_MIN=1.23
+set GO_VERSION_MIN=1.25
 set BINARY_NAME=gitlab-mcp-server
 set INSTALLER_SCRIPT=scripts\install.js
 

@@ -12,7 +12,7 @@ This project adheres to a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By 
 
 Before contributing, ensure you have the following installed:
 
-1. **Go 1.23 or later**
+1. **Go 1.25 or later** (the module declares `go 1.25.9`)
    - [Download Go](https://go.dev/doc/install)
    - [Install via Homebrew](https://formulae.brew.sh/formula/go) (macOS)
 
@@ -130,7 +130,7 @@ Before submitting a PR, ensure:
 
 ## Testing
 
-This project maintains high test coverage (88.9%). See [TESTING.md](TESTING.md) for detailed testing guidelines.
+This project maintains high test coverage (~89%). See [TESTING.md](TESTING.md) for details and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the broader contributor overview (architecture, package layout, how to add tools).
 
 ### Running Tests
 
