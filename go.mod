@@ -13,14 +13,13 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.20.0
 	github.com/stretchr/testify v1.11.1
-	github.com/zalando/go-keyring v0.2.6
+	github.com/zalando/go-keyring v0.2.8
 	gitlab.com/gitlab-org/api/client-go v1.46.0
 	go.uber.org/mock v0.6.0
 	golang.org/x/term v0.42.0
 )
 
 require (
-	al.essio.dev/pkg/shellescape v1.6.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/awnumar/memcall v0.4.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
