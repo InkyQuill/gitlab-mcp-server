@@ -3,6 +3,8 @@ package gitlab
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,9 +13,20 @@ import (
 	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
+// ClientInfo describes a GitLab client registered in the pool.
+type ClientInfo struct {
+	Name     string
+	Host     string
+	APIHost  string
+	ReadOnly bool
+	UserID   int64
+	Username string
+}
+
 // ClientPool manages multiple GitLab clients for different servers
 type ClientPool struct {
 	clients map[string]*gl.Client // key: server name
+	info    map[string]ClientInfo
 	store   *TokenStore
 	logger  *log.Logger
 	mu      sync.RWMutex
@@ -23,6 +36,7 @@ type ClientPool struct {
 func NewClientPool(store *TokenStore, logger *log.Logger) *ClientPool {
 	return &ClientPool{
 		clients: make(map[string]*gl.Client),
+		info:    make(map[string]ClientInfo),
 		store:   store,
 		logger:  logger,
 	}
@@ -30,18 +44,27 @@ func NewClientPool(store *TokenStore, logger *log.Logger) *ClientPool {
 
 // AddClient adds a new client to the pool
 func (cp *ClientPool) AddClient(name string, client *gl.Client) error {
-	if name == "" {
+	return cp.AddClientWithInfo(ClientInfo{Name: name}, client)
+}
+
+// AddClientWithInfo adds a new client and its metadata to the pool.
+func (cp *ClientPool) AddClientWithInfo(info ClientInfo, client *gl.Client) error {
+	if info.Name == "" {
 		return fmt.Errorf("client name cannot be empty")
 	}
 	if client == nil {
 		return fmt.Errorf("client cannot be nil")
 	}
+	if info.APIHost == "" {
+		info.APIHost = info.Host
+	}
 
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
 
-	cp.clients[name] = client
-	cp.logger.Infof("Added client '%s' to pool", name)
+	cp.clients[info.Name] = client
+	cp.info[info.Name] = info
+	cp.logger.Infof("Added client '%s' to pool", info.Name)
 	return nil
 }
 
@@ -56,6 +79,59 @@ func (cp *ClientPool) GetClient(name string) (*gl.Client, error) {
 	}
 
 	return client, nil
+}
+
+// GetClientInfo retrieves metadata for a client by name.
+func (cp *ClientPool) GetClientInfo(name string) (ClientInfo, error) {
+	cp.mu.RLock()
+	defer cp.mu.RUnlock()
+
+	info, ok := cp.info[name]
+	if !ok {
+		return ClientInfo{}, fmt.Errorf("client '%s' not found in pool", name)
+	}
+	return info, nil
+}
+
+// ListClientInfo returns metadata for all clients in the pool.
+func (cp *ClientPool) ListClientInfo() []ClientInfo {
+	cp.mu.RLock()
+	defer cp.mu.RUnlock()
+
+	infos := make([]ClientInfo, 0, len(cp.info))
+	for _, info := range cp.info {
+		infos = append(infos, info)
+	}
+	return infos
+}
+
+// FindClientByHost finds a client whose Host or APIHost matches host.
+// Duplicate host matches return the lexicographically first server name.
+func (cp *ClientPool) FindClientByHost(host string) (string, ClientInfo, bool) {
+	normalized := normalizePoolHost(host)
+	if normalized == "" {
+		return "", ClientInfo{}, false
+	}
+
+	cp.mu.RLock()
+	defer cp.mu.RUnlock()
+
+	matches := make([]string, 0)
+	for name, info := range cp.info {
+		if normalizePoolHost(info.Host) == normalized || normalizePoolHost(info.APIHost) == normalized {
+			matches = append(matches, name)
+		}
+	}
+	if len(matches) == 0 {
+		return "", ClientInfo{}, false
+	}
+	sort.Strings(matches)
+	name := matches[0]
+	return name, cp.info[name], true
+}
+
+func normalizePoolHost(host string) string {
+	return strings.ToLower(strings.TrimSuffix(strings.TrimSpace(host), "/"))
 }
 
 // GetDefaultClient returns the default client ("default" or first available)
@@ -98,6 +174,7 @@ func (cp *ClientPool) RemoveClient(name string) error {
 	}
 
 	delete(cp.clients, name)
+	delete(cp.info, name)
 	cp.logger.Infof("Removed client '%s' from pool", name)
 	return nil
 }
@@ -105,6 +182,11 @@ func (cp *ClientPool) RemoveClient(name string) error {
 // InitializeFromEnv initializes clients from environment variables and token store
 // This is called during server startup to set up the initial client(s)
 func (cp *ClientPool) InitializeFromEnv(ctx context.Context, token string, host string) error {
+	actualHost := host
+	if actualHost == "" {
+		actualHost = "https://gitlab.com"
+	}
+
 	// Create client options
 	clientOpts := []gl.ClientOptionFunc{}
 	if host != "" && host != "https://gitlab.com" {
@@ -126,7 +208,11 @@ func (cp *ClientPool) InitializeFromEnv(ctx context.Context, token string, host 
 	}
 
 	// Add to pool
-	if err := cp.AddClient(serverName, glClient); err != nil {
+	if err := cp.AddClientWithInfo(ClientInfo{
+		Name:    serverName,
+		Host:    actualHost,
+		APIHost: actualHost,
+	}, glClient); err != nil {
 		return err
 	}
 
@@ -159,7 +245,14 @@ func (cp *ClientPool) AddServerFromConfig(ctx context.Context, server *config.Se
 	if err != nil {
 		return fmt.Errorf("failed to create GitLab client: %w", err)
 	}
-	if err := cp.AddClient(server.Name, glClient); err != nil {
+	if err := cp.AddClientWithInfo(ClientInfo{
+		Name:     server.Name,
+		Host:     server.Host,
+		APIHost:  server.Host,
+		ReadOnly: server.ReadOnly,
+		UserID:   server.UserID,
+		Username: server.Username,
+	}, glClient); err != nil {
 		return err
 	}
 	metadata := &TokenMetadata{
@@ -230,7 +323,14 @@ func (cp *ClientPool) initializeServer(ctx context.Context, name string, server 
 	}
 
 	// Add to pool
-	if err := cp.AddClient(name, glClient); err != nil {
+	if err := cp.AddClientWithInfo(ClientInfo{
+		Name:     name,
+		Host:     server.Host,
+		APIHost:  server.Host,
+		ReadOnly: server.ReadOnly,
+		UserID:   server.UserID,
+		Username: server.Username,
+	}, glClient); err != nil {
 		return err
 	}
 
