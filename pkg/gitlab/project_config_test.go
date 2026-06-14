@@ -510,6 +510,44 @@ func TestParseGitLabURL(t *testing.T) {
 	}
 }
 
+func TestParseGitRemoteCandidates(t *testing.T) {
+	configData := []byte(`[remote "upstream"]
+	url = https://gitlab.com/group/upstream.git
+[remote "origin"]
+	url = git@gitlab.example.com:team/repo.git
+[remote "mirror"]
+	url = /srv/git/local.git
+`)
+
+	candidates, err := ParseGitRemoteCandidates(configData)
+	require.NoError(t, err)
+	require.Len(t, candidates, 2)
+
+	assert.Equal(t, GitRemoteCandidate{
+		RemoteName: "upstream",
+		URL:        "https://gitlab.com/group/upstream.git",
+		ProjectID:  "group/upstream",
+		Host:       "https://gitlab.com",
+	}, candidates[0])
+	assert.Equal(t, GitRemoteCandidate{
+		RemoteName: "origin",
+		URL:        "git@gitlab.example.com:team/repo.git",
+		ProjectID:  "team/repo",
+		Host:       "https://gitlab.example.com",
+	}, candidates[1])
+}
+
+func TestParseGitRemoteCandidates_GitHubHardError(t *testing.T) {
+	configData := []byte(`[remote "origin"]
+	url = https://github.com/owner/repo.git
+`)
+
+	candidates, err := ParseGitRemoteCandidates(configData)
+	require.Error(t, err)
+	assert.Nil(t, candidates)
+	assert.Contains(t, err.Error(), "GitHub repository detected")
+}
+
 func TestParseGitRemotes(t *testing.T) {
 	tests := []struct {
 		name          string

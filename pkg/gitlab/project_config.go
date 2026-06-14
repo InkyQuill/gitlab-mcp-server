@@ -170,6 +170,56 @@ func findGitDir(startDir string) string {
 	}
 }
 
+type GitRemoteCandidate struct {
+	RemoteName string
+	URL        string
+	ProjectID  string
+	Host       string
+}
+
+func ParseGitRemoteCandidates(configData []byte) ([]GitRemoteCandidate, error) {
+	lines := bytes.Split(configData, []byte{'\n'})
+	candidates := make([]GitRemoteCandidate, 0)
+	currentRemote := ""
+
+	for _, line := range lines {
+		trimmed := bytes.TrimSpace(line)
+		if bytes.HasPrefix(trimmed, []byte("[remote ")) {
+			currentRemote = parseRemoteSectionName(string(trimmed))
+			continue
+		}
+		if currentRemote == "" || !bytes.HasPrefix(trimmed, []byte("url = ")) {
+			continue
+		}
+
+		rawURL := strings.TrimSpace(string(trimmed[6:]))
+		projectID, host, err := parseGitLabURL(rawURL)
+		if err != nil {
+			return nil, err
+		}
+		if projectID == "" || host == "" {
+			continue
+		}
+		candidates = append(candidates, GitRemoteCandidate{
+			RemoteName: currentRemote,
+			URL:        rawURL,
+			ProjectID:  projectID,
+			Host:       host,
+		})
+	}
+
+	return candidates, nil
+}
+
+func parseRemoteSectionName(section string) string {
+	const prefix = `[remote "`
+	const suffix = `"]`
+	if !strings.HasPrefix(section, prefix) || !strings.HasSuffix(section, suffix) {
+		return ""
+	}
+	return strings.TrimSuffix(strings.TrimPrefix(section, prefix), suffix)
+}
+
 // parseGitRemotes parses .git/config content to extract GitLab remote
 func parseGitRemotes(configData []byte) (projectID, gitlabHost string, err error) {
 	lines := bytes.Split(configData, []byte{'\n'})
