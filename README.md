@@ -84,7 +84,7 @@ The server reads configuration (in this order of precedence):
 | `GITLAB_LOG_FILE` | `--log-file` | Write logs to this path instead of stderr. |
 | `GITLAB_USE_SECURE_MEMORY` | `--use-secure-memory` | Store tokens in memguard-protected memory. |
 | `GITLAB_EXPORT_TRANSLATIONS` | `--export-translations` | Dump translation keys and exit. |
-| `GITLAB_MCP_STRICT_RESOLVER` | _(no flag)_ | `1` to disable fallback resolution; every request must specify a known server. |
+| `GITLAB_MCP_STRICT_RESOLVER` | _(no flag)_ | `1` to disable unresolved/default fallback; normal GitLab API requests must resolve to a known server. |
 
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the full schema, secret backend setup, and precedence rules.
 
