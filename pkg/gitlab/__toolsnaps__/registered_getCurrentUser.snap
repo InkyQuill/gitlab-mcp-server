@@ -1,0 +1,18 @@
+{
+  "annotations": {
+    "title": "Get Current GitLab User",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_CURRENT_USER_DESCRIPTION",
+  "inputSchema": {
+    "properties": {
+      "server": {
+        "description": "Configured GitLab server name. Overrides .gmcprc/default routing for this call.",
+        "type": "string"
+      }
+    },
+    "required": [],
+    "type": "object"
+  },
+  "name": "getCurrentUser"
+}

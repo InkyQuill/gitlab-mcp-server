@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/InkyQuill/gitlab-mcp-server/internal/toolsnaps"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	log "github.com/sirupsen/logrus"
@@ -188,6 +189,55 @@ func TestInitToolsets_DoesNotOverwriteProjectConfigServerParameter(t *testing.T)
 	require.True(t, ok)
 	assert.Contains(t, description, "auto-detected from Git remote")
 	assert.NotContains(t, description, "Overrides .gmcprc/default routing")
+}
+
+func TestInitToolsets_RegisteredToolSchemaSnapshots(t *testing.T) {
+	allowWritesPolicy := func(context.Context) (ServerPolicy, error) {
+		return ServerPolicy{Name: "default"}, nil
+	}
+	tg, err := InitToolsets([]string{"all"}, false, mockGetClientFn, nil, NewTokenStore(), nil, false, allowWritesPolicy)
+	require.NoError(t, err)
+
+	routedToolsets := map[string]bool{
+		"projects":         true,
+		"issues":           true,
+		"merge_requests":   true,
+		"security":         true,
+		"users":            true,
+		"search":           true,
+		"tags":             true,
+		"pipeline_jobs":    true,
+		"project_config":   false,
+		"token_management": false,
+	}
+
+	for toolsetName, toolset := range tg.Toolsets {
+		expectsRouting, knownToolset := routedToolsets[toolsetName]
+		require.True(t, knownToolset, "registered snapshot test must classify routing behavior for toolset %s", toolsetName)
+
+		for _, serverTool := range toolset.Tools() {
+			tool := serverTool.Tool
+			require.NoError(t, toolsnaps.Test("registered_"+tool.Name, tool), "registered tool schema should match snapshot")
+
+			serverProperty, hasServer := tool.InputSchema.Properties["server"]
+			if expectsRouting {
+				require.True(t, hasServer, "registered GitLab API tool %s should accept routing server", tool.Name)
+				serverSchema, ok := serverProperty.(map[string]any)
+				require.True(t, ok, "server schema for %s should be an object", tool.Name)
+				assert.Equal(t, "string", serverSchema["type"])
+				assert.Equal(t, "Configured GitLab server name. Overrides .gmcprc/default routing for this call.", serverSchema["description"])
+				continue
+			}
+
+			if !hasServer {
+				continue
+			}
+			serverSchema, ok := serverProperty.(map[string]any)
+			require.True(t, ok, "server schema for %s should be an object", tool.Name)
+			description, _ := serverSchema["description"].(string)
+			assert.NotContains(t, description, "Overrides .gmcprc/default routing", "tool %s should preserve non-routing server semantics", tool.Name)
+		}
+	}
 }
 
 func TestInitToolsets_WriteGuardRejectsReadOnlyServer(t *testing.T) {

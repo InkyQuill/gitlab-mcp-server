@@ -2,7 +2,7 @@
 
 This is a catalog of MCP tools registered by the server. Tools are grouped into toolsets; enable a subset via `--toolsets` or the `GITLAB_TOOLSETS` env var. Normal GitLab API tools accept a `server` argument (optional) to pick which configured GitLab instance to use. When omitted, the resolver uses `.gmcprc` and then the configured default in legacy mode. Strict mode rejects unresolved calls. Project-config and token-management tools keep their own existing semantics.
 
-> **Authoritative schemas live in the code.** Parameter names, types, and descriptions are generated from `pkg/gitlab/*.go` and snapshotted in `pkg/gitlab/__toolsnaps__/*.json`. When in doubt, read the snapshot for the tool — it's the exact JSON schema the LLM sees.
+> **Authoritative schemas live in the code.** Parameter names, types, and descriptions are generated from `pkg/gitlab/*.go`, then normal GitLab API tools are wrapped with routing metadata when toolsets are initialized. Constructor snapshots in `pkg/gitlab/__toolsnaps__/<tool>.snap` cover raw tool definitions; `pkg/gitlab/__toolsnaps__/registered_<tool>.snap` covers the registered schema exposed to MCP clients and LLMs.
 
 ## Action-based consolidation
 
@@ -151,6 +151,7 @@ See [DYNAMIC_TOOLS.md](DYNAMIC_TOOLS.md).
 
 ## Where to look for exact schemas
 
-- `pkg/gitlab/__toolsnaps__/*.json` — canonical JSON schema for each tool, committed to the repo.
-- The tool definition in `pkg/gitlab/*.go` — look at `mcp.NewTool(…)` calls.
+- `pkg/gitlab/__toolsnaps__/registered_<tool>.snap` — canonical registered JSON schema exposed to MCP clients and LLMs, including routing wrappers where applicable.
+- `pkg/gitlab/__toolsnaps__/<tool>.snap` — constructor-level JSON schema for each raw tool definition.
+- The tool definition in `pkg/gitlab/*.go` and wrapper setup in `pkg/gitlab/toolsets.go`.
 - Dump live: `gitlab-mcp-server stdio --export-translations` writes every translation key, which is a proxy for the tool/parameter inventory.

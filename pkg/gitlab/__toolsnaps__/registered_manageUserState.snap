@@ -1,0 +1,38 @@
+{
+  "annotations": {
+    "title": "Manage GitLab User State",
+    "readOnlyHint": false
+  },
+  "description": "TOOL_MANAGE_USER_STATE_DESCRIPTION",
+  "inputSchema": {
+    "properties": {
+      "action": {
+        "description": "The administrative action to perform on the user",
+        "enum": [
+          "block",
+          "unblock",
+          "ban",
+          "unban",
+          "activate",
+          "deactivate",
+          "approve"
+        ],
+        "type": "string"
+      },
+      "server": {
+        "description": "Configured GitLab server name. Overrides .gmcprc/default routing for this call.",
+        "type": "string"
+      },
+      "userId": {
+        "description": "The ID of the user",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId",
+      "action"
+    ],
+    "type": "object"
+  },
+  "name": "manageUserState"
+}

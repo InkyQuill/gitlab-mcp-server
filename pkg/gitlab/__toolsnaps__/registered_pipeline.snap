@@ -1,0 +1,37 @@
+{
+  "annotations": {
+    "title": "Control Pipeline"
+  },
+  "description": "TOOL_PIPELINE_DESCRIPTION",
+  "inputSchema": {
+    "properties": {
+      "action": {
+        "description": "The action to perform on the pipeline.",
+        "enum": [
+          "cancel",
+          "retry"
+        ],
+        "type": "string"
+      },
+      "pipelineId": {
+        "description": "The ID of the pipeline.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "server": {
+        "description": "Configured GitLab server name. Overrides .gmcprc/default routing for this call.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "action",
+      "projectId",
+      "pipelineId"
+    ],
+    "type": "object"
+  },
+  "name": "pipeline"
+}
