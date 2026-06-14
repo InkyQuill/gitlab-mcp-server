@@ -10,7 +10,7 @@ __debug_bin*
 
 # Go
 vendor
-gitlab-mcp-server
+/gitlab-mcp-server
 bin/
 
 PDR.md
