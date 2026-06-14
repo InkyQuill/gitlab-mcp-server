@@ -16,10 +16,10 @@ import (
 // host recorded in the server's config.
 var ErrHostMismatch = errors.New("configured server host does not match API host")
 
-// StrictResolver picks a GitLab client based strictly on .gmcprc. No fallbacks,
-// no host-based matching, no default-server cascade. On first use per session
-// per server it verifies the API host matches the configured host and caches
-// the pass/fail.
+// StrictResolver picks a GitLab client from explicit request-scoped server
+// selection first, then strictly from .gmcprc. No fallbacks, no host-based
+// matching, no default-server cascade. On first use per session per server it
+// verifies the API host matches the configured host and caches the pass/fail.
 type StrictResolver struct {
 	pool         *ClientPool
 	serverHosts  map[string]string
@@ -41,7 +41,8 @@ func NewStrictResolver(pool *ClientPool, serverHosts map[string]string, logger *
 	}
 }
 
-// Resolve returns (client, serverName, error). It NEVER falls back.
+// Resolve returns (client, serverName, error). It checks explicit
+// request-scoped server selection before .gmcprc and NEVER falls back.
 func (r *StrictResolver) Resolve(ctx context.Context) (*gl.Client, string, error) {
 	if requestedServer, ok := RequestedServerFromContext(ctx); ok {
 		return r.resolveNamed(ctx, requestedServer)
