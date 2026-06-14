@@ -52,7 +52,7 @@ gitlab-mcp-server project init
 
 `project init` detects the remote host and records the matching server in `.gmcprc`.
 
-**Explicit argument on the tool call.** Any tool accepts a `server` argument that takes precedence:
+**Explicit argument on the tool call.** Normal GitLab API tools accept a `server` argument that takes precedence:
 
 ```json
 { "name": "listIssues", "arguments": { "server": "personal", "projectId": "user/oss" } }
@@ -81,6 +81,8 @@ Only one server is default at any time. `config list` marks the current default.
 ## Read-only per server
 
 Setting `--read-only` on a server blocks every write tool when that server is the target, regardless of the process-wide `--read-only` flag. Useful for mirrors or production instances you only want to read.
+
+Per-server read-only mode is enforced when a write tool runs. This means a write tool may still appear in the tool list, but calls targeting a read-only server fail before making a GitLab API request.
 
 ## Removing a server
 

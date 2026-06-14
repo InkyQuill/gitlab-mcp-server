@@ -1,6 +1,6 @@
 # Tools reference
 
-This is a catalog of MCP tools registered by the server. Tools are grouped into toolsets; enable a subset via `--toolsets` or the `GITLAB_TOOLSETS` env var. Every tool accepts a `server` argument (optional) to pick which configured GitLab instance to use.
+This is a catalog of MCP tools registered by the server. Tools are grouped into toolsets; enable a subset via `--toolsets` or the `GITLAB_TOOLSETS` env var. Normal GitLab API tools accept a `server` argument (optional) to pick which configured GitLab instance to use. When omitted, the resolver uses `.gmcprc` and then the configured default in legacy mode. Strict mode rejects unresolved calls. Project-config and token-management tools keep their own existing semantics.
 
 > **Authoritative schemas live in the code.** Parameter names, types, and descriptions are generated from `pkg/gitlab/*.go` and snapshotted in `pkg/gitlab/__toolsnaps__/*.json`. When in doubt, read the snapshot for the tool — it's the exact JSON schema the LLM sees.
 
