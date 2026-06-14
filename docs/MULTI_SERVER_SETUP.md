@@ -50,7 +50,13 @@ cd ~/projects/my-oss             # uses `personal`
 gitlab-mcp-server project init
 ```
 
-`project init` detects the remote host and records the matching server in `.gmcprc`.
+`project init` detects the remote host and records the matching server in `.gmcprc` when exactly one configured server matches that host. If a repository has several GitLab remotes, detection filters to configured hosts first and then prefers `origin`, `gitlab`, or `upstream` only when one clear remote remains.
+
+If several remotes or configured servers still match, `project init` reports the ambiguity instead of guessing. Recover by pinning the project and server explicitly:
+
+```bash
+gitlab-mcp-server project init group/project --server work
+```
 
 **Explicit argument on the tool call.** Normal GitLab API tools accept a `server` argument that takes precedence:
 
