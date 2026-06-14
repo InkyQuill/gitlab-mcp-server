@@ -65,6 +65,17 @@ func TestClientResolver_Resolve_ExplicitServerFromContext(t *testing.T) {
 	require.NoError(t, pool.AddClient("work", workClient))
 	require.NoError(t, pool.AddClient("personal", personalClient))
 
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".gmcprc")
+	configContent := `{"projectId":"g/p","server":"work"}`
+	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+
+	require.NoError(t, os.Chdir(tmpDir))
+
 	resolver := NewClientResolver(pool, "work", logger)
 	client, name, err := resolver.Resolve(WithRequestedServer(context.Background(), "personal"))
 	require.NoError(t, err)
