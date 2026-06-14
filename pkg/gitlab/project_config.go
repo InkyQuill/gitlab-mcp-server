@@ -226,6 +226,71 @@ func parseRemoteSectionName(section string) string {
 	return strings.TrimSuffix(strings.TrimPrefix(section, prefix), suffix)
 }
 
+func NormalizeGitLabHost(host string) string {
+	host = strings.TrimSpace(strings.ToLower(strings.TrimSuffix(host, "/")))
+	if host == "" {
+		return ""
+	}
+	if !strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://") {
+		host = "https://" + host
+	}
+	return host
+}
+
+func SelectGitRemoteCandidate(candidates []GitRemoteCandidate, allowedHosts []string) (GitRemoteCandidate, error) {
+	filtered := filterCandidatesByAllowedHosts(candidates, allowedHosts)
+	if len(filtered) == 0 {
+		return GitRemoteCandidate{}, fmt.Errorf("no GitLab remote found in .git/config")
+	}
+	if len(filtered) == 1 {
+		return filtered[0], nil
+	}
+
+	for _, preferred := range []string{"origin", "gitlab", "upstream"} {
+		matches := make([]GitRemoteCandidate, 0, 1)
+		for _, candidate := range filtered {
+			if candidate.RemoteName == preferred {
+				matches = append(matches, candidate)
+			}
+		}
+		if len(matches) == 1 {
+			return matches[0], nil
+		}
+	}
+
+	return GitRemoteCandidate{}, fmt.Errorf("ambiguous GitLab remotes: %s", formatRemoteCandidates(filtered))
+}
+
+func filterCandidatesByAllowedHosts(candidates []GitRemoteCandidate, allowedHosts []string) []GitRemoteCandidate {
+	if len(allowedHosts) == 0 {
+		return candidates
+	}
+
+	allowed := make(map[string]struct{}, len(allowedHosts))
+	for _, host := range allowedHosts {
+		normalized := NormalizeGitLabHost(host)
+		if normalized != "" {
+			allowed[normalized] = struct{}{}
+		}
+	}
+
+	filtered := make([]GitRemoteCandidate, 0, len(candidates))
+	for _, candidate := range candidates {
+		if _, ok := allowed[NormalizeGitLabHost(candidate.Host)]; ok {
+			filtered = append(filtered, candidate)
+		}
+	}
+	return filtered
+}
+
+func formatRemoteCandidates(candidates []GitRemoteCandidate) string {
+	parts := make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		parts = append(parts, fmt.Sprintf("%s=%s on %s", candidate.RemoteName, candidate.ProjectID, candidate.Host))
+	}
+	return strings.Join(parts, ", ")
+}
+
 // parseGitRemotes parses .git/config content to extract GitLab remote
 func parseGitRemotes(configData []byte) (projectID, gitlabHost string, err error) {
 	lines := bytes.Split(configData, []byte{'\n'})

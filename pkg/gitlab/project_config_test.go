@@ -600,6 +600,48 @@ func TestParseGitRemoteCandidates_URLAssignmentSpacing(t *testing.T) {
 	}
 }
 
+func TestSelectGitRemoteCandidate_MatchesAllowedHost(t *testing.T) {
+	candidates := []GitRemoteCandidate{
+		{RemoteName: "origin", ProjectID: "oss/repo", Host: "https://gitlab.com"},
+		{RemoteName: "work", ProjectID: "team/repo", Host: "https://gitlab.example.com"},
+	}
+
+	selected, err := SelectGitRemoteCandidate(candidates, []string{"https://gitlab.example.com/"})
+	require.NoError(t, err)
+	assert.Equal(t, "work", selected.RemoteName)
+	assert.Equal(t, "team/repo", selected.ProjectID)
+}
+
+func TestSelectGitRemoteCandidate_PrefersOriginWhenNoHostFilter(t *testing.T) {
+	candidates := []GitRemoteCandidate{
+		{RemoteName: "upstream", ProjectID: "group/upstream", Host: "https://gitlab.com"},
+		{RemoteName: "origin", ProjectID: "group/repo", Host: "https://gitlab.com"},
+	}
+
+	selected, err := SelectGitRemoteCandidate(candidates, nil)
+	require.NoError(t, err)
+	assert.Equal(t, "origin", selected.RemoteName)
+	assert.Equal(t, "group/repo", selected.ProjectID)
+}
+
+func TestSelectGitRemoteCandidate_AmbiguousWhenMultipleRemain(t *testing.T) {
+	candidates := []GitRemoteCandidate{
+		{RemoteName: "work", ProjectID: "team/api", Host: "https://gitlab.example.com"},
+		{RemoteName: "mirror", ProjectID: "team/api-mirror", Host: "https://gitlab.example.com"},
+	}
+
+	_, err := SelectGitRemoteCandidate(candidates, []string{"https://gitlab.example.com"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "ambiguous GitLab remotes")
+	assert.Contains(t, err.Error(), "work")
+	assert.Contains(t, err.Error(), "mirror")
+}
+
+func TestNormalizeGitLabHost(t *testing.T) {
+	assert.Equal(t, "https://gitlab.example.com", NormalizeGitLabHost("https://GitLab.Example.com/"))
+	assert.Equal(t, "https://gitlab.example.com", NormalizeGitLabHost("gitlab.example.com"))
+}
+
 func TestParseGitRemotes(t *testing.T) {
 	tests := []struct {
 		name          string
