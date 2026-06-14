@@ -327,6 +327,8 @@ Errors should be structured enough for agents to recover:
 
 ## Capability Matrix Seed
 
+The full Phase 0 inventory lives in [2026-06-14-glab-parity-inventory.md](2026-06-14-glab-parity-inventory.md). The table below is a high-level seed retained for roadmap readability.
+
 | Glab family | Roadmap status | MCP direction |
 |---|---|---|
 | `api` | add | Scoped generic API passthrough. |
@@ -378,4 +380,4 @@ References inspected while drafting:
 
 ## Next Step
 
-After this roadmap is approved, create the first implementation-planning artifact for **Phase 0: Parity Inventory** or **Phase 1: Multi-Instance Foundation**. Phase 1 is the recommended engineering start because safe server selection affects every later domain.
+Phase 1's first routing/read-only slice is implemented in [../plans/2026-06-14-multi-instance-routing-foundation.md](../plans/2026-06-14-multi-instance-routing-foundation.md). The next planning artifact is Phase 0 inventory: [../plans/2026-06-14-parity-inventory.md](../plans/2026-06-14-parity-inventory.md). After the inventory is complete, choose between the remaining Phase 1 slices (`project detection`, `strict-by-default migration`, `self-managed TLS`, `CI/job-token auth`) and Phase 2 output normalization.
