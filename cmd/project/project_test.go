@@ -1,10 +1,13 @@
 package project
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
+	pkgConfig "github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/gitlab"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -176,6 +179,77 @@ func TestDetectFromGit_GitHubRemote(t *testing.T) {
 	assert.Contains(t, err.Error(), "GitHub repository detected")
 }
 
+func TestInitCommand_UsesConfiguredHostToSelectRemote(t *testing.T) {
+	resetInitFlags(t)
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	repoDir := filepath.Join(tmpDir, "repo")
+	t.Setenv("HOME", homeDir)
+
+	mgr, err := pkgConfig.NewManager("")
+	require.NoError(t, err)
+	require.NoError(t, mgr.AddServer(&pkgConfig.ServerConfig{
+		Name:  "work",
+		Host:  "https://gitlab.example.com",
+		Token: "test-token",
+	}))
+	require.NoError(t, mgr.Save())
+
+	gitDir := filepath.Join(repoDir, ".git")
+	require.NoError(t, os.MkdirAll(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(`[remote "origin"]
+	url = https://gitlab.com/group/public.git
+[remote "upstream"]
+	url = git@gitlab.example.com:work/repo.git
+`), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(repoDir))
+
+	var out bytes.Buffer
+	cmd := NewCmd()
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"init"})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(filepath.Join(repoDir, ".gmcprc"))
+	require.NoError(t, err)
+	var cfg gitlab.ProjectConfig
+	require.NoError(t, json.Unmarshal(data, &cfg))
+	assert.Equal(t, "work/repo", cfg.ProjectID)
+	assert.Equal(t, "work", cfg.Server)
+	assert.Contains(t, out.String(), `Matched server "work" from configured host https://gitlab.example.com.`)
+}
+
+func TestDetectCommand_PrintsSelectedRemote(t *testing.T) {
+	tmpDir := t.TempDir()
+	gitDir := filepath.Join(tmpDir, ".git")
+	require.NoError(t, os.Mkdir(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(`[remote "upstream"]
+	url = https://gitlab.com/group/upstream.git
+[remote "origin"]
+	url = https://gitlab.com/group/repo.git
+`), 0644))
+	t.Setenv("GITLAB_TOKEN", "")
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	var out bytes.Buffer
+	cmd := NewCmd()
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"detect"})
+	require.NoError(t, cmd.Execute())
+
+	assert.Contains(t, out.String(), "  Remote:      origin\n")
+}
+
 func TestReadConfig_NotFound(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -300,4 +374,16 @@ func TestTruncateString(t *testing.T) {
 			assert.Equal(t, tc.expected, result)
 		})
 	}
+}
+
+func resetInitFlags(t *testing.T) {
+	t.Helper()
+	oldServer := initServer
+	oldHost := initHost
+	initServer = ""
+	initHost = ""
+	t.Cleanup(func() {
+		initServer = oldServer
+		initHost = oldHost
+	})
 }

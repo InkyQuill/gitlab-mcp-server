@@ -56,7 +56,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		projectID = args[0]
 	} else {
-		mgr, _ = pkgConfig.NewManager("")
+		var err error
+		mgr, err = pkgConfig.NewManager("")
+		if err != nil {
+			return fmt.Errorf("failed to load GitLab config for remote detection: %w", err)
+		}
 
 		candidate, err := gitlab.DetectProjectCandidateFromGit(configuredHostsFromManager(mgr))
 		if err != nil {
