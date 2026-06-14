@@ -710,6 +710,16 @@ func TestParseGitRemotes(t *testing.T) {
 			errorContains: "GitHub repository detected",
 		},
 		{
+			name: "Error - GitHub remote after GitLab remote",
+			configContent: `[remote "origin"]
+	url = git@gitlab.com:owner/repo.git
+[remote "upstream"]
+	url = https://github.com/upstream/repo.git
+`,
+			expectError:   true,
+			errorContains: "GitHub repository detected",
+		},
+		{
 			name: "Success - Non-GitLab remote (Bitbucket) gets parsed",
 			configContent: `[remote "origin"]
 	url = https://bitbucket.org/owner/repo.git
