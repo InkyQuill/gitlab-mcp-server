@@ -275,6 +275,7 @@ This server supports multiple GitLab instances and can be configured via:
 
 			// Create Client Resolver — strict (opt-in via env) or legacy (default).
 			var resolverFn gitlab.GetClientFn
+			var resolveServerName func(context.Context) (string, error)
 			if os.Getenv("GITLAB_MCP_STRICT_RESOLVER") == "1" {
 				hostsByName := map[string]string{}
 				if hasConfigServers {
@@ -284,18 +285,25 @@ This server supports multiple GitLab instances and can be configured via:
 				}
 				sr := gitlab.NewStrictResolver(clientPool, hostsByName, logger)
 				resolverFn = sr.GetClientFn()
+				resolveServerName = func(ctx context.Context) (string, error) {
+					_, name, err := sr.Resolve(ctx)
+					return name, err
+				}
 				logger.Info("Strict resolver enabled (GITLAB_MCP_STRICT_RESOLVER=1) — no fallbacks, host verified per session")
 			} else {
 				resolver := gitlab.NewClientResolver(clientPool, defaultServer, logger)
 				resolverFn = resolver.GetClientFn()
+				resolveServerName = func(ctx context.Context) (string, error) {
+					_, name, err := resolver.Resolve(ctx)
+					return name, err
+				}
 				logger.Infof("Client resolver initialized with default server '%s' (legacy — set GITLAB_MCP_STRICT_RESOLVER=1 for strict mode)", defaultServer)
 			}
 			serverPolicy := func(ctx context.Context) (gitlab.ServerPolicy, error) {
-				client, name, err := resolveClientForPolicy(ctx, clientPool, defaultServer)
+				name, err := resolveServerName(ctx)
 				if err != nil {
 					return gitlab.ServerPolicy{}, err
 				}
-				_ = client
 				info, err := clientPool.GetClientInfo(name)
 				if err != nil {
 					return gitlab.ServerPolicy{Name: name}, nil
@@ -477,20 +485,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error executing command: %v\n", err)
 		os.Exit(1)
 	}
-}
-
-func resolveClientForPolicy(ctx context.Context, pool *gitlab.ClientPool, defaultServer string) (*gl.Client, string, error) {
-	if requestedServer, ok := gitlab.RequestedServerFromContext(ctx); ok {
-		client, err := pool.GetClient(requestedServer)
-		return client, requestedServer, err
-	}
-	if defaultServer != "" {
-		client, err := pool.GetClient(defaultServer)
-		if err == nil {
-			return client, defaultServer, nil
-		}
-	}
-	return pool.GetDefaultClient()
 }
 
 // parseFileRefFromRef parses a file://<path>#<entry> ref. Tiny duplicate of

@@ -32,8 +32,8 @@ func NewClientResolver(pool *ClientPool, defaultServer string, logger *log.Logge
 // Resolve determines which client to use based on the current context
 // Resolution order:
 // 1. If a request-scoped server was specified, use that client
-// 2. Read .gmcprc to get tokenName
-// 3. If tokenName exists, use that client
+// 2. Read .gmcprc to get server
+// 3. If server exists, use that client
 // 4. If gitlabHost in .gmcprc, find matching client by host
 // 5. Fall back to defaultServer
 func (cr *ClientResolver) Resolve(ctx context.Context) (*gl.Client, string, error) {
@@ -56,14 +56,15 @@ func (cr *ClientResolver) Resolve(ctx context.Context) (*gl.Client, string, erro
 
 	cr.logger.Debugf("Found project config at %s: %+v", configPath, config)
 
-	// Priority 1: Use tokenName from config
-	if config.TokenName != "" {
-		client, err := cr.pool.GetClient(config.TokenName)
+	// Priority 1: Use server from config. ReadProjectConfig promotes
+	// deprecated tokenName to Server, so this covers both config shapes.
+	if config.Server != "" {
+		client, err := cr.pool.GetClient(config.Server)
 		if err != nil {
-			cr.logger.Warnf("Token '%s' specified in config but not found in pool, falling back to default", config.TokenName)
+			cr.logger.Warnf("Server '%s' specified in config but not found in pool, falling back to default", config.Server)
 		} else {
-			cr.logger.Debugf("Using client '%s' from project config", config.TokenName)
-			return client, config.TokenName, nil
+			cr.logger.Debugf("Using client '%s' from project config", config.Server)
+			return client, config.Server, nil
 		}
 	}
 

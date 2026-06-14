@@ -3,10 +3,13 @@ package gitlab
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -221,4 +224,53 @@ func TestInitToolsets_WriteGuardUsesRequestedServer(t *testing.T) {
 	require.True(t, result.IsError)
 	assert.Equal(t, "mirror", gotServer)
 	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, `server "mirror"`)
+}
+
+func TestInitToolsets_WriteGuardUsesResolverSelectedProjectConfigServer(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	pool := NewClientPool(NewTokenStore(), logger)
+	require.NoError(t, pool.AddClientWithInfo(ClientInfo{Name: "default"}, &gitlab.Client{}))
+	require.NoError(t, pool.AddClientWithInfo(ClientInfo{Name: "mirror", ReadOnly: true}, &gitlab.Client{}))
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".gmcprc")
+	require.NoError(t, os.WriteFile(configPath, []byte(`{"projectId":"g/p","server":"mirror"}`), 0600))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	resolver := NewClientResolver(pool, "default", logger)
+	policy := func(ctx context.Context) (ServerPolicy, error) {
+		_, name, err := resolver.Resolve(ctx)
+		if err != nil {
+			return ServerPolicy{}, err
+		}
+		info, err := pool.GetClientInfo(name)
+		if err != nil {
+			return ServerPolicy{Name: name}, nil
+		}
+		return ServerPolicy{Name: name, ReadOnly: info.ReadOnly}, nil
+	}
+
+	tg, err := InitToolsets([]string{"issues"}, false, resolver.GetClientFn(), logger, NewTokenStore(), nil, false, policy)
+	require.NoError(t, err)
+
+	var createIssue server.ServerTool
+	for _, tool := range tg.Toolsets["issues"].Tools() {
+		if tool.Tool.Name == "createIssue" {
+			createIssue = tool
+			break
+		}
+	}
+	require.NotNil(t, createIssue.Handler)
+
+	result, err := createIssue.Handler(context.Background(), mcp.CallToolRequest{})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, `server "mirror"`)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "read-only")
 }

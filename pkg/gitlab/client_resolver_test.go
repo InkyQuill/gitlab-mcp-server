@@ -165,6 +165,73 @@ func TestClientResolver_Resolve_WithTokenName(t *testing.T) {
 	assert.Equal(t, "work-token", name)
 }
 
+func TestClientResolver_Resolve_WithServer(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	pool := NewClientPool(NewTokenStore(), logger)
+
+	defaultClient := &gl.Client{}
+	workClient := &gl.Client{}
+	require.NoError(t, pool.AddClient("default", defaultClient))
+	require.NoError(t, pool.AddClient("work", workClient))
+
+	cr := NewClientResolver(pool, "default", logger)
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".gmcprc")
+	configContent := `{
+  "projectId": "group/project",
+  "server": "work"
+}`
+	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+
+	require.NoError(t, os.Chdir(tmpDir))
+
+	client, name, err := cr.Resolve(context.Background())
+	require.NoError(t, err)
+	assert.Same(t, workClient, client)
+	assert.Equal(t, "work", name)
+}
+
+func TestClientResolver_Resolve_ServerBeatsDeprecatedTokenName(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	pool := NewClientPool(NewTokenStore(), logger)
+
+	defaultClient := &gl.Client{}
+	workClient := &gl.Client{}
+	otherClient := &gl.Client{}
+	require.NoError(t, pool.AddClient("default", defaultClient))
+	require.NoError(t, pool.AddClient("work", workClient))
+	require.NoError(t, pool.AddClient("other", otherClient))
+
+	cr := NewClientResolver(pool, "default", logger)
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".gmcprc")
+	configContent := `{
+  "projectId": "group/project",
+  "server": "work",
+  "tokenName": "other"
+}`
+	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+
+	require.NoError(t, os.Chdir(tmpDir))
+
+	client, name, err := cr.Resolve(context.Background())
+	require.NoError(t, err)
+	assert.Same(t, workClient, client)
+	assert.Equal(t, "work", name)
+}
+
 func TestClientResolver_Resolve_InvalidTokenNameFallback(t *testing.T) {
 	logger := log.New()
 	logger.SetLevel(log.ErrorLevel)
