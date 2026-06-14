@@ -64,7 +64,7 @@ gitlab-mcp-server project init
 
 Set `GITLAB_MCP_STRICT_RESOLVER=1` to disable implicit defaults:
 
-- Every tool call must include a valid `server`.
+- Normal GitLab API calls must resolve to a configured server from an explicit `server` argument or `.gmcprc`.
 - The server's host is verified against the config on every session.
 - Typos surface as clear errors instead of silently hitting the default server.
 
