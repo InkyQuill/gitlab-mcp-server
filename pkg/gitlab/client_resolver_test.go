@@ -67,7 +67,7 @@ func TestClientResolver_Resolve_ExplicitServerFromContext(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".gmcprc")
-	configContent := `{"projectId":"g/p","server":"work"}`
+	configContent := `{"projectId":"g/p","tokenName":"work"}`
 	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0644))
 
 	oldWd, err := os.Getwd()
