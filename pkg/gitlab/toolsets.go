@@ -30,8 +30,14 @@ func newGitLabReadTool(tool mcp.Tool, handler server.ToolHandlerFunc) server.Ser
 }
 
 func newGitLabWriteTool(policy ServerPolicyFn, tool mcp.Tool, handler server.ToolHandlerFunc) server.ServerTool {
-	if handler == nil || policy == nil {
+	if handler == nil {
 		tool, handler = WithServerSelection(tool, handler)
+		return toolsets.NewServerTool(tool, handler)
+	}
+	if policy == nil {
+		tool, handler = WithServerSelection(tool, func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			return mcp.NewToolResultError(fmt.Sprintf("server policy is required for write tool %q", tool.Name)), nil
+		})
 		return toolsets.NewServerTool(tool, handler)
 	}
 	guardedHandler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {

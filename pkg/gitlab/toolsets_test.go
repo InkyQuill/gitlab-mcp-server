@@ -38,6 +38,10 @@ func requireToolText(t *testing.T, result *mcp.CallToolResult) string {
 }
 
 func TestInitToolsets(t *testing.T) {
+	allowWritesPolicy := func(context.Context) (ServerPolicy, error) {
+		return ServerPolicy{Name: "default"}, nil
+	}
+
 	// Define the expected toolset names based on the implementation
 	// All 10 toolsets defined in InitToolsets
 	expectedToolsetNames := []string{
@@ -113,7 +117,7 @@ func TestInitToolsets(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Call InitToolsets using the mock function
 			// Parameters: enabledToolsets, readOnly, getClient, logger, tokenStore, translations, dynamicMode
-			tg, err := InitToolsets(tc.enabledToolsets, tc.readOnly, mockGetClientFn, nil, nil, nil, false, nil)
+			tg, err := InitToolsets(tc.enabledToolsets, tc.readOnly, mockGetClientFn, nil, nil, nil, false, allowWritesPolicy)
 
 			if tc.expectError {
 				require.Error(t, err)
@@ -329,4 +333,19 @@ func TestGitLabWriteToolPolicyErrorSkipsHandler(t *testing.T) {
 	assert.False(t, handlerCalled)
 	assert.Contains(t, requireToolText(t, result), "failed to resolve server policy")
 	assert.Contains(t, requireToolText(t, result), policyErr.Error())
+}
+
+func TestGitLabWriteToolNilPolicySkipsHandler(t *testing.T) {
+	handlerCalled := false
+	tool := newGitLabWriteTool(nil, mcp.NewTool("writeThing"), func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		handlerCalled = true
+		return mcp.NewToolResultText("unexpected"), nil
+	})
+
+	result, err := tool.Handler(context.Background(), mcp.CallToolRequest{})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.True(t, result.IsError)
+	assert.False(t, handlerCalled)
+	assert.Contains(t, requireToolText(t, result), `server policy is required for write tool "writeThing"`)
 }
