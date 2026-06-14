@@ -15,6 +15,20 @@ var (
 	initHost   string
 )
 
+func configuredHostsFromManager(mgr *pkgConfig.Manager) []string {
+	if mgr == nil {
+		return nil
+	}
+	servers := mgr.ListServers()
+	hosts := make([]string, 0, len(servers))
+	for _, server := range servers {
+		if server.Host != "" {
+			hosts = append(hosts, server.Host)
+		}
+	}
+	return hosts
+}
+
 // newInitCmd creates the init command
 func newInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -37,17 +51,21 @@ If multiple servers are configured, you can specify which one to use with --serv
 func runInit(cmd *cobra.Command, args []string) error {
 	var projectID string
 	var gitlabHost string
+	var mgr *pkgConfig.Manager
 
 	if len(args) > 0 {
 		projectID = args[0]
 	} else {
-		var err error
-		projectID, gitlabHost, err = detectFromGit()
+		mgr, _ = pkgConfig.NewManager("")
+
+		candidate, err := gitlab.DetectProjectCandidateFromGit(configuredHostsFromManager(mgr))
 		if err != nil {
 			return fmt.Errorf("failed to detect project from Git remote: %w\n\n"+
 				"Please specify projectId explicitly:\n"+
 				"  gitlab-mcp-server project init <projectId>", err)
 		}
+		projectID = candidate.ProjectID
+		gitlabHost = candidate.Host
 	}
 	if initHost != "" {
 		gitlabHost = initHost
@@ -57,7 +75,10 @@ func runInit(cmd *cobra.Command, args []string) error {
 	// If not provided, try to match exactly one configured server by host.
 	serverName := initServer
 	if serverName == "" {
-		mgr, err := pkgConfig.NewManager("")
+		var err error
+		if mgr == nil {
+			mgr, err = pkgConfig.NewManager("")
+		}
 		if err == nil && mgr.ServerCount() > 0 && gitlabHost != "" {
 			matches := []string{}
 			for _, s := range mgr.ListServers() {

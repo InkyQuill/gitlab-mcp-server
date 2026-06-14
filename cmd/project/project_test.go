@@ -79,6 +79,27 @@ func TestDetectFromGit(t *testing.T) {
 	assert.Equal(t, "https://gitlab.com", gitlabHost)
 }
 
+func TestDetectFromGit_PrefersOriginWithMultipleGitLabRemotes(t *testing.T) {
+	tmpDir := t.TempDir()
+	gitDir := filepath.Join(tmpDir, ".git")
+	require.NoError(t, os.Mkdir(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(`[remote "upstream"]
+	url = https://gitlab.com/group/upstream.git
+[remote "origin"]
+	url = https://gitlab.com/group/repo.git
+`), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	projectID, gitlabHost, err := detectFromGit()
+	require.NoError(t, err)
+	assert.Equal(t, "group/repo", projectID)
+	assert.Equal(t, "https://gitlab.com", gitlabHost)
+}
+
 func TestDetectFromGit_SelfHosted(t *testing.T) {
 	// Create a temporary git repository
 	tmpDir := t.TempDir()

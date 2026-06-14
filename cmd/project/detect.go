@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/gitlab"
 	"github.com/spf13/cobra"
 	gl "gitlab.com/gitlab-org/api/client-go"
 )
@@ -27,13 +28,16 @@ and displays project information including ID, name, and host.`,
 
 func runDetect(cmd *cobra.Command, args []string) error {
 	// Detect from Git
-	projectID, gitlabHost, err := detectFromGit()
+	candidate, err := gitlab.DetectProjectCandidateFromGit(nil)
 	if err != nil {
 		return fmt.Errorf("failed to detect project: %w", err)
 	}
+	projectID := candidate.ProjectID
+	gitlabHost := candidate.Host
 
 	// Output detected information
 	fmt.Fprintf(cmd.OutOrStdout(), "Detected GitLab project:\n\n")
+	fmt.Fprintf(cmd.OutOrStdout(), "  Remote:      %s\n", candidate.RemoteName)
 	fmt.Fprintf(cmd.OutOrStdout(), "  Project ID:  %s\n", projectID)
 	fmt.Fprintf(cmd.OutOrStdout(), "  GitLab Host: %s\n", gitlabHost)
 
