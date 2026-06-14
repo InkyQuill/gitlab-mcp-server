@@ -548,6 +548,58 @@ func TestParseGitRemoteCandidates_GitHubHardError(t *testing.T) {
 	assert.Contains(t, err.Error(), "GitHub repository detected")
 }
 
+func TestParseGitRemoteCandidates_IgnoresURLsInNonRemoteSections(t *testing.T) {
+	configData := []byte(`[remote "origin"]
+	url = https://gitlab.com/group/repo.git
+[submodule "x"]
+	url = https://github.com/owner/submodule.git
+`)
+
+	candidates, err := ParseGitRemoteCandidates(configData)
+	require.NoError(t, err)
+	require.Len(t, candidates, 1)
+
+	assert.Equal(t, GitRemoteCandidate{
+		RemoteName: "origin",
+		URL:        "https://gitlab.com/group/repo.git",
+		ProjectID:  "group/repo",
+		Host:       "https://gitlab.com",
+	}, candidates[0])
+}
+
+func TestParseGitRemoteCandidates_URLAssignmentSpacing(t *testing.T) {
+	tests := []struct {
+		name string
+		line string
+	}{
+		{
+			name: "no spaces",
+			line: "url=https://gitlab.com/group/repo.git",
+		},
+		{
+			name: "extra spaces",
+			line: "url   =   https://gitlab.com/group/repo.git",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			configData := []byte("[remote \"origin\"]\n" + tc.line + "\n")
+
+			candidates, err := ParseGitRemoteCandidates(configData)
+			require.NoError(t, err)
+			require.Len(t, candidates, 1)
+
+			assert.Equal(t, GitRemoteCandidate{
+				RemoteName: "origin",
+				URL:        "https://gitlab.com/group/repo.git",
+				ProjectID:  "group/repo",
+				Host:       "https://gitlab.com",
+			}, candidates[0])
+		})
+	}
+}
+
 func TestParseGitRemotes(t *testing.T) {
 	tests := []struct {
 		name          string

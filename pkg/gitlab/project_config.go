@@ -188,11 +188,17 @@ func ParseGitRemoteCandidates(configData []byte) ([]GitRemoteCandidate, error) {
 			currentRemote = parseRemoteSectionName(string(trimmed))
 			continue
 		}
-		if currentRemote == "" || !bytes.HasPrefix(trimmed, []byte("url = ")) {
+		if bytes.HasPrefix(trimmed, []byte("[")) {
+			currentRemote = ""
 			continue
 		}
 
-		rawURL := strings.TrimSpace(string(trimmed[6:]))
+		key, value, ok := strings.Cut(string(trimmed), "=")
+		if currentRemote == "" || !ok || strings.TrimSpace(key) != "url" {
+			continue
+		}
+
+		rawURL := strings.TrimSpace(value)
 		projectID, host, err := parseGitLabURL(rawURL)
 		if err != nil {
 			return nil, err
