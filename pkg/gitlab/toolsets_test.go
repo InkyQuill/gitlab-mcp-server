@@ -2,8 +2,11 @@ package gitlab
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -98,7 +101,7 @@ func TestInitToolsets(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Call InitToolsets using the mock function
 			// Parameters: enabledToolsets, readOnly, getClient, logger, tokenStore, translations, dynamicMode
-			tg, err := InitToolsets(tc.enabledToolsets, tc.readOnly, mockGetClientFn, nil, nil, nil, false)
+			tg, err := InitToolsets(tc.enabledToolsets, tc.readOnly, mockGetClientFn, nil, nil, nil, false, nil)
 
 			if tc.expectError {
 				require.Error(t, err)
@@ -133,4 +136,89 @@ func TestInitToolsets(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInitToolsets_AddsServerParameter(t *testing.T) {
+	tg, err := InitToolsets([]string{"projects"}, false, mockGetClientFn, nil, NewTokenStore(), nil, false, nil)
+	require.NoError(t, err)
+
+	tools := tg.Toolsets["projects"].Tools()
+	require.NotEmpty(t, tools)
+
+	for _, tool := range tools {
+		assert.Contains(t, tool.Tool.InputSchema.Properties, "server", "tool %s should accept server", tool.Tool.Name)
+	}
+}
+
+func TestInitToolsets_DoesNotOverwriteProjectConfigServerParameter(t *testing.T) {
+	tg, err := InitToolsets([]string{"project_config"}, false, mockGetClientFn, nil, NewTokenStore(), nil, false, nil)
+	require.NoError(t, err)
+
+	var setCurrentProject server.ServerTool
+	for _, tool := range tg.Toolsets["project_config"].Tools() {
+		if tool.Tool.Name == "setCurrentProject" {
+			setCurrentProject = tool
+			break
+		}
+	}
+	require.NotEmpty(t, setCurrentProject.Tool.Name)
+
+	serverProperty := setCurrentProject.Tool.InputSchema.Properties["server"]
+	assert.Contains(t, fmt.Sprint(serverProperty), "auto-detected from Git remote")
+	assert.NotContains(t, fmt.Sprint(serverProperty), "Overrides .gmcprc/default routing")
+}
+
+func TestInitToolsets_WriteGuardRejectsReadOnlyServer(t *testing.T) {
+	policy := func(context.Context) (ServerPolicy, error) {
+		return ServerPolicy{Name: "mirror", ReadOnly: true}, nil
+	}
+
+	tg, err := InitToolsets([]string{"issues"}, false, mockGetClientFn, nil, NewTokenStore(), nil, false, policy)
+	require.NoError(t, err)
+
+	var createIssue server.ServerTool
+	for _, tool := range tg.Toolsets["issues"].Tools() {
+		if tool.Tool.Name == "createIssue" {
+			createIssue = tool
+			break
+		}
+	}
+	require.NotNil(t, createIssue.Handler)
+
+	result, err := createIssue.Handler(context.Background(), mcp.CallToolRequest{})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "read-only")
+}
+
+func TestInitToolsets_WriteGuardUsesRequestedServer(t *testing.T) {
+	var gotServer string
+	policy := func(ctx context.Context) (ServerPolicy, error) {
+		gotServer, _ = RequestedServerFromContext(ctx)
+		return ServerPolicy{Name: gotServer, ReadOnly: true}, nil
+	}
+
+	tg, err := InitToolsets([]string{"issues"}, false, mockGetClientFn, nil, NewTokenStore(), nil, false, policy)
+	require.NoError(t, err)
+
+	var createIssue server.ServerTool
+	for _, tool := range tg.Toolsets["issues"].Tools() {
+		if tool.Tool.Name == "createIssue" {
+			createIssue = tool
+			break
+		}
+	}
+	require.NotNil(t, createIssue.Handler)
+
+	result, err := createIssue.Handler(context.Background(), mcp.CallToolRequest{
+		Params: mcp.CallToolParams{
+			Arguments: map[string]any{"server": "mirror"},
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.True(t, result.IsError)
+	assert.Equal(t, "mirror", gotServer)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, `server "mirror"`)
 }

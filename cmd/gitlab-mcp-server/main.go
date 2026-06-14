@@ -290,12 +290,24 @@ This server supports multiple GitLab instances and can be configured via:
 				resolverFn = resolver.GetClientFn()
 				logger.Infof("Client resolver initialized with default server '%s' (legacy — set GITLAB_MCP_STRICT_RESOLVER=1 for strict mode)", defaultServer)
 			}
+			serverPolicy := func(ctx context.Context) (gitlab.ServerPolicy, error) {
+				client, name, err := resolveClientForPolicy(ctx, clientPool, defaultServer)
+				if err != nil {
+					return gitlab.ServerPolicy{}, err
+				}
+				_ = client
+				info, err := clientPool.GetClientInfo(name)
+				if err != nil {
+					return gitlab.ServerPolicy{Name: name}, nil
+				}
+				return gitlab.ServerPolicy{Name: name, ReadOnly: info.ReadOnly}, nil
+			}
 
 			// Check if dynamic toolsets mode is enabled
 			dynamicToolsets := viper.GetBool("dynamic-toolsets")
 
 			// Initialize Toolsets
-			toolsetGroup, err := gitlab.InitToolsets(enabledToolsets, readOnly, resolverFn, logger, tokenStore, t, dynamicToolsets)
+			toolsetGroup, err := gitlab.InitToolsets(enabledToolsets, readOnly, resolverFn, logger, tokenStore, t, dynamicToolsets, serverPolicy)
 			if err != nil {
 				logger.Fatalf("Failed to initialize toolsets: %v", err)
 			}
@@ -465,6 +477,20 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error executing command: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func resolveClientForPolicy(ctx context.Context, pool *gitlab.ClientPool, defaultServer string) (*gl.Client, string, error) {
+	if requestedServer, ok := gitlab.RequestedServerFromContext(ctx); ok {
+		client, err := pool.GetClient(requestedServer)
+		return client, requestedServer, err
+	}
+	if defaultServer != "" {
+		client, err := pool.GetClient(defaultServer)
+		if err == nil {
+			return client, defaultServer, nil
+		}
+	}
+	return pool.GetDefaultClient()
 }
 
 // parseFileRefFromRef parses a file://<path>#<entry> ref. Tiny duplicate of

@@ -2,16 +2,55 @@ package gitlab
 
 import (
 	"context" // Added for GetClientFn
+	"fmt"
+
 	// Import necessary packages, including your toolsets package
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/toolsets" // Adjust path if needed
-	log "github.com/sirupsen/logrus"                      // Import logger
-	gl "gitlab.com/gitlab-org/api/client-go"              // Import the GitLab client library
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
+	log "github.com/sirupsen/logrus"         // Import logger
+	gl "gitlab.com/gitlab-org/api/client-go" // Import the GitLab client library
 	// "github.com/InkyQuill/gitlab-mcp-server/pkg/translations" // Removed for now
 )
 
 // GetClientFn defines the function signature for retrieving an initialized GitLab client.
 // This allows decoupling toolset initialization from direct client creation.
 type GetClientFn func(context.Context) (*gl.Client, error)
+
+type ServerPolicy struct {
+	Name     string
+	ReadOnly bool
+}
+
+type ServerPolicyFn func(context.Context) (ServerPolicy, error)
+
+func newGitLabReadTool(tool mcp.Tool, handler server.ToolHandlerFunc) server.ServerTool {
+	tool, handler = WithServerSelection(tool, handler)
+	return toolsets.NewServerTool(tool, handler)
+}
+
+func newGitLabWriteTool(policy ServerPolicyFn, tool mcp.Tool, handler server.ToolHandlerFunc) server.ServerTool {
+	if handler == nil || policy == nil {
+		tool, handler = WithServerSelection(tool, handler)
+		return toolsets.NewServerTool(tool, handler)
+	}
+	guardedHandler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		p, err := policy(ctx)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to resolve server policy: %v", err)), nil
+		}
+		if p.ReadOnly {
+			serverName := p.Name
+			if serverName == "" {
+				serverName = "selected"
+			}
+			return mcp.NewToolResultError(fmt.Sprintf("server %q is configured read-only; write tool %q is blocked", serverName, tool.Name)), nil
+		}
+		return handler(ctx, request)
+	}
+	tool, guardedHandler = WithServerSelection(tool, guardedHandler)
+	return toolsets.NewServerTool(tool, guardedHandler)
+}
 
 // DefaultTools defines the list of toolsets enabled by default.
 var DefaultTools = []string{"all"}
@@ -26,6 +65,7 @@ func InitToolsets(
 	tokenStore *TokenStore, // Token store for token management
 	translations map[string]string, // Translation map for i18n
 	dynamicMode bool, // Enable dynamic toolset discovery mode
+	serverPolicy ServerPolicyFn,
 ) (*toolsets.ToolsetGroup, error) {
 
 	// 1. Create the ToolsetGroup
@@ -52,6 +92,9 @@ func InitToolsets(
 	//    Tool definition functions will need to accept GetClientFn or call it.
 	//    Example (placeholder):
 	//    getProjectTool := toolsets.NewServerTool(GetProject(getClient, t))
+	newWriteTool := func(tool mcp.Tool, handler server.ToolHandlerFunc) server.ServerTool {
+		return newGitLabWriteTool(serverPolicy, tool, handler)
+	}
 
 	// --- Add tools to tokenManagementTS (Token management) ---
 	tokenManagementTS.AddReadTools(
@@ -75,85 +118,85 @@ func InitToolsets(
 
 	// --- Add tools to projectsTS (Task 7 & 12) ---
 	projectsTS.AddReadTools(
-		toolsets.NewServerTool(GetProject(getClient, translations)),
-		toolsets.NewServerTool(ListProjects(getClient, translations)),
-		toolsets.NewServerTool(GetProjectFile(getClient, translations)),
-		toolsets.NewServerTool(ListProjectFiles(getClient, translations)),
-		toolsets.NewServerTool(GetProjectBranches(getClient, translations)),
-		toolsets.NewServerTool(GetProjectCommits(getClient, translations)),
+		newGitLabReadTool(GetProject(getClient, translations)),
+		newGitLabReadTool(ListProjects(getClient, translations)),
+		newGitLabReadTool(GetProjectFile(getClient, translations)),
+		newGitLabReadTool(ListProjectFiles(getClient, translations)),
+		newGitLabReadTool(GetProjectBranches(getClient, translations)),
+		newGitLabReadTool(GetProjectCommits(getClient, translations)),
 	)
 	// projectsTS.AddWriteTools(...)
 
 	// --- Add tools to issuesTS (Task 8 & 13) ---
 	issuesTS.AddReadTools(
-		toolsets.NewServerTool(GetIssue(getClient, translations)),
-		toolsets.NewServerTool(ListIssues(getClient, translations)),
-		toolsets.NewServerTool(GetIssueLabels(getClient, translations)),
+		newGitLabReadTool(GetIssue(getClient, translations)),
+		newGitLabReadTool(ListIssues(getClient, translations)),
+		newGitLabReadTool(GetIssueLabels(getClient, translations)),
 		// Milestones list tool
-		toolsets.NewServerTool(ListMilestones(getClient, translations)),
+		newGitLabReadTool(ListMilestones(getClient, translations)),
 	)
 	issuesTS.AddWriteTools(
-		toolsets.NewServerTool(CreateIssue(getClient, translations)),
-		toolsets.NewServerTool(UpdateIssue(getClient, translations)),
-		toolsets.NewServerTool(IssueComment(getClient, translations)),
+		newWriteTool(CreateIssue(getClient, translations)),
+		newWriteTool(UpdateIssue(getClient, translations)),
+		newWriteTool(IssueComment(getClient, translations)),
 		// Milestones write tools
-		toolsets.NewServerTool(Milestone(getClient, translations)),
+		newWriteTool(Milestone(getClient, translations)),
 	)
 
 	// --- Add tools to mergeRequestsTS (Task 9 & 14) ---
 	mergeRequestsTS.AddReadTools(
-		toolsets.NewServerTool(GetMergeRequest(getClient, translations)),
-		toolsets.NewServerTool(ListMergeRequests(getClient, translations)),
+		newGitLabReadTool(GetMergeRequest(getClient, translations)),
+		newGitLabReadTool(ListMergeRequests(getClient, translations)),
 	)
 	mergeRequestsTS.AddWriteTools(
-		toolsets.NewServerTool(CreateMergeRequest(getClient, translations)),
-		toolsets.NewServerTool(UpdateMergeRequest(getClient, translations)),
-		toolsets.NewServerTool(MergeRequestComment(getClient, translations)),
+		newWriteTool(CreateMergeRequest(getClient, translations)),
+		newWriteTool(UpdateMergeRequest(getClient, translations)),
+		newWriteTool(MergeRequestComment(getClient, translations)),
 	)
 
 	// --- Add tools to securityTS (Security scanning reports) ---
 	securityTS.AddReadTools(
-		toolsets.NewServerTool(GetProjectSAST(getClient, translations)),
-		toolsets.NewServerTool(GetProjectDAST(getClient, translations)),
-		toolsets.NewServerTool(GetProjectDependencyScanning(getClient, translations)),
-		toolsets.NewServerTool(GetProjectContainerScanning(getClient, translations)),
-		toolsets.NewServerTool(GetProjectSecretDetection(getClient, translations)),
-		toolsets.NewServerTool(GetProjectLicenseCompliance(getClient, translations)),
+		newGitLabReadTool(GetProjectSAST(getClient, translations)),
+		newGitLabReadTool(GetProjectDAST(getClient, translations)),
+		newGitLabReadTool(GetProjectDependencyScanning(getClient, translations)),
+		newGitLabReadTool(GetProjectContainerScanning(getClient, translations)),
+		newGitLabReadTool(GetProjectSecretDetection(getClient, translations)),
+		newGitLabReadTool(GetProjectLicenseCompliance(getClient, translations)),
 	)
 
 	// --- Add tools to usersTS (User management) ---
 	usersTS.AddReadTools(
-		toolsets.NewServerTool(GetCurrentUser(getClient, translations)),
-		toolsets.NewServerTool(GetUser(getClient, translations)),
-		toolsets.NewServerTool(GetUserStatus(getClient, translations)),
-		toolsets.NewServerTool(ListUsers(getClient, translations)),
-		toolsets.NewServerTool(ListProjectUsers(getClient, translations)),
+		newGitLabReadTool(GetCurrentUser(getClient, translations)),
+		newGitLabReadTool(GetUser(getClient, translations)),
+		newGitLabReadTool(GetUserStatus(getClient, translations)),
+		newGitLabReadTool(ListUsers(getClient, translations)),
+		newGitLabReadTool(ListProjectUsers(getClient, translations)),
 	)
 	usersTS.AddWriteTools(
-		toolsets.NewServerTool(ManageUserState(getClient, translations)),
+		newWriteTool(ManageUserState(getClient, translations)),
 	)
 
 	// --- Add tools to searchTS (Search capabilities) ---
 	searchTS.AddReadTools(
-		toolsets.NewServerTool(Search(getClient, translations)),
+		newGitLabReadTool(Search(getClient, translations)),
 	)
 
 	// --- Add tools to tagsTS (Tags Management) ---
 	tagsTS.AddReadTools(
-		toolsets.NewServerTool(ListRepositoryTags(getClient, translations)),
+		newGitLabReadTool(ListRepositoryTags(getClient, translations)),
 	)
 	tagsTS.AddWriteTools(
-		toolsets.NewServerTool(Tag(getClient, translations)),
+		newWriteTool(Tag(getClient, translations)),
 	)
 
 	// --- Add tools to pipelineJobsTS (CI/CD Pipeline Jobs) ---
 	pipelineJobsTS.AddReadTools(
-		toolsets.NewServerTool(PipelineJob(getClient, translations)),
+		newGitLabReadTool(PipelineJob(getClient, translations)),
 	)
 	pipelineJobsTS.AddWriteTools(
-		toolsets.NewServerTool(Pipeline(getClient, translations)),
-		toolsets.NewServerTool(RetryPipelineJob(getClient, translations)),
-		toolsets.NewServerTool(PlayPipelineJob(getClient, translations)),
+		newWriteTool(Pipeline(getClient, translations)),
+		newWriteTool(RetryPipelineJob(getClient, translations)),
+		newWriteTool(PlayPipelineJob(getClient, translations)),
 	)
 
 	// 4. Add defined Toolsets to the Group
