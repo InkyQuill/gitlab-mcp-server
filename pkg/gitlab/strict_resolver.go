@@ -43,6 +43,10 @@ func NewStrictResolver(pool *ClientPool, serverHosts map[string]string, logger *
 
 // Resolve returns (client, serverName, error). It NEVER falls back.
 func (r *StrictResolver) Resolve(ctx context.Context) (*gl.Client, string, error) {
+	if requestedServer, ok := RequestedServerFromContext(ctx); ok {
+		return r.resolveNamed(ctx, requestedServer)
+	}
+
 	cfg, _, err := FindProjectConfig()
 	if err != nil {
 		return nil, "", fmt.Errorf("strict resolver: failed to read .gmcprc: %w", err)
@@ -54,20 +58,35 @@ func (r *StrictResolver) Resolve(ctx context.Context) (*gl.Client, string, error
 		return nil, "", errors.New("strict resolver: .gmcprc is missing required 'server' field — re-run 'gitlab-mcp-server project init'")
 	}
 
-	client, err := r.pool.GetClient(cfg.Server)
+	return r.resolveNamed(ctx, cfg.Server)
+}
+
+func (r *StrictResolver) resolveNamed(ctx context.Context, name string) (*gl.Client, string, error) {
+	client, err := r.pool.GetClient(name)
 	if err != nil {
-		configured := make([]string, 0, len(r.serverHosts))
-		for n := range r.serverHosts {
-			configured = append(configured, n)
-		}
+		configured := r.configuredServerNames()
 		return nil, "", fmt.Errorf("strict resolver: server %q not configured; configured servers: %s",
-			cfg.Server, strings.Join(configured, ", "))
+			name, strings.Join(configured, ", "))
 	}
 
-	if err := r.verifyHost(ctx, cfg.Server, client); err != nil {
+	if err := r.verifyHost(ctx, name, client); err != nil {
 		return nil, "", err
 	}
-	return client, cfg.Server, nil
+	return client, name, nil
+}
+
+func (r *StrictResolver) configuredServerNames() []string {
+	infos := r.pool.ListClientInfo()
+	names := make([]string, 0, len(infos))
+	for _, info := range infos {
+		names = append(names, info.Name)
+	}
+	if len(names) == 0 {
+		for n := range r.serverHosts {
+			names = append(names, n)
+		}
+	}
+	return names
 }
 
 // GetClientFn adapts StrictResolver to the GetClientFn signature used by
@@ -92,6 +111,11 @@ func (r *StrictResolver) verifyHost(ctx context.Context, name string, client *gl
 	r.mu.Unlock()
 
 	wantHost := r.serverHosts[name]
+	if info, err := r.pool.GetClientInfo(name); err == nil && info.APIHost != "" {
+		wantHost = info.APIHost
+	} else if err == nil && info.Host != "" {
+		wantHost = info.Host
+	}
 	if wantHost == "" {
 		return fmt.Errorf("strict resolver: no host recorded for server %q", name)
 	}

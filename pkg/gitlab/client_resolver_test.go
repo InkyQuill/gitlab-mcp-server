@@ -55,6 +55,36 @@ func TestClientResolver_Resolve_NoConfig(t *testing.T) {
 	assert.Equal(t, "default", name)
 }
 
+func TestClientResolver_Resolve_ExplicitServerFromContext(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	pool := NewClientPool(NewTokenStore(), logger)
+
+	workClient := &gl.Client{}
+	personalClient := &gl.Client{}
+	require.NoError(t, pool.AddClient("work", workClient))
+	require.NoError(t, pool.AddClient("personal", personalClient))
+
+	resolver := NewClientResolver(pool, "work", logger)
+	client, name, err := resolver.Resolve(WithRequestedServer(context.Background(), "personal"))
+	require.NoError(t, err)
+	assert.Same(t, personalClient, client)
+	assert.Equal(t, "personal", name)
+}
+
+func TestClientResolver_Resolve_ExplicitUnknownServerErrors(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	pool := NewClientPool(NewTokenStore(), logger)
+	require.NoError(t, pool.AddClient("work", &gl.Client{}))
+
+	resolver := NewClientResolver(pool, "work", logger)
+	_, _, err := resolver.Resolve(WithRequestedServer(context.Background(), "missing"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "requested server")
+	assert.Contains(t, err.Error(), "missing")
+}
+
 func TestClientResolver_Resolve_WithTokenName(t *testing.T) {
 	logger := log.New()
 	logger.SetLevel(log.ErrorLevel)

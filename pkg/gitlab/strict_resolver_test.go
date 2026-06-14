@@ -68,6 +68,27 @@ func TestStrictResolver_ErrorsWhenNoProjectConfig(t *testing.T) {
 	assert.Contains(t, err.Error(), "no project configured")
 }
 
+func TestStrictResolver_ResolvesExplicitServerWithoutProjectConfig(t *testing.T) {
+	srv := newFakeGitLab(t)
+	defer srv.Close()
+
+	dir := t.TempDir()
+	cwd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(cwd) })
+	require.NoError(t, os.Chdir(dir))
+
+	pool := NewClientPool(NewTokenStore(), logrus.New())
+	client, err := gl.NewClient("x", gl.WithBaseURL(srv.URL))
+	require.NoError(t, err)
+	require.NoError(t, pool.AddClientWithInfo(ClientInfo{Name: "work", Host: srv.URL}, client))
+
+	r := NewStrictResolver(pool, nil, logrus.New())
+	got, name, err := r.Resolve(WithRequestedServer(context.Background(), "work"))
+	require.NoError(t, err)
+	assert.Equal(t, "work", name)
+	assert.NotNil(t, got)
+}
+
 func TestStrictResolver_ErrorsWhenServerFieldEmpty(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, ".gmcprc")

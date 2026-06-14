@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"context"
+	"fmt"
 
 	log "github.com/sirupsen/logrus"
 	gl "gitlab.com/gitlab-org/api/client-go"
@@ -34,6 +35,15 @@ func NewClientResolver(pool *ClientPool, defaultServer string, logger *log.Logge
 // 3. If gitlabHost in .gmcprc, find matching client by host
 // 4. Fall back to defaultServer
 func (cr *ClientResolver) Resolve(ctx context.Context) (*gl.Client, string, error) {
+	if requestedServer, ok := RequestedServerFromContext(ctx); ok {
+		client, err := cr.pool.GetClient(requestedServer)
+		if err != nil {
+			return nil, "", fmt.Errorf("requested server %q is not configured: %w", requestedServer, err)
+		}
+		cr.logger.Debugf("Using explicitly requested client '%s'", requestedServer)
+		return client, requestedServer, nil
+	}
+
 	// Try to read project config
 	config, configPath, err := FindProjectConfig()
 	if err != nil || config == nil {
