@@ -102,6 +102,9 @@ func (cp *ClientPool) ListClientInfo() []ClientInfo {
 	for _, info := range cp.info {
 		infos = append(infos, info)
 	}
+	sort.Slice(infos, func(i, j int) bool {
+		return infos[i].Name < infos[j].Name
+	})
 	return infos
 }
 

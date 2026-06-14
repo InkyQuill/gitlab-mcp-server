@@ -335,6 +335,31 @@ func TestClientPool_ListClients(t *testing.T) {
 	})
 }
 
+func TestClientPool_ListClientInfo(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	cp := NewClientPool(NewTokenStore(), logger)
+
+	require.NoError(t, cp.AddClientWithInfo(ClientInfo{
+		Name: "zeta",
+		Host: "https://zeta.gitlab.example.com",
+	}, &gl.Client{}))
+	require.NoError(t, cp.AddClientWithInfo(ClientInfo{
+		Name: "alpha",
+		Host: "https://alpha.gitlab.example.com",
+	}, &gl.Client{}))
+	require.NoError(t, cp.AddClientWithInfo(ClientInfo{
+		Name: "work",
+		Host: "https://work.gitlab.example.com",
+	}, &gl.Client{}))
+
+	infos := cp.ListClientInfo()
+	require.Len(t, infos, 3)
+	assert.Equal(t, "alpha", infos[0].Name)
+	assert.Equal(t, "work", infos[1].Name)
+	assert.Equal(t, "zeta", infos[2].Name)
+}
+
 func TestClientPool_RemoveClient(t *testing.T) {
 	logger := log.New()
 	logger.SetLevel(log.ErrorLevel)
