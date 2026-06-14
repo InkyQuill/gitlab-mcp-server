@@ -46,6 +46,9 @@ func newGitLabWriteTool(policy ServerPolicyFn, tool mcp.Tool, handler server.Too
 			}
 			return mcp.NewToolResultError(fmt.Sprintf("server %q is configured read-only; write tool %q is blocked", serverName, tool.Name)), nil
 		}
+		if p.Name != "" {
+			ctx = WithRequestedServer(ctx, p.Name)
+		}
 		return handler(ctx, request)
 	}
 	tool, guardedHandler = WithServerSelection(tool, guardedHandler)

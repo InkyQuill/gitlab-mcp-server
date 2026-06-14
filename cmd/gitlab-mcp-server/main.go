@@ -306,7 +306,7 @@ This server supports multiple GitLab instances and can be configured via:
 				}
 				info, err := clientPool.GetClientInfo(name)
 				if err != nil {
-					return gitlab.ServerPolicy{Name: name}, nil
+					return gitlab.ServerPolicy{}, fmt.Errorf("failed to get client info for %q: %w", name, err)
 				}
 				return gitlab.ServerPolicy{Name: name, ReadOnly: info.ReadOnly}, nil
 			}

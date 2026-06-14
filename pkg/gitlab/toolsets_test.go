@@ -2,7 +2,7 @@ package gitlab
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -27,6 +27,15 @@ func mockGetClientFn(_ context.Context) (*gitlab.Client, error) {
 // func mockTranslationHelper(key string, defaultVal string, args ...interface{}) string {
 // 	return defaultVal // Simple passthrough for now
 // }
+
+func requireToolText(t *testing.T, result *mcp.CallToolResult) string {
+	t.Helper()
+	require.NotNil(t, result)
+	require.NotEmpty(t, result.Content)
+	textContent, ok := result.Content[0].(mcp.TextContent)
+	require.True(t, ok, "expected first tool result content to be mcp.TextContent")
+	return textContent.Text
+}
 
 func TestInitToolsets(t *testing.T) {
 	// Define the expected toolset names based on the implementation
@@ -166,9 +175,15 @@ func TestInitToolsets_DoesNotOverwriteProjectConfigServerParameter(t *testing.T)
 	}
 	require.NotEmpty(t, setCurrentProject.Tool.Name)
 
-	serverProperty := setCurrentProject.Tool.InputSchema.Properties["server"]
-	assert.Contains(t, fmt.Sprint(serverProperty), "auto-detected from Git remote")
-	assert.NotContains(t, fmt.Sprint(serverProperty), "Overrides .gmcprc/default routing")
+	serverProperty, ok := setCurrentProject.Tool.InputSchema.Properties["server"]
+	require.True(t, ok)
+	serverSchema, ok := serverProperty.(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "string", serverSchema["type"])
+	description, ok := serverSchema["description"].(string)
+	require.True(t, ok)
+	assert.Contains(t, description, "auto-detected from Git remote")
+	assert.NotContains(t, description, "Overrides .gmcprc/default routing")
 }
 
 func TestInitToolsets_WriteGuardRejectsReadOnlyServer(t *testing.T) {
@@ -192,7 +207,7 @@ func TestInitToolsets_WriteGuardRejectsReadOnlyServer(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.True(t, result.IsError)
-	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "read-only")
+	assert.Contains(t, requireToolText(t, result), "read-only")
 }
 
 func TestInitToolsets_WriteGuardUsesRequestedServer(t *testing.T) {
@@ -223,7 +238,7 @@ func TestInitToolsets_WriteGuardUsesRequestedServer(t *testing.T) {
 	require.NotNil(t, result)
 	require.True(t, result.IsError)
 	assert.Equal(t, "mirror", gotServer)
-	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, `server "mirror"`)
+	assert.Contains(t, requireToolText(t, result), `server "mirror"`)
 }
 
 func TestInitToolsets_WriteGuardUsesResolverSelectedProjectConfigServer(t *testing.T) {
@@ -271,6 +286,47 @@ func TestInitToolsets_WriteGuardUsesResolverSelectedProjectConfigServer(t *testi
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.True(t, result.IsError)
-	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, `server "mirror"`)
-	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "read-only")
+	resultText := requireToolText(t, result)
+	assert.Contains(t, resultText, `server "mirror"`)
+	assert.Contains(t, resultText, "read-only")
+}
+
+func TestGitLabWriteToolUsesPolicySelectedServer(t *testing.T) {
+	policy := func(context.Context) (ServerPolicy, error) {
+		return ServerPolicy{Name: "mirror", ReadOnly: false}, nil
+	}
+
+	var gotServer string
+	tool := newGitLabWriteTool(policy, mcp.NewTool("writeThing"), func(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		gotServer, _ = RequestedServerFromContext(ctx)
+		return mcp.NewToolResultText("ok"), nil
+	})
+
+	result, err := tool.Handler(context.Background(), mcp.CallToolRequest{})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.False(t, result.IsError)
+	assert.Equal(t, "mirror", gotServer)
+	assert.Equal(t, "ok", requireToolText(t, result))
+}
+
+func TestGitLabWriteToolPolicyErrorSkipsHandler(t *testing.T) {
+	policyErr := errors.New("metadata missing")
+	policy := func(context.Context) (ServerPolicy, error) {
+		return ServerPolicy{}, policyErr
+	}
+
+	handlerCalled := false
+	tool := newGitLabWriteTool(policy, mcp.NewTool("writeThing"), func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		handlerCalled = true
+		return mcp.NewToolResultText("unexpected"), nil
+	})
+
+	result, err := tool.Handler(context.Background(), mcp.CallToolRequest{})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.True(t, result.IsError)
+	assert.False(t, handlerCalled)
+	assert.Contains(t, requireToolText(t, result), "failed to resolve server policy")
+	assert.Contains(t, requireToolText(t, result), policyErr.Error())
 }
