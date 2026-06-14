@@ -142,6 +142,28 @@ func TestSetCurrentProjectHandler(t *testing.T) {
 	}
 }
 
+func TestFindServerByHost_Ambiguous(t *testing.T) {
+	store := NewTokenStore()
+	require.NoError(t, store.AddToken("work", &TokenMetadata{GitLabHost: "https://gitlab.example.com"}))
+	require.NoError(t, store.AddToken("mirror", &TokenMetadata{GitLabHost: "https://gitlab.example.com/"}))
+
+	server, err := findServerByHost("https://gitlab.example.com", store)
+
+	require.Error(t, err)
+	assert.Empty(t, server)
+	assert.Contains(t, err.Error(), "multiple configured servers match host")
+}
+
+func TestFindServerByHost_NormalizesHost(t *testing.T) {
+	store := NewTokenStore()
+	require.NoError(t, store.AddToken("work", &TokenMetadata{GitLabHost: "https://GitLab.Example.com/"}))
+
+	server, err := findServerByHost("gitlab.example.com", store)
+
+	require.NoError(t, err)
+	assert.Equal(t, "work", server)
+}
+
 func TestGetCurrentProjectHandler(t *testing.T) {
 	// Tool schema snapshot test
 	tool, _ := GetCurrentProject(nil, nil)

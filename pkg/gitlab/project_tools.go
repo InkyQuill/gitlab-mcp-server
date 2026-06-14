@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -42,16 +43,19 @@ func SetCurrentProject(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.
 
 			// If server is not specified, try to detect from Git remote
 			if server == "" {
-				detectedProjectID, detectedHost, detectErr := DetectProjectFromGit()
-				if detectErr == nil && detectedProjectID != "" {
+				candidate, detectErr := DetectProjectCandidateFromGit(nil)
+				if detectErr == nil && candidate.ProjectID != "" {
 					// Try to match the detected host with a configured server
-					matchedServer := findServerByHost(detectedHost, tokenStore)
+					matchedServer, err := findServerByHost(candidate.Host, tokenStore)
+					if err != nil {
+						return mcp.NewToolResultError(fmt.Sprintf("failed to match detected GitLab host to configured server: %v", err)), nil
+					}
 					if matchedServer != "" {
 						server = matchedServer
 					}
 					// Use detected host if not explicitly provided
 					if gitlabHost == "" {
-						gitlabHost = detectedHost
+						gitlabHost = candidate.Host
 					}
 				}
 			}
@@ -89,29 +93,37 @@ func SetCurrentProject(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.
 }
 
 // findServerByHost tries to find a configured server that matches the given GitLab host
-func findServerByHost(gitlabHost string, tokenStore *TokenStore) string {
+func findServerByHost(gitlabHost string, tokenStore *TokenStore) (string, error) {
 	if tokenStore == nil || gitlabHost == "" {
-		return ""
+		return "", nil
 	}
 
 	// Get all tokens from the store
 	tokens := tokenStore.ListTokens()
 
-	// Normalize the input host (remove trailing slash, lowercase)
-	normalizedHost := strings.ToLower(strings.TrimSuffix(gitlabHost, "/"))
+	normalizedHost := NormalizeGitLabHost(gitlabHost)
+	if normalizedHost == "" {
+		return "", nil
+	}
 
-	// Find a token whose GitLabHost matches the input host
+	matches := make([]string, 0, 1)
 	for name, metadata := range tokens {
 		if metadata == nil {
 			continue
 		}
-		tokenHost := strings.ToLower(strings.TrimSuffix(metadata.GitLabHost, "/"))
-		if tokenHost == normalizedHost {
-			return name
+		if NormalizeGitLabHost(metadata.GitLabHost) == normalizedHost {
+			matches = append(matches, name)
 		}
 	}
 
-	return ""
+	if len(matches) == 0 {
+		return "", nil
+	}
+	sort.Strings(matches)
+	if len(matches) > 1 {
+		return "", fmt.Errorf("multiple configured servers match host %q: %s", gitlabHost, strings.Join(matches, ", "))
+	}
+	return matches[0], nil
 }
 
 // GetCurrentProject retrieves the current GitLab project from .gmcprc file.
@@ -129,8 +141,8 @@ func GetCurrentProject(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.
 
 			// If no config found, try auto-detection from Git
 			if config == nil {
-				projectID, gitlabHost, detectErr := DetectProjectFromGit()
-				if detectErr != nil || projectID == "" {
+				candidate, detectErr := DetectProjectCandidateFromGit(nil)
+				if detectErr != nil || candidate.ProjectID == "" {
 					return mcp.NewToolResultText(`{
   "found": false,
   "autoDetected": false,
@@ -144,20 +156,24 @@ func GetCurrentProject(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.
 					return mcp.NewToolResultError(fmt.Sprintf("failed to get GitLab client: %v", err)), nil
 				}
 
-				project, _, err := glClient.Projects.GetProject(projectID, nil, gl.WithContext(ctx))
+				project, _, err := glClient.Projects.GetProject(candidate.ProjectID, nil, gl.WithContext(ctx))
 				if err != nil {
-					return mcp.NewToolResultError(fmt.Sprintf("Detected project '%s' but could not verify it exists: %v", projectID, err)), nil
+					return mcp.NewToolResultError(fmt.Sprintf("Detected project '%s' but could not verify it exists: %v", candidate.ProjectID, err)), nil
 				}
 
 				// Find matching server by host
-				server := findServerByHost(gitlabHost, tokenStore)
+				server, err := findServerByHost(candidate.Host, tokenStore)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("failed to match detected GitLab host to configured server: %v", err)), nil
+				}
 
 				result := map[string]interface{}{
 					"found":        true,
 					"autoDetected": true,
-					"projectId":    projectID,
+					"projectId":    candidate.ProjectID,
 					"server":       server,
-					"gitlabHost":   gitlabHost,
+					"gitlabHost":   candidate.Host,
+					"remoteName":   candidate.RemoteName,
 					"projectName":  project.Name,
 					"projectPath":  project.PathWithNamespace,
 					"message":      "Project auto-detected from Git remote. Use 'setCurrentProject' to save this configuration.",
@@ -177,7 +193,10 @@ func GetCurrentProject(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.
 
 			// If server is not set but gitlabHost is, try to find matching server
 			if config.Server == "" && config.GitLabHost != "" {
-				matchedServer := findServerByHost(config.GitLabHost, tokenStore)
+				matchedServer, err := findServerByHost(config.GitLabHost, tokenStore)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("failed to match configured GitLab host to configured server: %v", err)), nil
+				}
 				if matchedServer != "" {
 					result["server"] = matchedServer
 					result["message"] = "Server auto-matched from GitLab host. Use 'setCurrentProject' to save this configuration."
@@ -196,7 +215,7 @@ func DetectProject(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHan
 			mcp.WithDescription("Auto-detects the GitLab project from the Git remote URL in the current directory. Useful for quickly setting up the project context."),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			projectID, gitlabHost, err := DetectProjectFromGit()
+			candidate, err := DetectProjectCandidateFromGit(nil)
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Failed to detect project: %v", err)), nil
 			}
@@ -207,18 +226,19 @@ func DetectProject(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHan
 				return nil, fmt.Errorf("failed to get GitLab client: %w", err)
 			}
 
-			project, _, err := glClient.Projects.GetProject(projectID, nil, gl.WithContext(ctx))
+			project, _, err := glClient.Projects.GetProject(candidate.ProjectID, nil, gl.WithContext(ctx))
 			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Detected project '%s' but could not verify it exists: %v", projectID, err)), nil
+				return mcp.NewToolResultError(fmt.Sprintf("Detected project '%s' but could not verify it exists: %v", candidate.ProjectID, err)), nil
 			}
 
 			result := map[string]interface{}{
 				"success":     true,
-				"projectId":   projectID,
-				"gitlabHost":  gitlabHost,
+				"projectId":   candidate.ProjectID,
+				"gitlabHost":  candidate.Host,
+				"remoteName":  candidate.RemoteName,
 				"projectName": project.Name,
 				"projectPath": project.PathWithNamespace,
-				"message":     fmt.Sprintf("Project detected successfully. Use 'setCurrentProject' with projectId='%s' to save it.", projectID),
+				"message":     fmt.Sprintf("Project detected successfully. Use 'setCurrentProject' with projectId='%s' to save it.", candidate.ProjectID),
 			}
 
 			data, _ := json.MarshalIndent(result, "", "  ")
@@ -233,7 +253,7 @@ func AutoDetectAndSetProject(getClient GetClientFn) (tool mcp.Tool, handler serv
 			mcp.WithDescription("Auto-detects the GitLab project from Git remote and creates a .gmcprc file. This is a convenience command that combines detectProject and setCurrentProject."),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			projectID, gitlabHost, err := DetectProjectFromGit()
+			candidate, err := DetectProjectCandidateFromGit(nil)
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Failed to detect project: %v", err)), nil
 			}
@@ -244,9 +264,9 @@ func AutoDetectAndSetProject(getClient GetClientFn) (tool mcp.Tool, handler serv
 				return nil, fmt.Errorf("failed to get GitLab client: %w", err)
 			}
 
-			project, _, err := glClient.Projects.GetProject(projectID, nil, gl.WithContext(ctx))
+			project, _, err := glClient.Projects.GetProject(candidate.ProjectID, nil, gl.WithContext(ctx))
 			if err != nil {
-				return mcp.NewToolResultError(fmt.Sprintf("Detected project '%s' but could not verify it exists: %v", projectID, err)), nil
+				return mcp.NewToolResultError(fmt.Sprintf("Detected project '%s' but could not verify it exists: %v", candidate.ProjectID, err)), nil
 			}
 
 			// Get current working directory
@@ -257,8 +277,8 @@ func AutoDetectAndSetProject(getClient GetClientFn) (tool mcp.Tool, handler serv
 
 			// Create and write project config
 			config := &ProjectConfig{
-				ProjectID:  projectID,
-				GitLabHost: gitlabHost,
+				ProjectID:  candidate.ProjectID,
+				GitLabHost: candidate.Host,
 			}
 
 			configPath, err := WriteProjectConfig(cwd, config)
@@ -269,8 +289,9 @@ func AutoDetectAndSetProject(getClient GetClientFn) (tool mcp.Tool, handler serv
 			result := map[string]interface{}{
 				"success":     true,
 				"configPath":  configPath,
-				"projectId":   projectID,
-				"gitlabHost":  gitlabHost,
+				"projectId":   candidate.ProjectID,
+				"gitlabHost":  candidate.Host,
+				"remoteName":  candidate.RemoteName,
 				"projectName": project.Name,
 				"projectPath": project.PathWithNamespace,
 				"message":     "Project detected and configured successfully!",
