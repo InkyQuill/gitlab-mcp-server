@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -227,14 +228,19 @@ func parseRemoteSectionName(section string) string {
 }
 
 func NormalizeGitLabHost(host string) string {
-	host = strings.TrimSpace(strings.ToLower(strings.TrimSuffix(host, "/")))
+	host = strings.TrimRight(strings.TrimSpace(host), "/")
 	if host == "" {
 		return ""
 	}
-	if !strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://") {
-		host = "https://" + host
+	parseHost := host
+	if !strings.Contains(parseHost, "://") {
+		parseHost = "https://" + parseHost
 	}
-	return host
+	parsed, err := url.Parse(parseHost)
+	if err != nil || parsed.Host == "" {
+		return strings.ToLower(host)
+	}
+	return strings.ToLower(parsed.Host)
 }
 
 func SelectGitRemoteCandidate(candidates []GitRemoteCandidate, allowedHosts []string) (GitRemoteCandidate, error) {

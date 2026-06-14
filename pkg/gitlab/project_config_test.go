@@ -637,9 +637,21 @@ func TestSelectGitRemoteCandidate_AmbiguousWhenMultipleRemain(t *testing.T) {
 	assert.Contains(t, err.Error(), "mirror")
 }
 
+func TestSelectGitRemoteCandidate_MatchesAllowedHostIgnoringScheme(t *testing.T) {
+	candidates := []GitRemoteCandidate{
+		{RemoteName: "origin", ProjectID: "team/repo", Host: "https://gitlab.local"},
+	}
+
+	selected, err := SelectGitRemoteCandidate(candidates, []string{"http://gitlab.local"})
+	require.NoError(t, err)
+	assert.Equal(t, "origin", selected.RemoteName)
+	assert.Equal(t, "team/repo", selected.ProjectID)
+}
+
 func TestNormalizeGitLabHost(t *testing.T) {
-	assert.Equal(t, "https://gitlab.example.com", NormalizeGitLabHost("https://GitLab.Example.com/"))
-	assert.Equal(t, "https://gitlab.example.com", NormalizeGitLabHost("gitlab.example.com"))
+	assert.Equal(t, "gitlab.example.com", NormalizeGitLabHost("https://GitLab.Example.com/"))
+	assert.Equal(t, "gitlab.example.com", NormalizeGitLabHost("gitlab.example.com"))
+	assert.Equal(t, "gitlab.example.com:8080", NormalizeGitLabHost("  http://GitLab.Example.com:8080/  "))
 }
 
 func TestParseGitRemotes(t *testing.T) {
