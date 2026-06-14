@@ -224,6 +224,34 @@ func TestInitCommand_UsesConfiguredHostToSelectRemote(t *testing.T) {
 	assert.Contains(t, out.String(), `Matched server "work" from configured host https://gitlab.example.com.`)
 }
 
+func TestInitCommand_ExplicitProjectSurfacesConfigLoadError(t *testing.T) {
+	resetInitFlags(t)
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	repoDir := filepath.Join(tmpDir, "repo")
+	t.Setenv("HOME", homeDir)
+
+	configDir := filepath.Join(homeDir, pkgConfig.ConfigDir)
+	require.NoError(t, os.MkdirAll(configDir, 0700))
+	require.NoError(t, os.WriteFile(filepath.Join(configDir, pkgConfig.ConfigFileName), []byte(`{`), 0600))
+	require.NoError(t, os.Mkdir(repoDir, 0755))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(repoDir))
+
+	var out bytes.Buffer
+	cmd := NewCmd()
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"init", "group/repo", "--host", "https://gitlab.example.com"})
+	err = cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load GitLab config for server inference")
+	assert.NotContains(t, err.Error(), "no --server specified")
+}
+
 func TestDetectCommand_PrintsSelectedRemote(t *testing.T) {
 	tmpDir := t.TempDir()
 	gitDir := filepath.Join(tmpDir, ".git")

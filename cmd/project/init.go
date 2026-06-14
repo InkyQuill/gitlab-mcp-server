@@ -82,8 +82,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 		var err error
 		if mgr == nil {
 			mgr, err = pkgConfig.NewManager("")
+			if err != nil {
+				return fmt.Errorf("failed to load GitLab config for server inference: %w", err)
+			}
 		}
-		if err == nil && mgr.ServerCount() > 0 && gitlabHost != "" {
+		if mgr.ServerCount() > 0 && gitlabHost != "" {
 			matches := []string{}
 			for _, s := range mgr.ListServers() {
 				if strings.EqualFold(strings.TrimSuffix(s.Host, "/"),
