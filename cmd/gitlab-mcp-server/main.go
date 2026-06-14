@@ -275,6 +275,7 @@ This server supports multiple GitLab instances and can be configured via:
 
 			// Create Client Resolver — strict (opt-in via env) or legacy (default).
 			var resolverFn gitlab.GetClientFn
+			var resolveServerName func(context.Context) (string, error)
 			if os.Getenv("GITLAB_MCP_STRICT_RESOLVER") == "1" {
 				hostsByName := map[string]string{}
 				if hasConfigServers {
@@ -284,18 +285,37 @@ This server supports multiple GitLab instances and can be configured via:
 				}
 				sr := gitlab.NewStrictResolver(clientPool, hostsByName, logger)
 				resolverFn = sr.GetClientFn()
+				resolveServerName = func(ctx context.Context) (string, error) {
+					_, name, err := sr.Resolve(ctx)
+					return name, err
+				}
 				logger.Info("Strict resolver enabled (GITLAB_MCP_STRICT_RESOLVER=1) — no fallbacks, host verified per session")
 			} else {
 				resolver := gitlab.NewClientResolver(clientPool, defaultServer, logger)
 				resolverFn = resolver.GetClientFn()
+				resolveServerName = func(ctx context.Context) (string, error) {
+					_, name, err := resolver.Resolve(ctx)
+					return name, err
+				}
 				logger.Infof("Client resolver initialized with default server '%s' (legacy — set GITLAB_MCP_STRICT_RESOLVER=1 for strict mode)", defaultServer)
+			}
+			serverPolicy := func(ctx context.Context) (gitlab.ServerPolicy, error) {
+				name, err := resolveServerName(ctx)
+				if err != nil {
+					return gitlab.ServerPolicy{}, err
+				}
+				info, err := clientPool.GetClientInfo(name)
+				if err != nil {
+					return gitlab.ServerPolicy{}, fmt.Errorf("failed to get client info for %q: %w", name, err)
+				}
+				return gitlab.ServerPolicy{Name: name, ReadOnly: info.ReadOnly}, nil
 			}
 
 			// Check if dynamic toolsets mode is enabled
 			dynamicToolsets := viper.GetBool("dynamic-toolsets")
 
 			// Initialize Toolsets
-			toolsetGroup, err := gitlab.InitToolsets(enabledToolsets, readOnly, resolverFn, logger, tokenStore, t, dynamicToolsets)
+			toolsetGroup, err := gitlab.InitToolsets(enabledToolsets, readOnly, resolverFn, logger, tokenStore, t, dynamicToolsets, serverPolicy)
 			if err != nil {
 				logger.Fatalf("Failed to initialize toolsets: %v", err)
 			}
@@ -445,6 +465,9 @@ func validateTokenOnStartup(ctx context.Context, client *gl.Client, tokenStr str
 			return nil, fmt.Errorf("token is invalid or expired (401 Unauthorized)")
 		}
 		return nil, fmt.Errorf("token validation failed: %w", err)
+	}
+	if user == nil {
+		return nil, fmt.Errorf("token validation failed: GitLab returned an empty current user response")
 	}
 
 	metadata := &gitlab.TokenMetadata{

@@ -1,0 +1,15 @@
+{
+  "annotations": {
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": true
+  },
+  "description": "Lists all configured GitLab tokens with their validation status and metadata.",
+  "inputSchema": {
+    "properties": {},
+    "required": [],
+    "type": "object"
+  },
+  "name": "listTokens"
+}

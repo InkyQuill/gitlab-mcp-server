@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"context"
+	"fmt"
 
 	log "github.com/sirupsen/logrus"
 	gl "gitlab.com/gitlab-org/api/client-go"
@@ -9,9 +10,10 @@ import (
 
 // ClientResolver resolves which GitLab client to use for a given context
 // It supports:
-// 1. Project-specific token (from .gmcprc)
-// 2. Host-based matching
-// 3. Default fallback
+// 1. Explicit request-scoped server selection
+// 2. Project-specific server (from .gmcprc)
+// 3. Host-based matching
+// 4. Default fallback
 type ClientResolver struct {
 	pool          *ClientPool
 	defaultServer string
@@ -29,11 +31,20 @@ func NewClientResolver(pool *ClientPool, defaultServer string, logger *log.Logge
 
 // Resolve determines which client to use based on the current context
 // Resolution order:
-// 1. Read .gmcprc to get tokenName
-// 2. If tokenName exists, use that client
+// 1. If a request-scoped server was specified, use that client
+// 2. Read .gmcprc: if server field exists, use that client
 // 3. If gitlabHost in .gmcprc, find matching client by host
 // 4. Fall back to defaultServer
 func (cr *ClientResolver) Resolve(ctx context.Context) (*gl.Client, string, error) {
+	if requestedServer, ok := RequestedServerFromContext(ctx); ok {
+		client, err := cr.pool.GetClient(requestedServer)
+		if err != nil {
+			return nil, "", fmt.Errorf("requested server %q is not configured: %w", requestedServer, err)
+		}
+		cr.logger.Debugf("Using explicitly requested client '%s'", requestedServer)
+		return client, requestedServer, nil
+	}
+
 	// Try to read project config
 	config, configPath, err := FindProjectConfig()
 	if err != nil || config == nil {
@@ -44,33 +55,27 @@ func (cr *ClientResolver) Resolve(ctx context.Context) (*gl.Client, string, erro
 
 	cr.logger.Debugf("Found project config at %s: %+v", configPath, config)
 
-	// Priority 1: Use tokenName from config
-	if config.TokenName != "" {
-		client, err := cr.pool.GetClient(config.TokenName)
+	// Priority 1: Use server from config. ReadProjectConfig promotes
+	// deprecated tokenName to Server, so this covers both config shapes.
+	if config.Server != "" {
+		client, err := cr.pool.GetClient(config.Server)
 		if err != nil {
-			cr.logger.Warnf("Token '%s' specified in config but not found in pool, falling back to default", config.TokenName)
+			cr.logger.Warnf("Server '%s' specified in config but not found in pool, falling back to default", config.Server)
 		} else {
-			cr.logger.Debugf("Using client '%s' from project config", config.TokenName)
-			return client, config.TokenName, nil
+			cr.logger.Debugf("Using client '%s' from project config", config.Server)
+			return client, config.Server, nil
 		}
 	}
 
 	// Priority 2: Match by gitlabHost
 	if config.GitLabHost != "" && config.GitLabHost != "https://gitlab.com" {
-		// Try to find a client that matches this host
-		// Client names are either hostnames or "default"
-		clientNames := cr.pool.ListClients()
-		for _, name := range clientNames {
-			// Check if this client's host matches
-			if client, err := cr.pool.GetClient(name); err == nil {
-				// We need to check if the client was created with this host
-				// For now, we'll use a simple name-based matching
-				// NOTE: Future improvement - store host metadata in ClientPool for better matching
-				if name == config.GitLabHost {
-					cr.logger.Debugf("Using client '%s' matching host %s", name, config.GitLabHost)
-					return client, name, nil
-				}
+		if name, _, ok := cr.pool.FindClientByHost(config.GitLabHost); ok {
+			client, err := cr.pool.GetClient(name)
+			if err != nil {
+				return nil, "", fmt.Errorf("client %q matched host %s but could not be loaded: %w", name, config.GitLabHost, err)
 			}
+			cr.logger.Debugf("Using client '%s' matching host %s", name, config.GitLabHost)
+			return client, name, nil
 		}
 
 		cr.logger.Warnf("No client found matching host %s, falling back to default", config.GitLabHost)

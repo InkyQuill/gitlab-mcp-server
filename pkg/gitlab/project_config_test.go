@@ -510,6 +510,150 @@ func TestParseGitLabURL(t *testing.T) {
 	}
 }
 
+func TestParseGitRemoteCandidates(t *testing.T) {
+	configData := []byte(`[remote "upstream"]
+	url = https://gitlab.com/group/upstream.git
+[remote "origin"]
+	url = git@gitlab.example.com:team/repo.git
+[remote "mirror"]
+	url = /srv/git/local.git
+`)
+
+	candidates, err := ParseGitRemoteCandidates(configData)
+	require.NoError(t, err)
+	require.Len(t, candidates, 2)
+
+	assert.Equal(t, GitRemoteCandidate{
+		RemoteName: "upstream",
+		URL:        "https://gitlab.com/group/upstream.git",
+		ProjectID:  "group/upstream",
+		Host:       "https://gitlab.com",
+	}, candidates[0])
+	assert.Equal(t, GitRemoteCandidate{
+		RemoteName: "origin",
+		URL:        "git@gitlab.example.com:team/repo.git",
+		ProjectID:  "team/repo",
+		Host:       "https://gitlab.example.com",
+	}, candidates[1])
+}
+
+func TestParseGitRemoteCandidates_GitHubHardError(t *testing.T) {
+	configData := []byte(`[remote "origin"]
+	url = https://github.com/owner/repo.git
+`)
+
+	candidates, err := ParseGitRemoteCandidates(configData)
+	require.Error(t, err)
+	assert.Nil(t, candidates)
+	assert.Contains(t, err.Error(), "GitHub repository detected")
+}
+
+func TestParseGitRemoteCandidates_IgnoresURLsInNonRemoteSections(t *testing.T) {
+	configData := []byte(`[remote "origin"]
+	url = https://gitlab.com/group/repo.git
+[submodule "x"]
+	url = https://github.com/owner/submodule.git
+`)
+
+	candidates, err := ParseGitRemoteCandidates(configData)
+	require.NoError(t, err)
+	require.Len(t, candidates, 1)
+
+	assert.Equal(t, GitRemoteCandidate{
+		RemoteName: "origin",
+		URL:        "https://gitlab.com/group/repo.git",
+		ProjectID:  "group/repo",
+		Host:       "https://gitlab.com",
+	}, candidates[0])
+}
+
+func TestParseGitRemoteCandidates_URLAssignmentSpacing(t *testing.T) {
+	tests := []struct {
+		name string
+		line string
+	}{
+		{
+			name: "no spaces",
+			line: "url=https://gitlab.com/group/repo.git",
+		},
+		{
+			name: "extra spaces",
+			line: "url   =   https://gitlab.com/group/repo.git",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			configData := []byte("[remote \"origin\"]\n" + tc.line + "\n")
+
+			candidates, err := ParseGitRemoteCandidates(configData)
+			require.NoError(t, err)
+			require.Len(t, candidates, 1)
+
+			assert.Equal(t, GitRemoteCandidate{
+				RemoteName: "origin",
+				URL:        "https://gitlab.com/group/repo.git",
+				ProjectID:  "group/repo",
+				Host:       "https://gitlab.com",
+			}, candidates[0])
+		})
+	}
+}
+
+func TestSelectGitRemoteCandidate_MatchesAllowedHost(t *testing.T) {
+	candidates := []GitRemoteCandidate{
+		{RemoteName: "origin", ProjectID: "oss/repo", Host: "https://gitlab.com"},
+		{RemoteName: "work", ProjectID: "team/repo", Host: "https://gitlab.example.com"},
+	}
+
+	selected, err := SelectGitRemoteCandidate(candidates, []string{"https://gitlab.example.com/"})
+	require.NoError(t, err)
+	assert.Equal(t, "work", selected.RemoteName)
+	assert.Equal(t, "team/repo", selected.ProjectID)
+}
+
+func TestSelectGitRemoteCandidate_PrefersOriginWhenNoHostFilter(t *testing.T) {
+	candidates := []GitRemoteCandidate{
+		{RemoteName: "upstream", ProjectID: "group/upstream", Host: "https://gitlab.com"},
+		{RemoteName: "origin", ProjectID: "group/repo", Host: "https://gitlab.com"},
+	}
+
+	selected, err := SelectGitRemoteCandidate(candidates, nil)
+	require.NoError(t, err)
+	assert.Equal(t, "origin", selected.RemoteName)
+	assert.Equal(t, "group/repo", selected.ProjectID)
+}
+
+func TestSelectGitRemoteCandidate_AmbiguousWhenMultipleRemain(t *testing.T) {
+	candidates := []GitRemoteCandidate{
+		{RemoteName: "work", ProjectID: "team/api", Host: "https://gitlab.example.com"},
+		{RemoteName: "mirror", ProjectID: "team/api-mirror", Host: "https://gitlab.example.com"},
+	}
+
+	_, err := SelectGitRemoteCandidate(candidates, []string{"https://gitlab.example.com"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "ambiguous GitLab remotes")
+	assert.Contains(t, err.Error(), "work")
+	assert.Contains(t, err.Error(), "mirror")
+}
+
+func TestSelectGitRemoteCandidate_MatchesAllowedHostIgnoringScheme(t *testing.T) {
+	candidates := []GitRemoteCandidate{
+		{RemoteName: "origin", ProjectID: "team/repo", Host: "https://gitlab.local"},
+	}
+
+	selected, err := SelectGitRemoteCandidate(candidates, []string{"http://gitlab.local"})
+	require.NoError(t, err)
+	assert.Equal(t, "origin", selected.RemoteName)
+	assert.Equal(t, "team/repo", selected.ProjectID)
+}
+
+func TestNormalizeGitLabHost(t *testing.T) {
+	assert.Equal(t, "gitlab.example.com", NormalizeGitLabHost("https://GitLab.Example.com/"))
+	assert.Equal(t, "gitlab.example.com", NormalizeGitLabHost("gitlab.example.com"))
+	assert.Equal(t, "gitlab.example.com:8080", NormalizeGitLabHost("  http://GitLab.Example.com:8080/  "))
+}
+
 func TestParseGitRemotes(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -538,11 +682,11 @@ func TestParseGitRemotes(t *testing.T) {
 			expectedHost: "https://gitlab.com",
 		},
 		{
-			name: "Success - Multiple remotes, GitLab first",
+			name: "Success - Multiple GitLab remotes, origin selected",
 			configContent: `[remote "origin"]
 	url = git@gitlab.com:owner/repo.git
 [remote "upstream"]
-	url = https://github.com/upstream/repo.git
+	url = https://gitlab.com/upstream/repo.git
 `,
 			expectError:  false,
 			expectedID:   "owner/repo",
@@ -561,6 +705,16 @@ func TestParseGitRemotes(t *testing.T) {
 			name: "Error - GitHub remote",
 			configContent: `[remote "origin"]
 	url = https://github.com/owner/repo.git
+`,
+			expectError:   true,
+			errorContains: "GitHub repository detected",
+		},
+		{
+			name: "Error - GitHub remote after GitLab remote",
+			configContent: `[remote "origin"]
+	url = git@gitlab.com:owner/repo.git
+[remote "upstream"]
+	url = https://github.com/upstream/repo.git
 `,
 			expectError:   true,
 			errorContains: "GitHub repository detected",
@@ -608,6 +762,19 @@ func TestParseGitRemotes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseGitRemotes_UsesCandidateSelection(t *testing.T) {
+	configData := []byte(`[remote "upstream"]
+	url = https://gitlab.com/group/upstream.git
+[remote "origin"]
+	url = https://gitlab.com/group/repo.git
+`)
+
+	projectID, host, err := parseGitRemotes(configData)
+	require.NoError(t, err)
+	assert.Equal(t, "group/repo", projectID)
+	assert.Equal(t, "https://gitlab.com", host)
 }
 
 func TestDetectProjectFromGit(t *testing.T) {
@@ -758,6 +925,50 @@ func TestDetectProjectFromGit(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDetectProjectCandidateFromGit_GitFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	repoDir := filepath.Join(tmpDir, "worktree")
+	actualGitDir := filepath.Join(tmpDir, "actual.git")
+	require.NoError(t, os.Mkdir(repoDir, 0755))
+	require.NoError(t, os.Mkdir(actualGitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, ".git"), []byte("gitdir: ../actual.git\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(actualGitDir, "config"), []byte(`[remote "origin"]
+	url = https://gitlab.example.com/group/repo.git
+`), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(repoDir))
+
+	candidate, err := DetectProjectCandidateFromGit([]string{"gitlab.example.com"})
+
+	require.NoError(t, err)
+	assert.Equal(t, "origin", candidate.RemoteName)
+	assert.Equal(t, "group/repo", candidate.ProjectID)
+	assert.Equal(t, "https://gitlab.example.com", candidate.Host)
+}
+
+func TestDetectProjectCandidateFromGit_Ambiguous(t *testing.T) {
+	tmpDir := t.TempDir()
+	gitDir := filepath.Join(tmpDir, ".git")
+	require.NoError(t, os.Mkdir(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(`[remote "work"]
+	url = https://gitlab.example.com/team/api.git
+[remote "mirror"]
+	url = https://gitlab.example.com/team/api-mirror.git
+`), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	_, err = DetectProjectCandidateFromGit([]string{"https://gitlab.example.com"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "ambiguous GitLab remotes")
 }
 
 func TestReadProjectConfig_PromotesTokenNameToServer(t *testing.T) {

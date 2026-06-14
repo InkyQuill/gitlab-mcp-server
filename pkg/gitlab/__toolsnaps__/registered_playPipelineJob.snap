@@ -1,0 +1,29 @@
+{
+  "annotations": {
+    "title": "Play Pipeline Job",
+    "readOnlyHint": false
+  },
+  "description": "TOOL_PLAY_PIPELINE_JOB_DESCRIPTION",
+  "inputSchema": {
+    "properties": {
+      "jobId": {
+        "description": "The ID of the job to play.",
+        "type": "number"
+      },
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "server": {
+        "description": "Configured GitLab server name. Overrides .gmcprc/default routing for this call.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId",
+      "jobId"
+    ],
+    "type": "object"
+  },
+  "name": "playPipelineJob"
+}

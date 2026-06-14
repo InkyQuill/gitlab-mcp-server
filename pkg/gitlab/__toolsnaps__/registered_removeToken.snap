@@ -1,0 +1,22 @@
+{
+  "annotations": {
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": true
+  },
+  "description": "Removes a token from the runtime token store. Note: This does not update MCP configuration files.",
+  "inputSchema": {
+    "properties": {
+      "name": {
+        "description": "Token name to remove.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "name"
+    ],
+    "type": "object"
+  },
+  "name": "removeToken"
+}

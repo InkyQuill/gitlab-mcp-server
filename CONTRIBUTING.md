@@ -12,7 +12,7 @@ This project adheres to a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By 
 
 Before contributing, ensure you have the following installed:
 
-1. **Go 1.25 or later** (the module declares `go 1.25.9`)
+1. **Go 1.25 or later** (the module declares `go 1.25.11`)
    - [Download Go](https://go.dev/doc/install)
    - [Install via Homebrew](https://formulae.brew.sh/formula/go) (macOS)
 

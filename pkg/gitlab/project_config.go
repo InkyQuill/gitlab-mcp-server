@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -120,35 +121,45 @@ func WriteProjectConfig(dir string, cfg *ProjectConfig) (string, error) {
 
 // DetectProjectFromGit attempts to detect the project ID from Git remote
 func DetectProjectFromGit() (projectID, gitlabHost string, err error) {
+	candidate, err := DetectProjectCandidateFromGit(nil)
+	if err != nil {
+		return "", "", err
+	}
+	return candidate.ProjectID, candidate.Host, nil
+}
+
+func DetectProjectCandidateFromGit(allowedHosts []string) (GitRemoteCandidate, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get working directory: %w", err)
+		return GitRemoteCandidate{}, fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	// Search for .git directory
 	gitDir := findGitDir(cwd)
 	if gitDir == "" {
-		return "", "", fmt.Errorf("not a Git repository (or any parent up to mount point)")
+		gitDir, err = findGitFileDir(cwd)
+		if err != nil {
+			return GitRemoteCandidate{}, err
+		}
+		if gitDir == "" {
+			return GitRemoteCandidate{}, fmt.Errorf("not a Git repository (or any parent up to mount point)")
+		}
 	}
 
-	// Read .git/config
-	configPath := filepath.Join(gitDir, "config")
-	configData, err := os.ReadFile(configPath)
+	configData, err := os.ReadFile(filepath.Join(gitDir, "config"))
 	if err != nil {
-		return "", "", fmt.Errorf("failed to read .git/config: %w", err)
+		return GitRemoteCandidate{}, fmt.Errorf("failed to read .git/config: %w", err)
 	}
 
-	// Parse Git config to find remotes
-	projectID, gitlabHost, err = parseGitRemotes(configData)
+	candidates, err := ParseGitRemoteCandidates(configData)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to parse Git remotes: %w", err)
+		return GitRemoteCandidate{}, fmt.Errorf("failed to parse Git remotes: %w", err)
 	}
 
-	if projectID == "" {
-		return "", "", fmt.Errorf("no GitLab remote found in .git/config")
+	candidate, err := SelectGitRemoteCandidate(candidates, allowedHosts)
+	if err != nil {
+		return GitRemoteCandidate{}, err
 	}
-
-	return projectID, gitlabHost, nil
+	return candidate, nil
 }
 
 // findGitDir searches for .git directory
@@ -170,38 +181,187 @@ func findGitDir(startDir string) string {
 	}
 }
 
-// parseGitRemotes parses .git/config content to extract GitLab remote
-func parseGitRemotes(configData []byte) (projectID, gitlabHost string, err error) {
-	lines := bytes.Split(configData, []byte{'\n'})
+func findGitFileDir(startDir string) (string, error) {
+	dir := startDir
+	for {
+		gitPath := filepath.Join(dir, ".git")
+		info, err := os.Stat(gitPath)
+		if err == nil && !info.IsDir() {
+			return resolveGitFileDir(dir, gitPath)
+		}
+		if err != nil && !os.IsNotExist(err) {
+			return "", fmt.Errorf("failed to inspect .git file: %w", err)
+		}
 
-	var url string
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", nil
+		}
+		dir = parent
+	}
+}
+
+func resolveGitFileDir(repoDir, gitPath string) (string, error) {
+	data, err := os.ReadFile(gitPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read .git file: %w", err)
+	}
+	line := strings.TrimSpace(string(data))
+	const prefix = "gitdir:"
+	if !strings.HasPrefix(strings.ToLower(line), prefix) {
+		return "", fmt.Errorf("invalid .git file %s: missing gitdir reference", gitPath)
+	}
+	gitDir := strings.TrimSpace(line[len(prefix):])
+	if gitDir == "" {
+		return "", fmt.Errorf("invalid .git file %s: empty gitdir reference", gitPath)
+	}
+	if !filepath.IsAbs(gitDir) {
+		gitDir = filepath.Join(repoDir, gitDir)
+	}
+	return filepath.Clean(gitDir), nil
+}
+
+type GitRemoteCandidate struct {
+	RemoteName string
+	URL        string
+	ProjectID  string
+	Host       string
+}
+
+func ParseGitRemoteCandidates(configData []byte) ([]GitRemoteCandidate, error) {
+	lines := bytes.Split(configData, []byte{'\n'})
+	candidates := make([]GitRemoteCandidate, 0)
+	currentRemote := ""
 
 	for _, line := range lines {
 		trimmed := bytes.TrimSpace(line)
-
-		// Check for remote section
 		if bytes.HasPrefix(trimmed, []byte("[remote ")) {
+			currentRemote = parseRemoteSectionName(string(trimmed))
+			continue
+		}
+		if bytes.HasPrefix(trimmed, []byte("[")) {
+			currentRemote = ""
 			continue
 		}
 
-		// Check for URL in current remote section
-		if bytes.HasPrefix(trimmed, []byte("url = ")) {
-			url = string(trimmed[6:])
-			url = strings.TrimSpace(url)
+		key, value, ok := strings.Cut(string(trimmed), "=")
+		if currentRemote == "" || !ok || strings.TrimSpace(key) != "url" {
+			continue
+		}
 
-			// Try to extract project info from URL
-			pid, host, parseErr := parseGitLabURL(url)
-			if parseErr != nil {
-				// GitHub detection - return error immediately
-				return "", "", parseErr
+		rawURL := strings.TrimSpace(value)
+		projectID, host, err := parseGitLabURL(rawURL)
+		if err != nil {
+			return nil, err
+		}
+		if projectID == "" || host == "" {
+			continue
+		}
+		candidates = append(candidates, GitRemoteCandidate{
+			RemoteName: currentRemote,
+			URL:        rawURL,
+			ProjectID:  projectID,
+			Host:       host,
+		})
+	}
+
+	return candidates, nil
+}
+
+func parseRemoteSectionName(section string) string {
+	const prefix = `[remote "`
+	const suffix = `"]`
+	if !strings.HasPrefix(section, prefix) || !strings.HasSuffix(section, suffix) {
+		return ""
+	}
+	return strings.TrimSuffix(strings.TrimPrefix(section, prefix), suffix)
+}
+
+func NormalizeGitLabHost(host string) string {
+	host = strings.TrimRight(strings.TrimSpace(host), "/")
+	if host == "" {
+		return ""
+	}
+	parseHost := host
+	if !strings.Contains(parseHost, "://") {
+		parseHost = "https://" + parseHost
+	}
+	parsed, err := url.Parse(parseHost)
+	if err != nil || parsed.Host == "" {
+		return strings.ToLower(host)
+	}
+	return strings.ToLower(parsed.Host)
+}
+
+func SelectGitRemoteCandidate(candidates []GitRemoteCandidate, allowedHosts []string) (GitRemoteCandidate, error) {
+	filtered := filterCandidatesByAllowedHosts(candidates, allowedHosts)
+	if len(filtered) == 0 {
+		return GitRemoteCandidate{}, fmt.Errorf("no GitLab remote found in .git/config")
+	}
+	if len(filtered) == 1 {
+		return filtered[0], nil
+	}
+
+	for _, preferred := range []string{"origin", "gitlab", "upstream"} {
+		matches := make([]GitRemoteCandidate, 0, 1)
+		for _, candidate := range filtered {
+			if candidate.RemoteName == preferred {
+				matches = append(matches, candidate)
 			}
-			if pid != "" {
-				return pid, host, nil
-			}
+		}
+		if len(matches) == 1 {
+			return matches[0], nil
 		}
 	}
 
-	return "", "", nil
+	return GitRemoteCandidate{}, fmt.Errorf("ambiguous GitLab remotes: %s", formatRemoteCandidates(filtered))
+}
+
+func filterCandidatesByAllowedHosts(candidates []GitRemoteCandidate, allowedHosts []string) []GitRemoteCandidate {
+	if len(allowedHosts) == 0 {
+		return candidates
+	}
+
+	allowed := make(map[string]struct{}, len(allowedHosts))
+	for _, host := range allowedHosts {
+		normalized := NormalizeGitLabHost(host)
+		if normalized != "" {
+			allowed[normalized] = struct{}{}
+		}
+	}
+
+	filtered := make([]GitRemoteCandidate, 0, len(candidates))
+	for _, candidate := range candidates {
+		if _, ok := allowed[NormalizeGitLabHost(candidate.Host)]; ok {
+			filtered = append(filtered, candidate)
+		}
+	}
+	return filtered
+}
+
+func formatRemoteCandidates(candidates []GitRemoteCandidate) string {
+	parts := make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		parts = append(parts, fmt.Sprintf("%s=%s on %s", candidate.RemoteName, candidate.ProjectID, candidate.Host))
+	}
+	return strings.Join(parts, ", ")
+}
+
+// parseGitRemotes parses .git/config content to extract GitLab remote
+func parseGitRemotes(configData []byte) (projectID, gitlabHost string, err error) {
+	candidates, err := ParseGitRemoteCandidates(configData)
+	if err != nil {
+		return "", "", err
+	}
+
+	candidate, err := SelectGitRemoteCandidate(candidates, nil)
+	if err != nil {
+		if strings.Contains(err.Error(), "no GitLab remote found") {
+			return "", "", nil
+		}
+		return "", "", err
+	}
+	return candidate.ProjectID, candidate.Host, nil
 }
 
 // isGitHubURL checks if the given URL is a GitHub repository URL

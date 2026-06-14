@@ -14,8 +14,8 @@ The server merges configuration from several places. At startup:
 
 At tool-call time, a resolver picks a GitLab client:
 
-- **Legacy (default).** Uses `server` from the tool arguments when present; otherwise falls back to the configured default.
-- **Strict.** Set `GITLAB_MCP_STRICT_RESOLVER=1` to require every call to name a valid configured server and verify that the server's host matches its config (no fallbacks). Recommended if you use multiple servers and want tools to fail loudly on typos.
+- **Legacy (default).** Uses `server` from normal GitLab API tool arguments when present, then `.gmcprc`, then the configured default.
+- **Strict.** Set `GITLAB_MCP_STRICT_RESOLVER=1` to require normal GitLab API calls to resolve to a configured server from an explicit `server` argument or `.gmcprc`, and verify that the server's host matches its config (no unresolved/default fallback). Recommended if you use multiple servers and want tools to fail loudly on typos.
 
 ## The global config file
 
@@ -146,7 +146,7 @@ Special case — **not** managed by viper:
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `GITLAB_MCP_STRICT_RESOLVER` | _(unset)_ | Set to `1` to switch the resolver to strict mode (every tool call must specify a known server; host verified per session). |
+| `GITLAB_MCP_STRICT_RESOLVER` | _(unset)_ | Set to `1` to switch the resolver to strict mode (normal GitLab API calls must resolve to a configured server; host verified per session). |
 
 ## Read-only mode
 
@@ -188,7 +188,7 @@ gitlab-mcp-server config add mirror   --host https://gitlab.example.internal --r
 gitlab-mcp-server config default work
 ```
 
-Tools can target a specific server by passing the `server` argument (`server: "personal"`). With `GITLAB_MCP_STRICT_RESOLVER=1` the `server` argument becomes mandatory.
+Tools can target a specific server by passing the `server` argument (`server: "personal"`). With `GITLAB_MCP_STRICT_RESOLVER=1`, normal GitLab API calls must resolve to a configured server from an explicit `server` argument or `.gmcprc`.
 
 ## See also
 

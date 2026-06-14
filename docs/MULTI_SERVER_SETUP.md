@@ -50,9 +50,15 @@ cd ~/projects/my-oss             # uses `personal`
 gitlab-mcp-server project init
 ```
 
-`project init` detects the remote host and records the matching server in `.gmcprc`.
+`project init` detects the remote host and records the matching server in `.gmcprc` when exactly one configured server matches that host. If a repository has several GitLab remotes, detection filters to configured hosts first and then prefers `origin`, `gitlab`, or `upstream` only when one clear remote remains.
 
-**Explicit argument on the tool call.** Any tool accepts a `server` argument that takes precedence:
+If several remotes or configured servers still match, `project init` reports the ambiguity instead of guessing. Recover by pinning the project and server explicitly:
+
+```bash
+gitlab-mcp-server project init group/project --server work
+```
+
+**Explicit argument on the tool call.** Normal GitLab API tools accept a `server` argument that takes precedence:
 
 ```json
 { "name": "listIssues", "arguments": { "server": "personal", "projectId": "user/oss" } }
@@ -64,7 +70,7 @@ gitlab-mcp-server project init
 
 Set `GITLAB_MCP_STRICT_RESOLVER=1` to disable implicit defaults:
 
-- Every tool call must include a valid `server`.
+- Normal GitLab API calls must resolve to a configured server from an explicit `server` argument or `.gmcprc`.
 - The server's host is verified against the config on every session.
 - Typos surface as clear errors instead of silently hitting the default server.
 
@@ -81,6 +87,8 @@ Only one server is default at any time. `config list` marks the current default.
 ## Read-only per server
 
 Setting `--read-only` on a server blocks every write tool when that server is the target, regardless of the process-wide `--read-only` flag. Useful for mirrors or production instances you only want to read.
+
+Per-server read-only mode is enforced when a write tool runs. This means a write tool may still appear in the tool list, but calls targeting a read-only server fail before making a GitLab API request.
 
 ## Removing a server
 

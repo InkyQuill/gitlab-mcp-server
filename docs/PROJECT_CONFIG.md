@@ -37,7 +37,9 @@ gitlab-mcp-server project detect   # detect without writing
 gitlab-mcp-server project status   # show the effective .gmcprc for the current directory
 ```
 
-`project init` looks at `.git/config` remote URLs, matches them against known GitLab hosts, and extracts `group/project`. If the remote host matches a configured server's host, that server is recorded as well.
+`project init` looks at `.git/config` remote URLs, matches them against known GitLab hosts, and extracts `group/project`. If the remote host matches exactly one configured server's host, that server is recorded as well.
+
+When multiple GitLab remotes are present, detection first filters to configured hosts when that information is available, then prefers the common remote names `origin`, `gitlab`, and `upstream` only when one clear match remains. If several remotes or several configured servers still match, the command reports the ambiguity instead of guessing. Pass the project ID and `--server` explicitly to recover.
 
 ## Tools
 
@@ -76,7 +78,15 @@ Self-hosted project pinned to a specific configured server:
 
 ## Troubleshooting
 
-**`project init` says "no GitLab remote found".** The remote URL must point at a known GitLab host. For private instances, make sure you've run `config add … --host <your-host>` first; `project init` will match against your configured servers.
+**`project init` says "no GitLab remote found".** The remote URL must point at a GitLab host. For private instances, make sure you've run `config add ... --host <your-host>` first; `project init` will match against your configured servers.
+
+**`project init` or `detectProject` reports ambiguous GitLab remotes.** Several remotes match and none can be selected safely. Run `git remote -v` to inspect them, then pass the project explicitly:
+
+```bash
+gitlab-mcp-server project init group/project --server work
+```
+
+**A configured server match is ambiguous.** More than one configured server uses the same normalized host. Rename or remove duplicate server entries, or pass the intended `server` argument directly in the MCP tool call.
 
 **Tool still asks for `projectId` even though `.gmcprc` exists.** The server only reads `.gmcprc` from its own working directory. Make sure the MCP client launches the server in the repo directory (most clients do). You can also call `setCurrentProject` once to write the file from inside a session.
 

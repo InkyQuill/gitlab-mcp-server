@@ -1,0 +1,26 @@
+{
+  "annotations": {
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": true
+  },
+  "description": "Updates an existing GitLab token. Validates the new token before updating.",
+  "inputSchema": {
+    "properties": {
+      "name": {
+        "description": "Token name to update.",
+        "type": "string"
+      },
+      "token": {
+        "description": "New GitLab Personal Access Token. If not provided, only revalidates existing token.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "name"
+    ],
+    "type": "object"
+  },
+  "name": "updateToken"
+}

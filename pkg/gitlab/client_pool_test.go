@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -100,6 +101,113 @@ func TestClientPool_AddClient(t *testing.T) {
 		require.NoError(t, err)
 		assert.Same(t, mockClient2, client)
 	})
+}
+
+func TestClientPool_AddClientWithMetadata(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	cp := NewClientPool(NewTokenStore(), logger)
+	client := &gl.Client{}
+
+	info := ClientInfo{
+		Name:     "work",
+		Host:     "https://gitlab.example.com",
+		ReadOnly: true,
+		Username: "inky",
+	}
+
+	require.NoError(t, cp.AddClientWithInfo(info, client))
+
+	gotClient, err := cp.GetClient("work")
+	require.NoError(t, err)
+	assert.Same(t, client, gotClient)
+
+	gotInfo, err := cp.GetClientInfo("work")
+	require.NoError(t, err)
+	assert.Equal(t, "work", gotInfo.Name)
+	assert.Equal(t, "https://gitlab.example.com", gotInfo.Host)
+	assert.Equal(t, "https://gitlab.example.com", gotInfo.APIHost)
+	assert.True(t, gotInfo.ReadOnly)
+	assert.Equal(t, "inky", gotInfo.Username)
+}
+
+func TestClientPool_FindClientByHost(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+
+	t.Run("matches host", func(t *testing.T) {
+		cp := NewClientPool(NewTokenStore(), logger)
+
+		require.NoError(t, cp.AddClientWithInfo(ClientInfo{
+			Name: "work",
+			Host: "https://gitlab.example.com/",
+		}, &gl.Client{}))
+
+		name, info, ok := cp.FindClientByHost("https://gitlab.example.com")
+		require.True(t, ok)
+		assert.Equal(t, "work", name)
+		assert.Equal(t, "https://gitlab.example.com/", info.Host)
+
+		_, _, ok = cp.FindClientByHost("https://gitlab.other.example")
+		assert.False(t, ok)
+	})
+
+	t.Run("returns lexicographically first duplicate host match", func(t *testing.T) {
+		cp := NewClientPool(NewTokenStore(), logger)
+
+		require.NoError(t, cp.AddClientWithInfo(ClientInfo{
+			Name: "zeta",
+			Host: "https://gitlab.example.com/",
+		}, &gl.Client{}))
+		require.NoError(t, cp.AddClientWithInfo(ClientInfo{
+			Name: "alpha",
+			Host: "https://gitlab.example.com",
+		}, &gl.Client{}))
+
+		name, info, ok := cp.FindClientByHost("https://gitlab.example.com/")
+		require.True(t, ok)
+		assert.Equal(t, "alpha", name)
+		assert.Equal(t, "alpha", info.Name)
+	})
+
+	t.Run("matches API host fallback", func(t *testing.T) {
+		cp := NewClientPool(NewTokenStore(), logger)
+
+		require.NoError(t, cp.AddClientWithInfo(ClientInfo{
+			Name:    "work-api",
+			Host:    "https://gitlab.example.com",
+			APIHost: "https://api.gitlab.example.com/",
+		}, &gl.Client{}))
+
+		name, info, ok := cp.FindClientByHost("https://api.gitlab.example.com")
+		require.True(t, ok)
+		assert.Equal(t, "work-api", name)
+		assert.Equal(t, "https://api.gitlab.example.com/", info.APIHost)
+	})
+}
+
+func TestClientPool_AddServerFromConfig_DefaultHostMetadata(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	cp := NewClientPool(NewTokenStore(), logger)
+
+	server := &config.ServerConfig{
+		Name:  "default",
+		Token: "test-token",
+	}
+	err := cp.AddServerFromConfig(context.Background(), server, func(context.Context, string) (string, error) {
+		return "test-token", nil
+	})
+	require.NoError(t, err)
+
+	info, err := cp.GetClientInfo("default")
+	require.NoError(t, err)
+	assert.Equal(t, "https://gitlab.com", info.Host)
+	assert.Equal(t, "https://gitlab.com", info.APIHost)
+
+	token, err := cp.store.GetToken("default")
+	require.NoError(t, err)
+	assert.Equal(t, "https://gitlab.com", token.GitLabHost)
 }
 
 func TestClientPool_GetClient(t *testing.T) {
@@ -252,6 +360,31 @@ func TestClientPool_ListClients(t *testing.T) {
 	})
 }
 
+func TestClientPool_ListClientInfo(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	cp := NewClientPool(NewTokenStore(), logger)
+
+	require.NoError(t, cp.AddClientWithInfo(ClientInfo{
+		Name: "zeta",
+		Host: "https://zeta.gitlab.example.com",
+	}, &gl.Client{}))
+	require.NoError(t, cp.AddClientWithInfo(ClientInfo{
+		Name: "alpha",
+		Host: "https://alpha.gitlab.example.com",
+	}, &gl.Client{}))
+	require.NoError(t, cp.AddClientWithInfo(ClientInfo{
+		Name: "work",
+		Host: "https://work.gitlab.example.com",
+	}, &gl.Client{}))
+
+	infos := cp.ListClientInfo()
+	require.Len(t, infos, 3)
+	assert.Equal(t, "alpha", infos[0].Name)
+	assert.Equal(t, "work", infos[1].Name)
+	assert.Equal(t, "zeta", infos[2].Name)
+}
+
 func TestClientPool_RemoveClient(t *testing.T) {
 	logger := log.New()
 	logger.SetLevel(log.ErrorLevel)
@@ -298,6 +431,8 @@ func TestClientPool_RemoveClient(t *testing.T) {
 				require.NoError(t, err)
 				// Verify client was removed
 				_, err := cp.GetClient(tc.clientName)
+				require.Error(t, err)
+				_, err = cp.GetClientInfo(tc.clientName)
 				require.Error(t, err)
 			}
 		})
@@ -364,6 +499,16 @@ func TestClientPool_InitializeFromEnv(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, client)
 		assert.Equal(t, "default", name)
+
+		info, err := cp.GetClientInfo("default")
+		require.NoError(t, err)
+		assert.Equal(t, "https://gitlab.com", info.Host)
+		assert.Equal(t, "https://gitlab.com", info.APIHost)
+
+		name, info, ok := cp.FindClientByHost("https://gitlab.com")
+		require.True(t, ok)
+		assert.Equal(t, "default", name)
+		assert.Equal(t, "https://gitlab.com", info.Host)
 	})
 
 	t.Run("Success - Initialize with custom host", func(t *testing.T) {

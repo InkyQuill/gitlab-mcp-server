@@ -1,0 +1,24 @@
+{
+  "annotations": {
+    "title": "Get GitLab Project License Compliance",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_PROJECT_LICENSE_COMPLIANCE_DESCRIPTION",
+  "inputSchema": {
+    "properties": {
+      "pid": {
+        "description": "The ID or URL-encoded path of the project",
+        "type": "string"
+      },
+      "server": {
+        "description": "Configured GitLab server name. Overrides .gmcprc/default routing for this call.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "pid"
+    ],
+    "type": "object"
+  },
+  "name": "getProjectLicenseCompliance"
+}

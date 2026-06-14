@@ -153,7 +153,7 @@ Ensure `~/go/bin` (or wherever the binary went) is on `PATH`. In IDE configs, pr
 Re-run `gitlab-mcp-server config validate`. Common causes: expired token, wrong host, scopes missing (`api` is the safe default), or a corporate proxy stripping TLS. For self-managed GitLab with a private CA, see [docs/SELF_HOSTED.md](SELF_HOSTED.md).
 
 **Tool appears but errors "server not found"**
-You have multiple servers configured and no default. Set one with `gitlab-mcp-server config default <name>`, or pass `server` explicitly on tool calls. Strict mode (`GITLAB_MCP_STRICT_RESOLVER=1`) requires explicit `server` on every call.
+You have multiple servers configured and no default. Set one with `gitlab-mcp-server config default <name>`, or pass `server` explicitly on normal GitLab API tool calls. Strict mode (`GITLAB_MCP_STRICT_RESOLVER=1`) requires normal GitLab API calls to resolve to a configured server from an explicit `server` argument or `.gmcprc`.
 
 **IDE doesn't pick up the server**
 Confirm the IDE restarted, the config file is valid JSON (the installer creates a `.backup` you can diff against), and the path to the binary is correct. `gitlab-mcp-server install status` reports whether each client's config file exists.

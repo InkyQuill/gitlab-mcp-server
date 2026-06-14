@@ -1,0 +1,24 @@
+{
+  "annotations": {
+    "title": "Get GitLab User by ID",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_USER_DESCRIPTION",
+  "inputSchema": {
+    "properties": {
+      "server": {
+        "description": "Configured GitLab server name. Overrides .gmcprc/default routing for this call.",
+        "type": "string"
+      },
+      "userId": {
+        "description": "The ID of the user",
+        "type": "number"
+      }
+    },
+    "required": [
+      "userId"
+    ],
+    "type": "object"
+  },
+  "name": "getUser"
+}

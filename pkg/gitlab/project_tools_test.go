@@ -142,6 +142,120 @@ func TestSetCurrentProjectHandler(t *testing.T) {
 	}
 }
 
+func TestFindServerByHost_Ambiguous(t *testing.T) {
+	store := NewTokenStore()
+	require.NoError(t, store.AddToken("work", &TokenMetadata{GitLabHost: "https://gitlab.example.com"}))
+	require.NoError(t, store.AddToken("mirror", &TokenMetadata{GitLabHost: "https://gitlab.example.com/"}))
+
+	server, err := findServerByHost("https://gitlab.example.com", store)
+
+	require.Error(t, err)
+	assert.Empty(t, server)
+	assert.Contains(t, err.Error(), "multiple configured servers match host")
+}
+
+func TestFindServerByHost_NormalizesHost(t *testing.T) {
+	store := NewTokenStore()
+	require.NoError(t, store.AddToken("work", &TokenMetadata{GitLabHost: "https://GitLab.Example.com/"}))
+
+	server, err := findServerByHost("gitlab.example.com", store)
+
+	require.NoError(t, err)
+	assert.Equal(t, "work", server)
+}
+
+func TestConfiguredHostsFromTokenStore(t *testing.T) {
+	assert.Nil(t, configuredHostsFromTokenStore(nil))
+
+	store := NewTokenStore()
+	require.NoError(t, store.AddToken("empty", &TokenMetadata{}))
+	require.NoError(t, store.AddToken("work", &TokenMetadata{GitLabHost: "https://gitlab.example.com"}))
+
+	hosts := configuredHostsFromTokenStore(store)
+
+	assert.Equal(t, []string{"https://gitlab.example.com"}, hosts)
+}
+
+func TestSetCurrentProjectHandler_FiltersDetectedRemoteByConfiguredHosts(t *testing.T) {
+	mockClient, _, ctrl := setupMockClient(t)
+	defer ctrl.Finish()
+
+	tokenStore := NewTokenStore()
+	require.NoError(t, tokenStore.AddToken("work", &TokenMetadata{GitLabHost: "https://gitlab.example.com"}))
+	_, handler := SetCurrentProject(func(_ context.Context) (*gl.Client, error) {
+		return mockClient, nil
+	}, tokenStore)
+
+	tmpDir := t.TempDir()
+	gitDir := filepath.Join(tmpDir, ".git")
+	require.NoError(t, os.Mkdir(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(`[remote "origin"]
+	url = https://gitlab.com/group/public.git
+[remote "upstream"]
+	url = https://gitlab.example.com/work/repo.git
+`), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	req := mcp.CallToolRequest{
+		Params: mcp.CallToolParams{
+			Name: "setCurrentProject",
+			Arguments: map[string]any{
+				"projectId": "manual/project",
+			},
+		},
+	}
+	result, err := handler(context.Background(), req)
+
+	require.NoError(t, err)
+	textContent := getTextResult(t, result)
+	var resultMap map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(textContent.Text), &resultMap))
+	assert.Equal(t, "manual/project", resultMap["projectId"])
+	assert.Equal(t, "work", resultMap["server"])
+	assert.Equal(t, "https://gitlab.example.com", resultMap["gitlabHost"])
+}
+
+func TestSetCurrentProjectHandler_AmbiguousDetectionReturnsToolError(t *testing.T) {
+	_, handler := SetCurrentProject(func(_ context.Context) (*gl.Client, error) {
+		t.Fatal("getClient should not be called by setCurrentProject")
+		return nil, nil
+	}, NewTokenStore())
+
+	tmpDir := t.TempDir()
+	gitDir := filepath.Join(tmpDir, ".git")
+	require.NoError(t, os.Mkdir(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(`[remote "work"]
+	url = https://gitlab.example.com/team/api.git
+[remote "mirror"]
+	url = https://gitlab.example.com/team/api-mirror.git
+`), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	req := mcp.CallToolRequest{
+		Params: mcp.CallToolParams{
+			Name: "setCurrentProject",
+			Arguments: map[string]any{
+				"projectId": "manual/project",
+			},
+		},
+	}
+	result, err := handler(context.Background(), req)
+
+	require.NoError(t, err)
+	textContent := getTextResult(t, result)
+	assert.Contains(t, textContent.Text, "Failed to detect project")
+	assert.Contains(t, textContent.Text, "ambiguous GitLab remotes")
+	assert.NoFileExists(t, filepath.Join(tmpDir, ".gmcprc"))
+}
+
 func TestGetCurrentProjectHandler(t *testing.T) {
 	// Tool schema snapshot test
 	tool, _ := GetCurrentProject(nil, nil)
@@ -258,6 +372,79 @@ func TestGetCurrentProjectHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetCurrentProjectHandler_AmbiguousDetectionReturnsToolError(t *testing.T) {
+	_, handler := GetCurrentProject(func(_ context.Context) (*gl.Client, error) {
+		t.Fatal("getClient should not be called when detection is ambiguous")
+		return nil, nil
+	}, NewTokenStore())
+
+	tmpDir := t.TempDir()
+	gitDir := filepath.Join(tmpDir, ".git")
+	require.NoError(t, os.Mkdir(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(`[remote "work"]
+	url = https://gitlab.example.com/team/api.git
+[remote "mirror"]
+	url = https://gitlab.example.com/team/api-mirror.git
+`), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: "getCurrentProject"}}
+	result, err := handler(context.Background(), req)
+
+	require.NoError(t, err)
+	textContent := getTextResult(t, result)
+	assert.Contains(t, textContent.Text, "Failed to detect project")
+	assert.Contains(t, textContent.Text, "ambiguous GitLab remotes")
+	assert.NotContains(t, textContent.Text, `"found": false`)
+}
+
+func TestGetCurrentProjectHandler_BindsDetectedServerBeforeVerification(t *testing.T) {
+	mockClient, mockProjects, ctrl := setupMockClient(t)
+	defer ctrl.Finish()
+
+	tokenStore := NewTokenStore()
+	require.NoError(t, tokenStore.AddToken("work", &TokenMetadata{GitLabHost: "https://gitlab.example.com"}))
+	_, handler := GetCurrentProject(func(ctx context.Context) (*gl.Client, error) {
+		server, ok := RequestedServerFromContext(ctx)
+		require.True(t, ok)
+		assert.Equal(t, "work", server)
+		return mockClient, nil
+	}, tokenStore)
+
+	tmpDir := t.TempDir()
+	gitDir := filepath.Join(tmpDir, ".git")
+	require.NoError(t, os.Mkdir(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(`[remote "origin"]
+	url = https://gitlab.com/group/public.git
+[remote "upstream"]
+	url = https://gitlab.example.com/work/repo.git
+`), 0644))
+
+	mockProjects.EXPECT().
+		GetProject("work/repo", gomock.Any(), gomock.Any()).
+		Return(&gl.Project{Name: "repo", PathWithNamespace: "work/repo"}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: "getCurrentProject"}}
+	result, err := handler(context.Background(), req)
+
+	require.NoError(t, err)
+	textContent := getTextResult(t, result)
+	var resultMap map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(textContent.Text), &resultMap))
+	assert.Equal(t, "work/repo", resultMap["projectId"])
+	assert.Equal(t, "work", resultMap["server"])
+	assert.Equal(t, "upstream", resultMap["remoteName"])
 }
 
 func TestGetProjectIDWithFallback(t *testing.T) {
@@ -495,6 +682,49 @@ func TestDetectProjectHandler(t *testing.T) {
 	}
 }
 
+func TestDetectProjectWithTokenStore_FiltersAndBindsServer(t *testing.T) {
+	mockClient, mockProjects, ctrl := setupMockClient(t)
+	defer ctrl.Finish()
+
+	tokenStore := NewTokenStore()
+	require.NoError(t, tokenStore.AddToken("work", &TokenMetadata{GitLabHost: "https://gitlab.example.com"}))
+	_, handler := DetectProjectWithTokenStore(func(ctx context.Context) (*gl.Client, error) {
+		server, ok := RequestedServerFromContext(ctx)
+		require.True(t, ok)
+		assert.Equal(t, "work", server)
+		return mockClient, nil
+	}, tokenStore)
+
+	tmpDir := t.TempDir()
+	gitDir := filepath.Join(tmpDir, ".git")
+	require.NoError(t, os.Mkdir(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(`[remote "origin"]
+	url = https://gitlab.com/group/public.git
+[remote "upstream"]
+	url = https://gitlab.example.com/work/repo.git
+`), 0644))
+
+	mockProjects.EXPECT().
+		GetProject("work/repo", gomock.Any(), gomock.Any()).
+		Return(&gl.Project{Name: "repo", PathWithNamespace: "work/repo"}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: "detectProject"}}
+	result, err := handler(context.Background(), req)
+
+	require.NoError(t, err)
+	textContent := getTextResult(t, result)
+	var resultMap map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(textContent.Text), &resultMap))
+	assert.Equal(t, "work/repo", resultMap["projectId"])
+	assert.Equal(t, "work", resultMap["server"])
+	assert.Equal(t, "upstream", resultMap["remoteName"])
+}
+
 func TestAutoDetectAndSetProjectHandler(t *testing.T) {
 	// Tool schema snapshot test
 	tool, _ := AutoDetectAndSetProject(nil)
@@ -598,6 +828,54 @@ func TestAutoDetectAndSetProjectHandler(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, string(configData), "group/project")
 	})
+}
+
+func TestAutoDetectAndSetProjectWithTokenStore_WritesMatchedServer(t *testing.T) {
+	mockClient, mockProjects, ctrl := setupMockClient(t)
+	defer ctrl.Finish()
+
+	tokenStore := NewTokenStore()
+	require.NoError(t, tokenStore.AddToken("work", &TokenMetadata{GitLabHost: "https://gitlab.example.com"}))
+	_, handler := AutoDetectAndSetProjectWithTokenStore(func(ctx context.Context) (*gl.Client, error) {
+		server, ok := RequestedServerFromContext(ctx)
+		require.True(t, ok)
+		assert.Equal(t, "work", server)
+		return mockClient, nil
+	}, tokenStore)
+
+	tmpDir := t.TempDir()
+	gitDir := filepath.Join(tmpDir, ".git")
+	require.NoError(t, os.Mkdir(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(`[remote "origin"]
+	url = https://gitlab.com/group/public.git
+[remote "upstream"]
+	url = https://gitlab.example.com/work/repo.git
+`), 0644))
+
+	mockProjects.EXPECT().
+		GetProject("work/repo", gomock.Any(), gomock.Any()).
+		Return(&gl.Project{Name: "repo", PathWithNamespace: "work/repo"}, &gl.Response{Response: &http.Response{StatusCode: 200}}, nil)
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Name: "autoDetectAndSetProject"}}
+	result, err := handler(context.Background(), req)
+
+	require.NoError(t, err)
+	textContent := getTextResult(t, result)
+	var resultMap map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(textContent.Text), &resultMap))
+	assert.Equal(t, "work/repo", resultMap["projectId"])
+	assert.Equal(t, "work", resultMap["server"])
+	assert.Equal(t, "upstream", resultMap["remoteName"])
+
+	config, err := readProjectConfig(filepath.Join(tmpDir, ".gmcprc"))
+	require.NoError(t, err)
+	assert.Equal(t, "work", config.Server)
+	assert.Equal(t, "work/repo", config.ProjectID)
 }
 
 // Integration test for the full project config workflow

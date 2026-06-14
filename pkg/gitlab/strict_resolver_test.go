@@ -68,6 +68,47 @@ func TestStrictResolver_ErrorsWhenNoProjectConfig(t *testing.T) {
 	assert.Contains(t, err.Error(), "no project configured")
 }
 
+func TestStrictResolver_ResolvesExplicitServerWithoutProjectConfig(t *testing.T) {
+	srv := newFakeGitLab(t)
+	defer srv.Close()
+
+	dir := t.TempDir()
+	cwd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(cwd) })
+	require.NoError(t, os.Chdir(dir))
+
+	pool := NewClientPool(NewTokenStore(), logrus.New())
+	client, err := gl.NewClient("x", gl.WithBaseURL(srv.URL))
+	require.NoError(t, err)
+	require.NoError(t, pool.AddClientWithInfo(ClientInfo{Name: "work", Host: srv.URL}, client))
+
+	r := NewStrictResolver(pool, nil, logrus.New())
+	got, name, err := r.Resolve(WithRequestedServer(context.Background(), "work"))
+	require.NoError(t, err)
+	assert.Equal(t, "work", name)
+	assert.NotNil(t, got)
+}
+
+func TestStrictResolver_ExplicitServerBeatsProjectConfig(t *testing.T) {
+	srv := newFakeGitLab(t)
+	defer srv.Close()
+	_ = mkProjectCfg(t, "work")
+
+	pool := NewClientPool(NewTokenStore(), logrus.New())
+	workClient, err := gl.NewClient("x", gl.WithBaseURL(srv.URL))
+	require.NoError(t, err)
+	personalClient, err := gl.NewClient("x", gl.WithBaseURL(srv.URL))
+	require.NoError(t, err)
+	require.NoError(t, pool.AddClientWithInfo(ClientInfo{Name: "work", Host: srv.URL}, workClient))
+	require.NoError(t, pool.AddClientWithInfo(ClientInfo{Name: "personal", Host: srv.URL}, personalClient))
+
+	r := NewStrictResolver(pool, nil, logrus.New())
+	got, name, err := r.Resolve(WithRequestedServer(context.Background(), "personal"))
+	require.NoError(t, err)
+	assert.Equal(t, "personal", name)
+	assert.Same(t, personalClient, got)
+}
+
 func TestStrictResolver_ErrorsWhenServerFieldEmpty(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, ".gmcprc")

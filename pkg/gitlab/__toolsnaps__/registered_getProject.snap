@@ -1,0 +1,24 @@
+{
+  "annotations": {
+    "title": "Get Project Details",
+    "readOnlyHint": true
+  },
+  "description": "TOOL_GET_PROJECT_DESCRIPTION",
+  "inputSchema": {
+    "properties": {
+      "projectId": {
+        "description": "The ID (integer) or URL-encoded path (string) of the project.",
+        "type": "string"
+      },
+      "server": {
+        "description": "Configured GitLab server name. Overrides .gmcprc/default routing for this call.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "projectId"
+    ],
+    "type": "object"
+  },
+  "name": "getProject"
+}
