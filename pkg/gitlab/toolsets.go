@@ -31,6 +31,8 @@ func newGitLabReadTool(tool mcp.Tool, handler server.ToolHandlerFunc) server.Ser
 
 func newGitLabWriteTool(policy ServerPolicyFn, tool mcp.Tool, handler server.ToolHandlerFunc) server.ServerTool {
 	if handler == nil {
+		// Schema-only tool definitions still need the routing parameter, but
+		// there is no callable handler where read-only policy can be enforced.
 		tool, handler = WithServerSelection(tool, handler)
 		return toolsets.NewServerTool(tool, handler)
 	}

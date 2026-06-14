@@ -399,3 +399,17 @@ func TestGitLabWriteToolNilPolicySkipsHandler(t *testing.T) {
 	assert.False(t, handlerCalled)
 	assert.Contains(t, requireToolText(t, result), `server policy is required for write tool "writeThing"`)
 }
+
+func TestGitLabWriteToolNilHandlerPassesThroughSchema(t *testing.T) {
+	policyCalled := false
+	policy := func(context.Context) (ServerPolicy, error) {
+		policyCalled = true
+		return ServerPolicy{Name: "default"}, nil
+	}
+
+	tool := newGitLabWriteTool(policy, mcp.NewTool("writeThing"), nil)
+
+	assert.Nil(t, tool.Handler)
+	assert.False(t, policyCalled)
+	assert.Contains(t, tool.Tool.InputSchema.Properties, "server")
+}

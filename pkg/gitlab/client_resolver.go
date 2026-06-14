@@ -11,7 +11,7 @@ import (
 // ClientResolver resolves which GitLab client to use for a given context
 // It supports:
 // 1. Explicit request-scoped server selection
-// 2. Project-specific token (from .gmcprc)
+// 2. Project-specific server (from .gmcprc)
 // 3. Host-based matching
 // 4. Default fallback
 type ClientResolver struct {
@@ -32,10 +32,9 @@ func NewClientResolver(pool *ClientPool, defaultServer string, logger *log.Logge
 // Resolve determines which client to use based on the current context
 // Resolution order:
 // 1. If a request-scoped server was specified, use that client
-// 2. Read .gmcprc to get server
-// 3. If server exists, use that client
-// 4. If gitlabHost in .gmcprc, find matching client by host
-// 5. Fall back to defaultServer
+// 2. Read .gmcprc: if server field exists, use that client
+// 3. If gitlabHost in .gmcprc, find matching client by host
+// 4. Fall back to defaultServer
 func (cr *ClientResolver) Resolve(ctx context.Context) (*gl.Client, string, error) {
 	if requestedServer, ok := RequestedServerFromContext(ctx); ok {
 		client, err := cr.pool.GetClient(requestedServer)
