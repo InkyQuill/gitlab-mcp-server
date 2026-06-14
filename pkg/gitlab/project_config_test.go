@@ -927,6 +927,30 @@ func TestDetectProjectFromGit(t *testing.T) {
 	}
 }
 
+func TestDetectProjectCandidateFromGit_GitFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	repoDir := filepath.Join(tmpDir, "worktree")
+	actualGitDir := filepath.Join(tmpDir, "actual.git")
+	require.NoError(t, os.Mkdir(repoDir, 0755))
+	require.NoError(t, os.Mkdir(actualGitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, ".git"), []byte("gitdir: ../actual.git\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(actualGitDir, "config"), []byte(`[remote "origin"]
+	url = https://gitlab.example.com/group/repo.git
+`), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(repoDir))
+
+	candidate, err := DetectProjectCandidateFromGit([]string{"gitlab.example.com"})
+
+	require.NoError(t, err)
+	assert.Equal(t, "origin", candidate.RemoteName)
+	assert.Equal(t, "group/repo", candidate.ProjectID)
+	assert.Equal(t, "https://gitlab.example.com", candidate.Host)
+}
+
 func TestDetectProjectCandidateFromGit_Ambiguous(t *testing.T) {
 	tmpDir := t.TempDir()
 	gitDir := filepath.Join(tmpDir, ".git")

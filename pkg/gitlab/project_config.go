@@ -136,7 +136,13 @@ func DetectProjectCandidateFromGit(allowedHosts []string) (GitRemoteCandidate, e
 
 	gitDir := findGitDir(cwd)
 	if gitDir == "" {
-		return GitRemoteCandidate{}, fmt.Errorf("not a Git repository (or any parent up to mount point)")
+		gitDir, err = findGitFileDir(cwd)
+		if err != nil {
+			return GitRemoteCandidate{}, err
+		}
+		if gitDir == "" {
+			return GitRemoteCandidate{}, fmt.Errorf("not a Git repository (or any parent up to mount point)")
+		}
 	}
 
 	configData, err := os.ReadFile(filepath.Join(gitDir, "config"))
@@ -173,6 +179,46 @@ func findGitDir(startDir string) string {
 		}
 		dir = parent
 	}
+}
+
+func findGitFileDir(startDir string) (string, error) {
+	dir := startDir
+	for {
+		gitPath := filepath.Join(dir, ".git")
+		info, err := os.Stat(gitPath)
+		if err == nil && !info.IsDir() {
+			return resolveGitFileDir(dir, gitPath)
+		}
+		if err != nil && !os.IsNotExist(err) {
+			return "", fmt.Errorf("failed to inspect .git file: %w", err)
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", nil
+		}
+		dir = parent
+	}
+}
+
+func resolveGitFileDir(repoDir, gitPath string) (string, error) {
+	data, err := os.ReadFile(gitPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read .git file: %w", err)
+	}
+	line := strings.TrimSpace(string(data))
+	const prefix = "gitdir:"
+	if !strings.HasPrefix(strings.ToLower(line), prefix) {
+		return "", fmt.Errorf("invalid .git file %s: missing gitdir reference", gitPath)
+	}
+	gitDir := strings.TrimSpace(line[len(prefix):])
+	if gitDir == "" {
+		return "", fmt.Errorf("invalid .git file %s: empty gitdir reference", gitPath)
+	}
+	if !filepath.IsAbs(gitDir) {
+		gitDir = filepath.Join(repoDir, gitDir)
+	}
+	return filepath.Clean(gitDir), nil
 }
 
 type GitRemoteCandidate struct {

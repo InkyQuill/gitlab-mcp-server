@@ -69,20 +69,13 @@ func (cr *ClientResolver) Resolve(ctx context.Context) (*gl.Client, string, erro
 
 	// Priority 2: Match by gitlabHost
 	if config.GitLabHost != "" && config.GitLabHost != "https://gitlab.com" {
-		// Try to find a client that matches this host
-		// Client names are either hostnames or "default"
-		clientNames := cr.pool.ListClients()
-		for _, name := range clientNames {
-			// Check if this client's host matches
-			if client, err := cr.pool.GetClient(name); err == nil {
-				// We need to check if the client was created with this host
-				// For now, we'll use a simple name-based matching
-				// NOTE: Future improvement - store host metadata in ClientPool for better matching
-				if name == config.GitLabHost {
-					cr.logger.Debugf("Using client '%s' matching host %s", name, config.GitLabHost)
-					return client, name, nil
-				}
+		if name, _, ok := cr.pool.FindClientByHost(config.GitLabHost); ok {
+			client, err := cr.pool.GetClient(name)
+			if err != nil {
+				return nil, "", fmt.Errorf("client %q matched host %s but could not be loaded: %w", name, config.GitLabHost, err)
 			}
+			cr.logger.Debugf("Using client '%s' matching host %s", name, config.GitLabHost)
+			return client, name, nil
 		}
 
 		cr.logger.Warnf("No client found matching host %s, falling back to default", config.GitLabHost)

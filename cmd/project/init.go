@@ -3,7 +3,6 @@ package project
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	pkgConfig "github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	"github.com/InkyQuill/gitlab-mcp-server/pkg/gitlab"
@@ -88,9 +87,9 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 		if mgr.ServerCount() > 0 && gitlabHost != "" {
 			matches := []string{}
+			normalizedGitLabHost := gitlab.NormalizeGitLabHost(gitlabHost)
 			for _, s := range mgr.ListServers() {
-				if strings.EqualFold(strings.TrimSuffix(s.Host, "/"),
-					strings.TrimSuffix(gitlabHost, "/")) {
+				if gitlab.NormalizeGitLabHost(s.Host) == normalizedGitLabHost {
 					matches = append(matches, s.Name)
 				}
 			}

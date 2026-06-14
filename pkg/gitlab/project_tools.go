@@ -43,7 +43,10 @@ func SetCurrentProject(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.
 
 			// If server is not specified, try to detect from Git remote
 			if server == "" {
-				candidate, detectErr := DetectProjectCandidateFromGit(nil)
+				candidate, detectErr := detectProjectCandidateForTokenStore(tokenStore)
+				if detectErr != nil && !shouldReturnNoProjectConfigPayload(detectErr) {
+					return mcp.NewToolResultError(fmt.Sprintf("Failed to detect project: %v", detectErr)), nil
+				}
 				if detectErr == nil && candidate.ProjectID != "" {
 					// Try to match the detected host with a configured server
 					matchedServer, err := findServerByHost(candidate.Host, tokenStore)
@@ -126,6 +129,34 @@ func findServerByHost(gitlabHost string, tokenStore *TokenStore) (string, error)
 	return matches[0], nil
 }
 
+func configuredHostsFromTokenStore(tokenStore *TokenStore) []string {
+	if tokenStore == nil {
+		return nil
+	}
+	tokens := tokenStore.ListTokens()
+	hosts := make([]string, 0, len(tokens))
+	for _, metadata := range tokens {
+		if metadata != nil && metadata.GitLabHost != "" {
+			hosts = append(hosts, metadata.GitLabHost)
+		}
+	}
+	sort.Strings(hosts)
+	return hosts
+}
+
+func detectProjectCandidateForTokenStore(tokenStore *TokenStore) (GitRemoteCandidate, error) {
+	return DetectProjectCandidateFromGit(configuredHostsFromTokenStore(tokenStore))
+}
+
+func shouldReturnNoProjectConfigPayload(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "not a Git repository") ||
+		strings.Contains(msg, "no GitLab remote found")
+}
+
 // GetCurrentProject retrieves the current GitLab project from .gmcprc file.
 // If no .gmcprc is found, it auto-detects from Git remote and matches with configured servers.
 func GetCurrentProject(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.Tool, handler server.ToolHandlerFunc) {
@@ -141,13 +172,32 @@ func GetCurrentProject(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.
 
 			// If no config found, try auto-detection from Git
 			if config == nil {
-				candidate, detectErr := DetectProjectCandidateFromGit(nil)
-				if detectErr != nil || candidate.ProjectID == "" {
+				candidate, detectErr := detectProjectCandidateForTokenStore(tokenStore)
+				if detectErr != nil {
+					if shouldReturnNoProjectConfigPayload(detectErr) {
+						return mcp.NewToolResultText(`{
+  "found": false,
+  "autoDetected": false,
+  "message": "No .gmcprc file found. Initialize a project with 'setCurrentProject' or ensure this is a Git repository with a GitLab remote."
+}`), nil
+					}
+					return mcp.NewToolResultError(fmt.Sprintf("Failed to detect project: %v", detectErr)), nil
+				}
+				if candidate.ProjectID == "" {
 					return mcp.NewToolResultText(`{
   "found": false,
   "autoDetected": false,
   "message": "No .gmcprc file found. Initialize a project with 'setCurrentProject' or ensure this is a Git repository with a GitLab remote."
 }`), nil
+				}
+
+				// Find matching server by host
+				server, err := findServerByHost(candidate.Host, tokenStore)
+				if err != nil {
+					return mcp.NewToolResultError(fmt.Sprintf("failed to match detected GitLab host to configured server: %v", err)), nil
+				}
+				if server != "" {
+					ctx = WithRequestedServer(ctx, server)
 				}
 
 				// Verify the project exists
@@ -159,12 +209,6 @@ func GetCurrentProject(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.
 				project, _, err := glClient.Projects.GetProject(candidate.ProjectID, nil, gl.WithContext(ctx))
 				if err != nil {
 					return mcp.NewToolResultError(fmt.Sprintf("Detected project '%s' but could not verify it exists: %v", candidate.ProjectID, err)), nil
-				}
-
-				// Find matching server by host
-				server, err := findServerByHost(candidate.Host, tokenStore)
-				if err != nil {
-					return mcp.NewToolResultError(fmt.Sprintf("failed to match detected GitLab host to configured server: %v", err)), nil
 				}
 
 				result := map[string]interface{}{
@@ -210,14 +254,26 @@ func GetCurrentProject(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.
 
 // DetectProject attempts to auto-detect the GitLab project from Git remote configuration.
 func DetectProject(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return DetectProjectWithTokenStore(getClient, nil)
+}
+
+func DetectProjectWithTokenStore(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"detectProject",
 			mcp.WithDescription("Auto-detects the GitLab project from the Git remote URL in the current directory. Useful for quickly setting up the project context."),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			candidate, err := DetectProjectCandidateFromGit(nil)
+			candidate, err := detectProjectCandidateForTokenStore(tokenStore)
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Failed to detect project: %v", err)), nil
+			}
+
+			server, err := findServerByHost(candidate.Host, tokenStore)
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("failed to match detected GitLab host to configured server: %v", err)), nil
+			}
+			if server != "" {
+				ctx = WithRequestedServer(ctx, server)
 			}
 
 			// Verify the project exists by calling GitLab API
@@ -234,6 +290,7 @@ func DetectProject(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHan
 			result := map[string]interface{}{
 				"success":     true,
 				"projectId":   candidate.ProjectID,
+				"server":      server,
 				"gitlabHost":  candidate.Host,
 				"remoteName":  candidate.RemoteName,
 				"projectName": project.Name,
@@ -248,14 +305,26 @@ func DetectProject(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHan
 
 // AutoDetectAndSetProject combines detection and setting in one command
 func AutoDetectAndSetProject(getClient GetClientFn) (tool mcp.Tool, handler server.ToolHandlerFunc) {
+	return AutoDetectAndSetProjectWithTokenStore(getClient, nil)
+}
+
+func AutoDetectAndSetProjectWithTokenStore(getClient GetClientFn, tokenStore *TokenStore) (tool mcp.Tool, handler server.ToolHandlerFunc) {
 	return mcp.NewTool(
 			"autoDetectAndSetProject",
 			mcp.WithDescription("Auto-detects the GitLab project from Git remote and creates a .gmcprc file. This is a convenience command that combines detectProject and setCurrentProject."),
 		),
 		func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			candidate, err := DetectProjectCandidateFromGit(nil)
+			candidate, err := detectProjectCandidateForTokenStore(tokenStore)
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Failed to detect project: %v", err)), nil
+			}
+
+			server, err := findServerByHost(candidate.Host, tokenStore)
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("failed to match detected GitLab host to configured server: %v", err)), nil
+			}
+			if server != "" {
+				ctx = WithRequestedServer(ctx, server)
 			}
 
 			// Verify the project exists
@@ -279,6 +348,7 @@ func AutoDetectAndSetProject(getClient GetClientFn) (tool mcp.Tool, handler serv
 			config := &ProjectConfig{
 				ProjectID:  candidate.ProjectID,
 				GitLabHost: candidate.Host,
+				Server:     server,
 			}
 
 			configPath, err := WriteProjectConfig(cwd, config)
@@ -290,6 +360,7 @@ func AutoDetectAndSetProject(getClient GetClientFn) (tool mcp.Tool, handler serv
 				"success":     true,
 				"configPath":  configPath,
 				"projectId":   candidate.ProjectID,
+				"server":      server,
 				"gitlabHost":  candidate.Host,
 				"remoteName":  candidate.RemoteName,
 				"projectName": project.Name,

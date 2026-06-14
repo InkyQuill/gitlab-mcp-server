@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	gl "gitlab.com/gitlab-org/api/client-go"
@@ -123,11 +124,11 @@ func TestValidateTokenOn_NilUser(t *testing.T) {
 			},
 		}, nil)
 
-	// This should panic when trying to access nil user's fields
-	// The function doesn't check for nil user (this is a known bug)
-	assert.Panics(t, func() {
-		validateTokenOnStartup(ctx, client.Client, "test-token")
-	})
+	metadata, err := validateTokenOnStartup(ctx, client.Client, "test-token")
+
+	require.Error(t, err)
+	assert.Nil(t, metadata)
+	assert.Contains(t, err.Error(), "empty current user response")
 }
 
 // TestInitLogger_DebugLevel tests logger initialization with debug level
@@ -198,8 +199,10 @@ func TestInitLogger_FileOutput(t *testing.T) {
 
 // TestInitLogger_FileOutputError tests logger with invalid file path
 func TestInitLogger_FileOutputError(t *testing.T) {
-	// Use an invalid path (e.g., directory that doesn't exist)
-	invalidPath := "/nonexistent/directory/test.log"
+	tmpDir := t.TempDir()
+	notDir := filepath.Join(tmpDir, "not-a-dir")
+	require.NoError(t, os.WriteFile(notDir, []byte("file"), 0600))
+	invalidPath := filepath.Join(notDir, "test.log")
 
 	logger, err := initLogger("info", invalidPath)
 
@@ -210,14 +213,14 @@ func TestInitLogger_FileOutputError(t *testing.T) {
 
 // TestInitConfig tests viper configuration initialization
 func TestInitConfig(t *testing.T) {
+	viper.Reset()
 	// Set environment variable before calling initConfig
 	t.Setenv("GITLAB_TOKEN", "test-token-from-env")
 
 	// Call initConfig
 	initConfig()
 
-	// Verify environment variable is read (via viper.AutomaticEnv)
-	// Note: We can't directly test viper's state in initConfig, but we verify it doesn't panic
+	assert.Equal(t, "test-token-from-env", viper.GetString("TOKEN"))
 }
 
 // TestSignalHandling_SIGINT tests SIGINT signal handling
@@ -225,12 +228,17 @@ func TestSignalHandling_SIGINT(t *testing.T) {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
+	errCh := make(chan error, 1)
+
 	// Send SIGINT signal
 	go func() {
 		time.Sleep(50 * time.Millisecond)
 		process, err := os.FindProcess(os.Getpid())
-		require.NoError(t, err)
-		_ = process.Signal(os.Interrupt)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		errCh <- process.Signal(os.Interrupt)
 	}()
 
 	// Wait for context to be cancelled
@@ -238,6 +246,7 @@ func TestSignalHandling_SIGINT(t *testing.T) {
 	case <-ctx.Done():
 		// Expected: context should be cancelled
 		assert.Equal(t, context.Canceled, ctx.Err())
+		require.NoError(t, <-errCh)
 	case <-time.After(1 * time.Second):
 		t.Fatal("Context was not cancelled within timeout")
 	}
@@ -248,12 +257,17 @@ func TestSignalHandling_SIGTERM(t *testing.T) {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM)
 	defer stop()
 
+	errCh := make(chan error, 1)
+
 	// Send SIGTERM signal
 	go func() {
 		time.Sleep(50 * time.Millisecond)
 		process, err := os.FindProcess(os.Getpid())
-		require.NoError(t, err)
-		_ = process.Signal(syscall.SIGTERM)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		errCh <- process.Signal(syscall.SIGTERM)
 	}()
 
 	// Wait for context to be cancelled
@@ -261,6 +275,7 @@ func TestSignalHandling_SIGTERM(t *testing.T) {
 	case <-ctx.Done():
 		// Expected: context should be cancelled
 		assert.Equal(t, context.Canceled, ctx.Err())
+		require.NoError(t, <-errCh)
 	case <-time.After(1 * time.Second):
 		t.Fatal("Context was not cancelled within timeout")
 	}

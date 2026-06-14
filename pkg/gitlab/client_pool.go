@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -134,7 +133,7 @@ func (cp *ClientPool) FindClientByHost(host string) (string, ClientInfo, bool) {
 }
 
 func normalizePoolHost(host string) string {
-	return strings.ToLower(strings.TrimSuffix(strings.TrimSpace(host), "/"))
+	return NormalizeGitLabHost(host)
 }
 
 // GetDefaultClient returns the default client ("default" or first available)
@@ -244,14 +243,18 @@ func (cp *ClientPool) AddServerFromConfig(ctx context.Context, server *config.Se
 	if server.Host != "" && server.Host != "https://gitlab.com" {
 		clientOpts = append(clientOpts, gl.WithBaseURL(server.Host))
 	}
+	effectiveHost := server.Host
+	if effectiveHost == "" {
+		effectiveHost = "https://gitlab.com"
+	}
 	glClient, err := gl.NewClient(token, clientOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to create GitLab client: %w", err)
 	}
 	if err := cp.AddClientWithInfo(ClientInfo{
 		Name:     server.Name,
-		Host:     server.Host,
-		APIHost:  server.Host,
+		Host:     effectiveHost,
+		APIHost:  effectiveHost,
 		ReadOnly: server.ReadOnly,
 		UserID:   server.UserID,
 		Username: server.Username,
@@ -260,7 +263,7 @@ func (cp *ClientPool) AddServerFromConfig(ctx context.Context, server *config.Se
 	}
 	metadata := &TokenMetadata{
 		Token:         token,
-		GitLabHost:    server.Host,
+		GitLabHost:    effectiveHost,
 		CreatedAt:     time.Now(),
 		LastValidated: time.Now(),
 	}
@@ -318,6 +321,10 @@ func (cp *ClientPool) initializeServer(ctx context.Context, name string, server 
 	if server.Host != "" && server.Host != "https://gitlab.com" {
 		clientOpts = append(clientOpts, gl.WithBaseURL(server.Host))
 	}
+	effectiveHost := server.Host
+	if effectiveHost == "" {
+		effectiveHost = "https://gitlab.com"
+	}
 
 	// Create GitLab client
 	glClient, err := gl.NewClient(server.Token, clientOpts...)
@@ -328,8 +335,8 @@ func (cp *ClientPool) initializeServer(ctx context.Context, name string, server 
 	// Add to pool
 	if err := cp.AddClientWithInfo(ClientInfo{
 		Name:     name,
-		Host:     server.Host,
-		APIHost:  server.Host,
+		Host:     effectiveHost,
+		APIHost:  effectiveHost,
 		ReadOnly: server.ReadOnly,
 		UserID:   server.UserID,
 		Username: server.Username,
@@ -340,7 +347,7 @@ func (cp *ClientPool) initializeServer(ctx context.Context, name string, server 
 	// Store token metadata in token store (minimal info, will be validated later)
 	metadata := &TokenMetadata{
 		Token:         server.Token,
-		GitLabHost:    server.Host,
+		GitLabHost:    effectiveHost,
 		CreatedAt:     time.Now(),
 		LastValidated: time.Now(),
 	}

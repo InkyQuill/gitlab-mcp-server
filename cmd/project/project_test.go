@@ -252,6 +252,44 @@ func TestInitCommand_ExplicitProjectSurfacesConfigLoadError(t *testing.T) {
 	assert.NotContains(t, err.Error(), "no --server specified")
 }
 
+func TestInitCommand_NormalizesConfiguredHostForExplicitHost(t *testing.T) {
+	resetInitFlags(t)
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	repoDir := filepath.Join(tmpDir, "repo")
+	t.Setenv("HOME", homeDir)
+
+	mgr, err := pkgConfig.NewManager("")
+	require.NoError(t, err)
+	require.NoError(t, mgr.AddServer(&pkgConfig.ServerConfig{
+		Name:  "work",
+		Host:  "https://gitlab.example.com",
+		Token: "test-token",
+	}))
+	require.NoError(t, mgr.Save())
+	require.NoError(t, os.Mkdir(repoDir, 0755))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(repoDir))
+
+	var out bytes.Buffer
+	cmd := NewCmd()
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"init", "group/repo", "--host", "gitlab.example.com"})
+	require.NoError(t, cmd.Execute())
+
+	data, err := os.ReadFile(filepath.Join(repoDir, ".gmcprc"))
+	require.NoError(t, err)
+	var cfg gitlab.ProjectConfig
+	require.NoError(t, json.Unmarshal(data, &cfg))
+	assert.Equal(t, "group/repo", cfg.ProjectID)
+	assert.Equal(t, "work", cfg.Server)
+	assert.Contains(t, out.String(), `Matched server "work" from configured host gitlab.example.com.`)
+}
+
 func TestDetectCommand_PrintsSelectedRemote(t *testing.T) {
 	tmpDir := t.TempDir()
 	gitDir := filepath.Join(tmpDir, ".git")

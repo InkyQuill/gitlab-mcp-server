@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/InkyQuill/gitlab-mcp-server/pkg/config"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -183,6 +184,30 @@ func TestClientPool_FindClientByHost(t *testing.T) {
 		assert.Equal(t, "work-api", name)
 		assert.Equal(t, "https://api.gitlab.example.com/", info.APIHost)
 	})
+}
+
+func TestClientPool_AddServerFromConfig_DefaultHostMetadata(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	cp := NewClientPool(NewTokenStore(), logger)
+
+	server := &config.ServerConfig{
+		Name:  "default",
+		Token: "test-token",
+	}
+	err := cp.AddServerFromConfig(context.Background(), server, func(context.Context, string) (string, error) {
+		return "test-token", nil
+	})
+	require.NoError(t, err)
+
+	info, err := cp.GetClientInfo("default")
+	require.NoError(t, err)
+	assert.Equal(t, "https://gitlab.com", info.Host)
+	assert.Equal(t, "https://gitlab.com", info.APIHost)
+
+	token, err := cp.store.GetToken("default")
+	require.NoError(t, err)
+	assert.Equal(t, "https://gitlab.com", token.GitLabHost)
 }
 
 func TestClientPool_GetClient(t *testing.T) {

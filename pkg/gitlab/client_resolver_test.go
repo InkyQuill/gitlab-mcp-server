@@ -197,6 +197,40 @@ func TestClientResolver_Resolve_WithServer(t *testing.T) {
 	assert.Equal(t, "work", name)
 }
 
+func TestClientResolver_Resolve_MatchesGitLabHostByClientInfo(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	pool := NewClientPool(NewTokenStore(), logger)
+
+	defaultClient := &gl.Client{}
+	workClient := &gl.Client{}
+	require.NoError(t, pool.AddClient("default", defaultClient))
+	require.NoError(t, pool.AddClientWithInfo(ClientInfo{
+		Name: "work",
+		Host: "https://gitlab.example.com",
+	}, workClient))
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".gmcprc")
+	configContent := `{
+  "projectId": "group/project",
+  "gitlabHost": "gitlab.example.com"
+}`
+	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	cr := NewClientResolver(pool, "default", logger)
+	client, name, err := cr.Resolve(context.Background())
+
+	require.NoError(t, err)
+	assert.Same(t, workClient, client)
+	assert.Equal(t, "work", name)
+}
+
 func TestClientResolver_Resolve_ServerBeatsDeprecatedTokenName(t *testing.T) {
 	logger := log.New()
 	logger.SetLevel(log.ErrorLevel)
@@ -280,7 +314,10 @@ func TestClientResolver_Resolve_HostMatching(t *testing.T) {
 	mockClient2 := &gl.Client{}
 	err := pool.AddClient("default", mockClient1)
 	require.NoError(t, err)
-	err = pool.AddClient("https://gitlab.example.com", mockClient2)
+	err = pool.AddClientWithInfo(ClientInfo{
+		Name: "work",
+		Host: "https://gitlab.example.com",
+	}, mockClient2)
 	require.NoError(t, err)
 
 	cr := NewClientResolver(pool, "default", logger)
@@ -306,7 +343,7 @@ func TestClientResolver_Resolve_HostMatching(t *testing.T) {
 	client, name, err := cr.Resolve(context.Background())
 	require.NoError(t, err)
 	assert.Same(t, mockClient2, client, "Should use client matching host")
-	assert.Equal(t, "https://gitlab.example.com", name)
+	assert.Equal(t, "work", name)
 }
 
 func TestClientResolver_Resolve_HostMatchingFallback(t *testing.T) {

@@ -152,7 +152,10 @@ func TestClientResolverFlow(t *testing.T) {
 
 		// Add client with matching hostname
 		client1, _ := gl.NewClient("token1")
-		pool.AddClient("https://gitlab.example.com", client1)
+		pool.AddClientWithInfo(gitlab.ClientInfo{
+			Name: "work",
+			Host: "https://gitlab.example.com",
+		}, client1)
 
 		// Add default client
 		client2, _ := gl.NewClient("token2")
@@ -167,8 +170,8 @@ func TestClientResolverFlow(t *testing.T) {
 			t.Fatalf("Resolve() error = %v", err)
 		}
 
-		if name != "https://gitlab.example.com" {
-			t.Errorf("expected name 'https://gitlab.example.com', got '%s'", name)
+		if name != "work" {
+			t.Errorf("expected name 'work', got '%s'", name)
 		}
 
 		if client == nil {

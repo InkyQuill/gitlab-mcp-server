@@ -466,6 +466,9 @@ func validateTokenOnStartup(ctx context.Context, client *gl.Client, tokenStr str
 		}
 		return nil, fmt.Errorf("token validation failed: %w", err)
 	}
+	if user == nil {
+		return nil, fmt.Errorf("token validation failed: GitLab returned an empty current user response")
+	}
 
 	metadata := &gitlab.TokenMetadata{
 		Token:         tokenStr,
