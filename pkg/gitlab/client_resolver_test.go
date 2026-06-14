@@ -83,6 +83,34 @@ func TestClientResolver_Resolve_ExplicitServerFromContext(t *testing.T) {
 	assert.Equal(t, "personal", name)
 }
 
+func TestClientResolver_Resolve_ExplicitServerBeatsGitLabHostConfig(t *testing.T) {
+	logger := log.New()
+	logger.SetLevel(log.ErrorLevel)
+	pool := NewClientPool(NewTokenStore(), logger)
+
+	hostClient := &gl.Client{}
+	personalClient := &gl.Client{}
+	require.NoError(t, pool.AddClient("https://gitlab.example.com", hostClient))
+	require.NoError(t, pool.AddClient("personal", personalClient))
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".gmcprc")
+	configContent := `{"projectId":"g/p","gitlabHost":"https://gitlab.example.com"}`
+	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+
+	require.NoError(t, os.Chdir(tmpDir))
+
+	resolver := NewClientResolver(pool, "https://gitlab.example.com", logger)
+	client, name, err := resolver.Resolve(WithRequestedServer(context.Background(), "personal"))
+	require.NoError(t, err)
+	assert.Same(t, personalClient, client)
+	assert.Equal(t, "personal", name)
+}
+
 func TestClientResolver_Resolve_ExplicitUnknownServerErrors(t *testing.T) {
 	logger := log.New()
 	logger.SetLevel(log.ErrorLevel)
