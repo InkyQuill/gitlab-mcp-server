@@ -121,35 +121,39 @@ func WriteProjectConfig(dir string, cfg *ProjectConfig) (string, error) {
 
 // DetectProjectFromGit attempts to detect the project ID from Git remote
 func DetectProjectFromGit() (projectID, gitlabHost string, err error) {
+	candidate, err := DetectProjectCandidateFromGit(nil)
+	if err != nil {
+		return "", "", err
+	}
+	return candidate.ProjectID, candidate.Host, nil
+}
+
+func DetectProjectCandidateFromGit(allowedHosts []string) (GitRemoteCandidate, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get working directory: %w", err)
+		return GitRemoteCandidate{}, fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	// Search for .git directory
 	gitDir := findGitDir(cwd)
 	if gitDir == "" {
-		return "", "", fmt.Errorf("not a Git repository (or any parent up to mount point)")
+		return GitRemoteCandidate{}, fmt.Errorf("not a Git repository (or any parent up to mount point)")
 	}
 
-	// Read .git/config
-	configPath := filepath.Join(gitDir, "config")
-	configData, err := os.ReadFile(configPath)
+	configData, err := os.ReadFile(filepath.Join(gitDir, "config"))
 	if err != nil {
-		return "", "", fmt.Errorf("failed to read .git/config: %w", err)
+		return GitRemoteCandidate{}, fmt.Errorf("failed to read .git/config: %w", err)
 	}
 
-	// Parse Git config to find remotes
-	projectID, gitlabHost, err = parseGitRemotes(configData)
+	candidates, err := ParseGitRemoteCandidates(configData)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to parse Git remotes: %w", err)
+		return GitRemoteCandidate{}, fmt.Errorf("failed to parse Git remotes: %w", err)
 	}
 
-	if projectID == "" {
-		return "", "", fmt.Errorf("no GitLab remote found in .git/config")
+	candidate, err := SelectGitRemoteCandidate(candidates, allowedHosts)
+	if err != nil {
+		return GitRemoteCandidate{}, err
 	}
-
-	return projectID, gitlabHost, nil
+	return candidate, nil
 }
 
 // findGitDir searches for .git directory
@@ -299,36 +303,19 @@ func formatRemoteCandidates(candidates []GitRemoteCandidate) string {
 
 // parseGitRemotes parses .git/config content to extract GitLab remote
 func parseGitRemotes(configData []byte) (projectID, gitlabHost string, err error) {
-	lines := bytes.Split(configData, []byte{'\n'})
-
-	var url string
-
-	for _, line := range lines {
-		trimmed := bytes.TrimSpace(line)
-
-		// Check for remote section
-		if bytes.HasPrefix(trimmed, []byte("[remote ")) {
-			continue
-		}
-
-		// Check for URL in current remote section
-		if bytes.HasPrefix(trimmed, []byte("url = ")) {
-			url = string(trimmed[6:])
-			url = strings.TrimSpace(url)
-
-			// Try to extract project info from URL
-			pid, host, parseErr := parseGitLabURL(url)
-			if parseErr != nil {
-				// GitHub detection - return error immediately
-				return "", "", parseErr
-			}
-			if pid != "" {
-				return pid, host, nil
-			}
-		}
+	candidates, err := ParseGitRemoteCandidates(configData)
+	if err != nil {
+		return "", "", err
 	}
 
-	return "", "", nil
+	candidate, err := SelectGitRemoteCandidate(candidates, nil)
+	if err != nil {
+		if strings.Contains(err.Error(), "no GitLab remote found") {
+			return "", "", nil
+		}
+		return "", "", err
+	}
+	return candidate.ProjectID, candidate.Host, nil
 }
 
 // isGitHubURL checks if the given URL is a GitHub repository URL

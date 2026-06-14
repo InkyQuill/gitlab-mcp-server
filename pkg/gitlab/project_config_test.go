@@ -682,11 +682,11 @@ func TestParseGitRemotes(t *testing.T) {
 			expectedHost: "https://gitlab.com",
 		},
 		{
-			name: "Success - Multiple remotes, GitLab first",
+			name: "Success - Multiple GitLab remotes, origin selected",
 			configContent: `[remote "origin"]
 	url = git@gitlab.com:owner/repo.git
 [remote "upstream"]
-	url = https://github.com/upstream/repo.git
+	url = https://gitlab.com/upstream/repo.git
 `,
 			expectError:  false,
 			expectedID:   "owner/repo",
@@ -752,6 +752,19 @@ func TestParseGitRemotes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseGitRemotes_UsesCandidateSelection(t *testing.T) {
+	configData := []byte(`[remote "upstream"]
+	url = https://gitlab.com/group/upstream.git
+[remote "origin"]
+	url = https://gitlab.com/group/repo.git
+`)
+
+	projectID, host, err := parseGitRemotes(configData)
+	require.NoError(t, err)
+	assert.Equal(t, "group/repo", projectID)
+	assert.Equal(t, "https://gitlab.com", host)
 }
 
 func TestDetectProjectFromGit(t *testing.T) {
@@ -902,6 +915,26 @@ func TestDetectProjectFromGit(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDetectProjectCandidateFromGit_Ambiguous(t *testing.T) {
+	tmpDir := t.TempDir()
+	gitDir := filepath.Join(tmpDir, ".git")
+	require.NoError(t, os.Mkdir(gitDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(`[remote "work"]
+	url = https://gitlab.example.com/team/api.git
+[remote "mirror"]
+	url = https://gitlab.example.com/team/api-mirror.git
+`), 0644))
+
+	oldWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldWd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	_, err = DetectProjectCandidateFromGit([]string{"https://gitlab.example.com"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "ambiguous GitLab remotes")
 }
 
 func TestReadProjectConfig_PromotesTokenNameToServer(t *testing.T) {
