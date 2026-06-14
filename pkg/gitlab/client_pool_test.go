@@ -125,6 +125,7 @@ func TestClientPool_AddClientWithMetadata(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "work", gotInfo.Name)
 	assert.Equal(t, "https://gitlab.example.com", gotInfo.Host)
+	assert.Equal(t, "https://gitlab.example.com", gotInfo.APIHost)
 	assert.True(t, gotInfo.ReadOnly)
 	assert.Equal(t, "inky", gotInfo.Username)
 }
